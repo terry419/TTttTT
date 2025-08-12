@@ -1,0 +1,468 @@
+  Unity 프로젝트 단계별 상세 구현 지시서 (최종 완성본)
+
+  서문
+
+  본 문서는 8th 프로젝트의 기획서(project_plan.md)와 현재 Assets/1.Scripts 폴더에 준비된 C# 스크립트들을
+  기반으로, Unity 에디터 내에서 게임을 처음부터 완성해나가는 과정을 상세하게 안내합니다. 각 단계는 구체적인
+  메뉴 경로, 단축키, 컴포넌트 설정값 등을 포함하며, 왜 그렇게 설정해야 하는지에 대한 설명을 덧붙여
+  프로젝트의 구조와 원리를 깊이 이해할 수 있도록 돕는 것을 목표로 합니다.
+
+  개발 환경: Unity 2022.3.6f1
+
+  ---
+
+  Part 0: 프로젝트 초기 설정 및 기반 다지기
+
+  본격적인 씬(Scene) 제작에 앞서, 프로젝트 전체에서 사용될 기본 폴더 구조와 설정을 구성합니다. 이 단계는
+  프로젝트를 체계적으로 관리하고, 스크립트들이 정상적으로 동작하기 위한 필수적인 준비 과정입니다.
+
+  1. 에셋 폴더 구조 정리
+
+  먼저, 프로젝트의 모든 리소스(에셋)를 체계적으로 관리하기 위한 폴더 구조를 만듭니다. Project 창의 Assets
+  폴더 하위에 다음과 같이 폴더를 생성하고 역할을 이해합니다.
+
+   - 생성 방법: Project 창에서 Assets 폴더를 우클릭 -> Create -> Folder
+   - 폴더 목록 및 역할:
+       - 1.Scripts: (존재) 모든 C# 스크립트가 위치합니다.
+       - 2.Scenes: 게임의 각 화면(메인 메뉴, 게임 플레이 등)을 구성하는 씬 파일들을 저장합니다.
+       - 3.Resources: DataManager가 게임 실행 중에 동적으로 불러올 ScriptableObject 데이터(카드, 유물 등)를
+         저장하는 매우 중요한 폴더입니다. 반드시 'Resources'라는 이름으로 만들어야 합니다.
+       - 4.Prefabs: 여러 씬에서 재사용될 게임 오브젝트(플레이어, 몬스터, UI 패널 등)를 저장하는 프리팹
+         폴더입니다.
+       - 5.Sprites: UI 이미지, 캐릭터, 배경 등 2D 이미지 파일들을 저장합니다.
+       - 6.Audio: 배경음악(BGM), 효과음(SFX) 등 오디오 파일들을 저장합니다.
+       - 7.Animations: 캐릭터나 UI의 애니메이션 클립 및 컨트롤러를 저장합니다.
+
+  2. 태그(Tag) 설정
+
+  스크립트에서 특정 오브젝트를 구분하기 위해 '태그'를 사용합니다. MonsterController가 플레이어의 총알을
+  인식하기 위해 이 설정이 반드시 필요합니다.
+
+   1. Unity 에디터 상단 메뉴에서 Edit -> Project Settings...를 선택합니다.
+   2. 왼쪽 목록에서 Tags and Layers를 선택합니다.
+   3. Tags 항목을 펼치고, 오른쪽의 + 버튼을 누릅니다.
+   4. New Tag Name에 Player를 입력하고 Save를 누릅니다.
+   5. 다시 + 버튼을 누르고, PlayerBullet을 입력한 뒤 Save를 누릅니다.
+
+   - 이유: MonsterController.cs의 OnTriggerEnter2D 함수는 충돌한 오브젝트의 태그가 PlayerBullet인지 검사하여
+     데미지를 입습니다. 이 태그가 없으면 몬스터는 플레이어의 공격을 인식하지 못합니다. Player 태그는 몬스터가
+     추적할 대상을 찾는 데 사용됩니다.
+
+  3. ScriptableObject(SO) 에셋 생성
+
+  게임의 핵심 데이터인 카드, 캐릭터, 유물 데이터를 에셋 파일로 만듭니다. DataManager는 Resources 폴더에 있는
+   이 파일들을 읽어 게임에 적용합니다.
+
+   1. Project 창에서 Assets/3.Resources/ 폴더로 이동합니다.
+   2. Resources 폴더 안에 CardData, ArtifactData, CharacterData 라는 하위 폴더를 각각 생성하여 데이터를
+      종류별로 관리합니다.
+   3. 캐릭터 데이터 생성 (워리어):
+       - Assets/3.Resources/CharacterData/ 폴더로 이동합니다.
+       - 폴더 안에서 우클릭 -> Create -> GameData -> CharacterData를 선택합니다.
+       - 생성된 파일의 이름을 CharacterData_Warrior로 변경합니다.
+       - 파일을 선택하고 Inspector 창에서 다음과 같이 값을 입력합니다.
+           - Character Id: warrior
+           - Character Name: 전사
+           - Base Stats -> Base Health: 100
+           - Base Stats -> Base Damage: 20
+           - (나머지 스탯도 기획에 맞게 입력)
+   4. 카드 데이터 생성 (기본 공격):
+       - Assets/3.Resources/CardData/ 폴더로 이동합니다.
+       - 우클릭 -> Create -> GameData -> CardData를 선택합니다.
+       - 파일 이름을 CardData_BasicAttack으로 변경합니다.
+       - Inspector 창에서 값을 입력합니다. (예: Card ID: warrior_basic_001, Card Name: 기본 공격 카드 등)
+   5. 유물 데이터 생성 (체력 부스팅):
+       - Assets/3.Resources/ArtifactData/ 폴더로 이동하여 위와 동일한 방식으로 ArtifactData_HealthBoost 에셋을
+          생성하고 값을 입력합니다.
+
+   - 결과: 이 과정을 통해 게임의 모든 데이터가 코드와 분리되어 ScriptableObject 에셋으로 관리됩니다. 이는
+     기획자가 코드를 몰라도 데이터를 쉽게 수정하고 추가할 수 있게 만들어주며, 게임의 확장성을 크게 높여줍니다.
+
+  ---
+
+  Part 1: MainMenu 씬 상세 구현
+
+  게임의 첫인상인 메인 메뉴 씬을 만듭니다. 모든 매니저(Manager)들을 배치하고, UI 요소들을 만들어 스크립트와
+  연결하는 전 과정을 상세히 다룹니다.
+
+  1. 씬 생성 및 매니저 프리팹 제작
+
+   1. Project 창의 Assets/2.Scenes/ 폴더로 이동합니다.
+   2. 우클릭 -> Create -> Scene을 선택하고, 이름을 MainMenu로 지정합니다.
+   3. 생성된 MainMenu 씬을 더블클릭하여 엽니다.
+   4. 매니저 오브젝트 생성:
+       - Hierarchy 창에서 단축키 Ctrl+Shift+N (또는 우클릭 -> Create Empty)을 눌러 빈 게임 오브젝트를
+         생성하고, 이름을 _Managers로 지정합니다. (언더스코어 _는 씬에서 중요한 오브젝트임을 시각적으로
+         구분하기 위함입니다.)
+       - _Managers 오브젝트를 선택하고, Inspector 창에서 Add Component 버튼을 누릅니다.
+       - 다음 스크립트들을 모두 검색하여 추가합니다: GameManager, DataManager, InputManager, PoolManager,
+         RewardManager, StatusEffectManager, ProgressionManager, AudioManager, DebugManager,
+         SceneTransitionManager.
+   5. 매니저 프리팹화:
+       - _Managers 오브젝트를 Hierarchy 창에서 Project 창의 Assets/4.Prefabs/ 폴더로 드래그 앤 드롭합니다.
+       - 파란색 아이콘으로 변한 _Managers 프리팹이 생성된 것을 확인합니다.
+       - 이유: 게임의 핵심 로직을 담당하는 매니저들은 모든 씬에 존재해야 합니다. 이들을 하나의 프리팹으로
+         만들어두면, 다른 씬을 만들 때마다 이 프리팹을 가져다 놓기만 하면 되므로 작업이 매우 편리해지고 실수를
+          줄일 수 있습니다. 각 매니저 스크립트의 Awake 함수에 있는 DontDestroyOnLoad(gameObject); 코드는 씬이
+         바뀌어도 이 매니저 오브젝트가 파괴되지 않고 계속 유지되도록 만들어줍니다.
+
+  2. UI Canvas 및 기본 요소 제작
+
+   1. Canvas 생성:
+       - Hierarchy 창에서 우클릭 -> UI -> Canvas를 선택하여 Canvas를 생성하고, 이름을 GameUICanvas로
+         변경합니다.
+       - GameUICanvas를 선택하고 Inspector 창을 봅니다.
+       - Canvas Scaler 컴포넌트의 UI Scale Mode를 Constant Pixel Size에서 Scale With Screen Size로 변경합니다.
+       - Reference Resolution을 X: 1920, Y: 1080으로 설정합니다.
+       - 이유: Scale With Screen Size로 설정하면, 게임 창의 해상도가 바뀌어도 UI 요소들이 기준
+         해상도(1920x1080)에 맞춰 자동으로 크기를 조절합니다. 이를 통해 다양한 해상도에서 UI가 깨지거나
+         어긋나지 않고 일관된 모습을 보여줄 수 있습니다.
+   2. FadeOverlay 생성:
+       - GameUICanvas를 우클릭 -> UI -> Image를 선택하고, 이름을 FadeOverlay로 변경합니다.
+       - FadeOverlay를 선택하고 Inspector 창의 Rect Transform 컴포넌트를 봅니다.
+       - Shift와 Alt 키를 동시에 누른 상태에서, 앵커 프리셋(네모 9개 아이콘)을 클릭하고, 오른쪽 아래의
+         stretch-stretch를 선택합니다.
+       - 결과: FadeOverlay의 사각형이 부모인 GameUICanvas 전체를 항상 꽉 채우게 됩니다.
+       - Image 컴포넌트의 Color를 검은색으로 설정합니다.
+       - _Managers 오브젝트를 선택하고, Scene Transition Manager 컴포넌트의 Fade Overlay 필드에 Hierarchy의
+         FadeOverlay 오브젝트를 드래그 앤 드롭하여 연결합니다.
+       - 이유: SceneTransitionManager는 이 FadeOverlay 이미지의 알파(투명도) 값을 조절하여 화면을 어둡게/밝게
+         만드는 페이드인/아웃 효과를 구현합니다.
+   3. 기타 UI 요소 생성:
+       - 위와 같은 방식으로 GameUICanvas 하위에 Image를 만들어 CursorSprite를, UI -> Text - TextMeshPro를
+         만들어 TitleText, VersionInfoText를 생성합니다.
+       - UI -> Button - TextMeshPro를 이용해 StartButton, OptionsButton, CodexButton, ExitButton을 생성합니다.
+          각 버튼의 자식 Text 오브젝트를 수정하여 버튼의 이름을 표시합니다.
+
+  3. MainMenuUI 스크립트 연결 및 완성
+
+   1. GameUICanvas 오브젝트를 선택하고, Inspector에서 Add Component를 눌러 MainMenuUI 스크립트를 추가합니다.
+   2. MainMenuUI 컴포넌트의 각 필드(슬롯)에 Hierarchy 창의 오브젝트들을 드래그 앤 드롭하여 연결합니다.
+       - Cursor Sprite 필드 -> CursorSprite 오브젝트의 Rect Transform
+       - Options Button 필드 -> OptionsButton 오브젝트
+       - Start Button 필드 -> StartButton 오브젝트
+       - ... (나머지 버튼과 텍스트도 모두 연결)
+   3. 버튼 기능 연결:
+       - StartButton을 선택하고, Inspector의 Button 컴포넌트에서 On Click () 리스트를 봅니다.
+       - + 버튼을 누르고, None (Object)라고 된 필드에 GameUICanvas 오브젝트를 드래그 앤 드롭합니다.
+       - No Function 드롭다운을 클릭하고, MainMenuUI -> OnStartButtonClicked ()를 선택합니다.
+       - 결과: 이제 사용자가 StartButton을 클릭하면, MainMenuUI 스크립트의 OnStartButtonClicked 함수가
+         실행됩니다. 이 함수는 GameManager.Instance.ChangeState(GameManager.GameState.Allocation);를 호출하여
+         게임 상태를 바꾸고, CharacterSelect 씬으로 전환시킵니다.
+       - 나머지 버튼들(Options, Codex, Exit)도 각각에 맞는 함수(OnOptionsButtonClicked 등)와 동일한 방식으로
+         연결합니다.
+
+   - 최종 확인: MainMenu 씬을 저장하고, Unity 에디터 상단의 재생(▶) 버튼을 눌러 게임을 실행합니다. 키보드 w,
+     s 키로 커서가 움직이고, Enter 키로 버튼이 눌리는지, 각 버튼이 의도한 대로 동작하는지(씬 전환, 게임 종료
+     등) 확인합니다.
+
+  ---
+
+  Part 2: CharacterSelect 씬 상세 구현
+
+  메인 메뉴의 '시작' 버튼을 눌렀을 때 진입하는 캐릭터 선택 씬을 구현합니다. 이 씬은 여러 UI 패널이
+  순차적으로 나타나는 복합적인 구조를 가집니다.
+
+  1. 씬 생성 및 기본 오브젝트 배치
+
+   1. Assets/2.Scenes/ 폴더에 CharacterSelect 라는 이름의 새 씬을 생성하고 엽니다.
+   2. Project 창의 Assets/4.Prefabs/ 폴더에서 _Managers 프리팹을 Hierarchy 창으로 드래그 앤 드롭하여
+      배치합니다.
+   3. Hierarchy에서 Ctrl+Shift+N으로 빈 오브젝트를 생성하고, 이름을 _CharacterSelectController로 지정합니다.
+   4. _CharacterSelectController를 선택하고 Inspector에서 CharacterSelectController 스크립트를 추가합니다.
+
+  2. UI 패널 및 스크립트 구성
+
+   1. Hierarchy에서 UI -> Canvas를 생성하고 GameUICanvas로 이름을 변경합니다. Canvas Scaler를 MainMenu 씬과
+      동일하게 설정합니다.
+   2. GameUICanvas 하위에 UI -> Panel을 이용하여 3개의 패널을 생성하고, 각각 이름을 Panel_CharacterSelect,
+      Panel_PointAllocation, Panel_PointAllocationResult로 지정합니다.
+   3. 각 패널에 해당 스크립트를 추가합니다.
+       - Panel_CharacterSelect 오브젝트 -> CharacterSelectUI.cs 추가
+       - Panel_PointAllocation 오브젝트 -> PointAllocationUI.cs 추가
+       - Panel_PointAllocationResult 오브젝트 -> PointAllocationResultUI.cs 추가
+   4. _CharacterSelectController 오브젝트를 선택하고, Inspector의 Character Select Controller 컴포넌트에 있는
+      3개의 Panel 필드에 Hierarchy의 각 패널 오브젝트를 드래그 앤 드롭하여 연결합니다.
+       - 이유: CharacterSelectController는 이 패널들을 참조하여 씬의 흐름(캐릭터 선택 -> 포인트 분배 -> 결과
+         확인)에 따라 각 패널을 켜고 끄는 역할을 합니다.
+
+  3. Panel_CharacterSelect 상세 구현
+
+   1. Panel_CharacterSelect 하위에 기획서 레이아웃에 맞춰 Image, TextMeshProUGUI, Button들을 배치합니다.
+      (캐릭터 일러스트, 스탯 정보, 워리어/아처/메이지 버튼, 게임 시작 버튼 등)
+   2. Panel_CharacterSelect 오브젝트를 선택하고, Inspector의 Character Select UI 컴포넌트의 모든 필드에 방금
+      만든 UI 요소들을 연결합니다.
+   3. Controller 필드에는 _CharacterSelectController 오브젝트를 연결합니다.
+   4. 각 버튼의 On Click() 이벤트도 MainMenu에서 했던 것과 동일한 방식으로 CharacterSelectUI의 해당
+      함수들(SelectCharacter, OnGameStartClicked 등)과 연결합니다.
+
+  4. Panel_PointAllocation 상세 구현
+
+   1. UI 요소 생성:
+       - Panel_PointAllocation 하위에 UI -> Input Field - TextMeshPro를 생성하고 이름을 InputField_Points로
+         지정합니다.
+       - UI -> Button - TextMeshPro를 생성하고 이름을 Button_Confirm으로, Text를 "결정"으로 수정합니다.
+   2. 스크립트 필드 연결:
+       - Panel_PointAllocation 오브젝트를 선택하고 Inspector의 Point Allocation UI 컴포넌트를 봅니다.
+       - Controller 필드에 _CharacterSelectController를 드래그합니다.
+       - InputField_Points를 Point Input Field 필드에, Button_Confirm을 Confirm Button 필드에 연결합니다.
+   3. 버튼 `On Click()` 이벤트 설정:
+       - Button_Confirm의 On Click() 이벤트가 PointAllocationUI의 OnConfirmClicked() 함수를 호출하도록
+         설정합니다.
+
+  5. Panel_PointAllocationResult 상세 구현
+
+   1. UI 요소 생성:
+       - Panel_PointAllocationResult 하위에 UI -> Text - TextMeshPro를 생성하고 Text_FinalStats로 이름을
+         지정합니다.
+       - UI -> Button - TextMeshPro를 생성하고 Button_StartFinal로, Text를 "게임 시작"으로 수정합니다.
+   2. 스크립트 필드 연결:
+       - Panel_PointAllocationResult 오브젝트를 선택하고 Inspector의 Point Allocation Result UI 컴포넌트를
+         봅니다.
+       - Controller 필드에 _CharacterSelectController를 드래그합니다.
+       - Text_FinalStats를 Final Stats Text 필드에, Button_StartFinal을 Start Game Button 필드에 연결합니다.
+   3. 버튼 `On Click()` 이벤트 설정:
+       - Button_StartFinal의 On Click() 이벤트가 PointAllocationResultUI의 OnStartGameClicked() 함수를
+         호출하도록 설정합니다.
+
+   - 최종 확인: MainMenu 씬에서부터 게임을 실행하여, Start 버튼을 눌렀을 때 CharacterSelect 씬으로 전환되는지,
+      캐릭터 버튼 선택 시 정보가 표시되는지, '게임 시작' 버튼을 누르면 포인트 분배 패널이 나타나는지, 포인트를
+      입력하고 '결정'을 누르면 결과 패널이 나타나는지, 마지막으로 '게임 시작'을 누르면 Gameplay 씬으로
+     전환되는지(아직 Gameplay 씬이 없으므로 오류가 나거나 빈 씬이 로드됨) 전체 흐름을 확인합니다.
+
+  ---
+
+  Part 3: Gameplay 씬 상세 구현
+
+  게임의 핵심 플레이가 이루어지는 공간입니다. 플레이어, 몬스터, UI 등 모든 요소를 배치하고 연결합니다.
+
+  1. 씬 생성 및 기본 배치
+
+   1. Assets/2.Scenes/ 폴더에 Gameplay 라는 이름의 새 씬을 생성하고 엽니다.
+   2. Project 창의 Assets/4.Prefabs/ 폴더에서 _Managers 프리팹을 Hierarchy 창으로 드래그 앤 드롭합니다.
+
+  2. 플레이어 프리팹 제작
+
+   1. Hierarchy에서 Ctrl+Shift+N으로 빈 오브젝트를 생성하고 이름을 Player로 지정합니다.
+   2. Player 오브젝트를 선택하고 Inspector에서 Tag 드롭다운을 클릭하여 이전에 만들어 둔 Player 태그를
+      선택합니다.
+   3. 컴포넌트 추가 및 설정:
+       - Add Component를 눌러 Rigidbody 2D를 추가합니다. Gravity Scale을 0으로 설정하여 중력의 영향을 받지
+         않게 합니다. Constraints를 펼쳐 Freeze Rotation Z를 체크하여 물리적 충돌로 회전하지 않도록 합니다.
+       - Add Component를 눌러 Circle Collider 2D를 추가합니다. 몬스터나 다른 오브젝트와 충돌을 감지하기
+         위함입니다.
+       - Add Component를 눌러 Player Controller, Character Stats, `PlayerInitializer` 스크립트를 추가합니다.
+   4. 자식 오브젝트 생성:
+       - Player 오브젝트를 우클릭 -> Create Empty를 선택하여 자식 오브젝트를 만들고, 이름을 FirePoint로
+         지정합니다. 이 오브젝트의 Transform Position을 조정하여 총알이 발사될 위치를 지정합니다. (예: X: 0.5,
+          Y: 0)
+   5. 프리팹화:
+       - Player 오브젝트를 Hierarchy에서 Project 창의 Assets/4.Prefabs/ 폴더로 드래그 앤 드롭하여 프리팹으로
+         만듭니다.
+
+  3. 몬스터 및 총알 프리팹 제작
+
+   1. 총알 프리팹:
+       - Hierarchy에서 UI -> Image 또는 2D Object -> Sprites -> Square 등을 이용해 간단한 총알 모양의
+         오브젝트를 만들고 이름을 Bullet으로 지정합니다.
+       - Tag를 PlayerBullet으로 설정합니다.
+       - Add Component로 Rigidbody 2D를 추가하고 Gravity Scale을 0으로 설정합니다.
+       - Add Component로 Circle Collider 2D를 추가하고, Is Trigger를 체크합니다.
+           - 이유: Is Trigger를 체크하면 물리적 충돌(튕겨나감) 없이 통과하면서 OnTriggerEnter2D 이벤트를
+             발생시킬 수 있습니다. 총알이 몬스터에게 부딪혀 튕겨나가는 대신, 데미지를 주고 사라지게 하는 데
+             적합합니다.
+       - BulletController 스크립트를 추가합니다.
+       - Bullet Controller 컴포넌트의 Bullet Prefab 필드에 Project 창의 Bullet 프리팹 자기 자신을 드래그 앤
+         드롭하여 연결합니다. (이 총알이 풀로 돌아갈 때 어떤 프리팹에 속하는지 알려주기 위함입니다.)
+       - Bullet 오브젝트를 Assets/4.Prefabs/ 폴더로 드래그하여 프리팹으로 만듭니다.
+   2. 몬스터 프리팹:
+       - 위와 유사하게 간단한 몬스터 모양의 오브젝트를 만들고 이름을 Monster로 지정합니다.
+       - Rigidbody 2D (Gravity Scale: 0), Circle Collider 2D를 추가합니다.
+       - MonsterController 스크립트를 추가합니다.
+       - Monster Controller 컴포넌트의 Monster Prefab 필드에 Project 창의 Monster 프리팹 자기 자신을 드래그 앤
+          드롭하여 연결합니다.
+       - Monster 오브젝트를 Assets/4.Prefabs/ 폴더로 드래그하여 프리팹으로 만듭니다.
+
+  4. 게임 로직 및 UI 연결
+
+   1. 라운드 로직 설정:
+       - Hierarchy에서 빈 오브젝트를 만들고 _RoundLogic으로 이름을 지정합니다.
+       - _RoundLogic에 RoundManager와 MonsterSpawner 스크립트를 추가합니다.
+       - Round Manager 컴포넌트의 Monster Spawner 필드에 _RoundLogic 오브젝트를 드래그 앤 드롭합니다.
+       - Monster Spawner 컴포넌트의 Monster Prefab 필드에 Project 창의 Monster 프리팹을, Player Transform
+         필드에 Hierarchy의 Player 오브젝트를 드래그합니다.
+   2. 게임플레이 UI (HUD) 설정:
+       - Hierarchy에서 UI -> Canvas를 생성하고 GameplayCanvas로 이름을 지정합니다. (Canvas Scaler 설정
+         동일하게)
+       - GameplayCanvas 하위에 UI -> Slider를 만들어 Slider_HealthBar로, UI -> Text - TextMeshPro를 두 개
+         만들어 Text_Timer, Text_KillCount로 이름을 지정하고 배치합니다.
+       - GameplayCanvas에 HUDController 스크립트를 추가합니다.
+       - HUD Controller 컴포넌트의 각 필드에 방금 만든 Slider와 Text들을 연결합니다.
+   3. GameManager와 연동:
+       - _Managers 오브젝트를 선택하고 Game Manager 컴포넌트의 Main Canvas 필드에 GameplayCanvas를 연결합니다.
+          (이는 GameManager가 상태에 따라 UI를 켜고 끌 때 사용됩니다.)
+
+   - 최종 확인: Gameplay 씬을 저장합니다. File -> Build Settings...를 열고, Scenes In Build에 MainMenu,
+     CharacterSelect, Gameplay 씬을 순서대로 드래그 앤 드롭하여 추가합니다. 게임을 실행하여 MainMenu부터
+     Gameplay 씬까지 정상적으로 진입하는지, 플레이어가 움직이는지, 시간이 흐르고 HUD가 표시되는지 확인합니다.
+     (몬스터 스폰은 RoundManager.StartRound()가 호출되어야 시작됩니다.)
+
+  ---
+
+  Part 4: CardReward 씬 상세 구현
+
+  라운드 클리어 후 진입하는 카드 보상 씬을 구현합니다. 동적으로 카드 선택지를 생성하고, 사용자의 선택을
+  처리합니다.
+
+  1. 씬 생성 및 기본 배치
+
+   1. Assets/2.Scenes/ 폴더에 CardReward 라는 이름의 새 씬을 생성하고 엽니다.
+   2. Assets/4.Prefabs/ 폴더에서 _Managers 프리팹을 Hierarchy 창으로 드래그 앤 드롭합니다.
+
+  2. CardDisplay 프리팹 제작
+
+  CardRewardController가 동적으로 생성할 카드 UI 프리팹을 만듭니다.
+
+   1. Hierarchy에서 UI -> Panel을 생성하고 이름을 CardDisplay로 지정합니다.
+   2. CardDisplay 하위에 UI -> Image (카드 아이콘), UI -> Text - TextMeshPro (카드 이름), UI -> Text -
+      TextMeshPro (카드 설명) 등을 배치합니다.
+   3. CardDisplay 오브젝트에 Button 컴포넌트를 추가합니다.
+   4. `CardDisplay.cs` 스크립트 생성:
+       - Assets/1.Scripts/UI/ 폴더에 CardDisplay.cs 스크립트를 새로 만듭니다.
+       - `CardDisplay.cs` 내용:
+
+    1         using UnityEngine;
+    2         using UnityEngine.UI;
+    3         using TMPro;
+    4
+    5         /// <summary>
+    6         /// 개별 카드 선택지 UI를 표시하고, 클릭 이벤트를 CardRewardController에 전달합니다.
+    7         /// </summary>
+    8         public class CardDisplay : MonoBehaviour
+    9         {
+   10             [SerializeField] private Image cardIcon;
+   11             [SerializeField] private TextMeshProUGUI cardNameText;
+   12             [SerializeField] private TextMeshProUGUI cardDescriptionText;
+   13
+   14             private CardDataSO currentCardData;
+   15             private CardRewardController parentController;
+   16
+   17             /// <summary>
+   18             /// 카드 데이터를 받아 UI를 설정하고, 부모 컨트롤러를 연결합니다.
+   19             /// </summary>
+   20             public void Setup(CardDataSO cardData, CardRewardController controller)
+   21             {
+   22                 currentCardData = cardData;
+   23                 parentController = controller;
+   24
+   25                 if (cardIcon != null) cardIcon.sprite = cardData.icon; // TODO: CardDataSO에
+      icon 필드 추가 필요
+   26                 if (cardNameText != null) cardNameText.text = cardData.cardName;
+   27                 if (cardDescriptionText != null) cardDescriptionText.text =
+      cardData.effectDescription;
+   28
+   29                 // 버튼 클릭 시 OnCardClicked 메서드 호출
+   30                 GetComponent<Button>().onClick.AddListener(OnCardClicked);
+   31             }
+   32
+   33             private void OnCardClicked()
+   34             {
+   35                 if (parentController != null)
+   36                 {
+   37                     parentController.OnCardSelected(currentCardData);
+   38                 }
+   39             }
+   40         }
+   5. CardDisplay 오브젝트에 CardDisplay.cs 스크립트를 추가하고, 필드들을 연결합니다.
+   6. CardDisplay 오브젝트를 Assets/4.Prefabs/ 폴더로 드래그하여 프리팹으로 만듭니다.
+
+  3. CardReward UI 구성 및 스크립트 연결
+
+   1. Hierarchy에서 UI -> Canvas를 생성하고 GameUICanvas로 이름을 지정합니다. (Canvas Scaler 설정 동일하게)
+   2. GameUICanvas 하위에 UI -> Panel을 생성하고 이름을 Panel_CardReward로 지정합니다.
+   3. Panel_CardReward에 CardRewardController 스크립트를 추가합니다.
+   4. Panel_CardReward 하위에 기획서 레이아웃에 맞춰 카드 슬롯(UI -> Panel 3개), 획득/합성/포기/맵 버튼(UI ->
+      Button - TextMeshPro)들을 배치합니다.
+   5. CardRewardController 컴포넌트의 필드들을 연결합니다.
+       - Card Slots 리스트에 카드 슬롯 패널들을 드래그하여 연결합니다.
+       - Acquire Button, Synthesize Button, Skip Button, Map Button 필드에 해당 버튼들을 연결합니다.
+       - Card Info Prefab 필드에 Assets/4.Prefabs/CardDisplay 프리팹을 드래그하여 연결합니다.
+   6. GameManager의 Main Canvas 필드에 GameUICanvas를 연결합니다.
+
+  ---
+
+  Part 5: Options 씬 상세 구현
+
+  게임 설정(그래픽, 오디오, 언어)을 변경하는 씬입니다.
+
+  1. 씬 생성 및 기본 배치
+
+   1. Assets/2.Scenes/ 폴더에 Options 라는 이름의 새 씬을 생성하고 엽니다.
+   2. Assets/4.Prefabs/ 폴더에서 _Managers 프리팹을 Hierarchy 창으로 드래그 앤 드롭합니다.
+
+  2. Options UI 구성 및 스크립트 연결
+
+   1. Hierarchy에서 UI -> Canvas를 생성하고 GameUICanvas로 이름을 지정합니다. (Canvas Scaler 설정 동일하게)
+   2. GameUICanvas 하위에 UI -> Panel을 생성하고 이름을 Panel_Options로 지정합니다.
+   3. Panel_Options에 OptionsController 스크립트를 추가합니다.
+   4. Panel_Options 하위에 기획서 레이아웃에 맞춰 TMP_Dropdown (해상도, 언어), Toggle (전체화면), Slider (BGM,
+      SFX 볼륨) 등을 배치합니다.
+   5. OptionsController 컴포넌트의 필드들을 연결합니다.
+   6. 각 UI 요소의 On Value Changed 이벤트에 OptionsController의 해당 메서드(SetResolution, SetFullscreen,
+      SetBgmVolume, SetSfxVolume 등)를 연결합니다.
+   7. GameManager의 Main Canvas 필드에 GameUICanvas를 연결합니다.
+
+  ---
+
+  Part 6: Codex 씬 상세 구현
+
+  플레이어가 수집한 카드와 유물 정보를 열람하는 씬입니다.
+
+  1. 씬 생성 및 기본 배치
+
+   1. Assets/2.Scenes/ 폴더에 Codex 라는 이름의 새 씬을 생성하고 엽니다.
+   2. Assets/4.Prefabs/ 폴더에서 _Managers 프리팹을 Hierarchy 창으로 드래그 앤 드롭합니다.
+
+  2. Codex UI 구성 및 스크립트 연결
+
+   1. Hierarchy에서 UI -> Canvas를 생성하고 GameUICanvas로 이름을 지정합니다. (Canvas Scaler 설정 동일하게)
+   2. GameUICanvas 하위에 UI -> Panel을 생성하고 이름을 Panel_Codex로 지정합니다.
+   3. Panel_Codex에 CodexController 스크립트를 추가합니다.
+   4. Panel_Codex 하위에 기획서 레이아웃에 맞춰 카드/유물 탭 버튼, 스크롤 뷰, 아이템 정보 표시 영역 등을
+      배치합니다.
+   5. CodexController 컴포넌트의 필드들을 연결합니다.
+       - Item Info Prefab 필드에 CardDisplay 프리팹(또는 Codex 전용 ItemDisplay 프리팹)을 연결합니다.
+   6. GameManager의 Main Canvas 필드에 GameUICanvas를 연결합니다.
+
+  ---
+
+  Part 7: 빌드 설정 및 최종 확인
+
+  모든 씬을 만들고 연결했다면, 게임을 빌드할 준비를 합니다.
+
+  1. 빌드 설정에 씬 추가
+
+   1. Unity 에디터 상단 메뉴에서 File -> Build Settings...를 선택합니다.
+   2. Scenes In Build 목록에 현재 프로젝트의 모든 씬(MainMenu, CharacterSelect, Gameplay, CardReward, Options,
+      Codex)을 드래그 앤 드롭하여 추가합니다.
+   3. 중요: 씬의 순서가 중요합니다. MainMenu가 가장 위에(인덱스 0) 있어야 합니다.
+
+  2. 최종 확인
+
+   1. Unity 에디터 상단의 재생(▶) 버튼을 눌러 게임을 실행합니다.
+   2. MainMenu부터 시작하여 모든 씬 전환이 원활하게 이루어지는지, 각 UI가 의도대로 작동하는지, 플레이어가
+      움직이고 몬스터가 스폰되는지, 라운드 클리어 후 보상 화면으로 넘어가는지 등 게임의 모든 흐름을
+      테스트합니다.
+
+  ---
+
+  결론
+
+  본 지시서를 따라 모든 단계를 완료했다면, 이제 8th 프로젝트는 기획서에 명시된 대부분의 핵심 기능이 구현된,
+  실제 플레이 가능한 프로토타입 상태가 되었을 것입니다. 각 씬은 유기적으로 연결되고, 데이터는 DataManager를
+  통해 관리되며, PoolManager를 통한 성능 최적화까지 고려되었습니다.
+
+  이제 개발자님은 이 기반 위에서 새로운 콘텐츠를 추가하고, 디테일을 다듬어 게임의 완성도를 높여나갈 수
+  있습니다.
+
+  수고 많으셨습니다.

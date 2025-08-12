@@ -1,0 +1,188 @@
+using UnityEngine;
+using UnityEngine.UI; // UI 컴포넌트 사용을 위해 필요
+using TMPro; // TextMeshProUGUI 사용을 위해 필요
+using System.Collections.Generic; // List 사용을 위해 필요
+
+// 메인 메뉴 UI를 관리하는 스크립트입니다.
+// InputManager와 GameManager를 사용하여 사용자 입력 및 씬 전환을 처리합니다.
+public class MainMenuUI : MonoBehaviour
+{
+    [Header("UI 요소 참조")]
+    public RectTransform cursorSprite; // 커서 스프라이트의 RectTransform
+    public Button optionsButton; // 옵션 버튼
+    public Button startButton; // 시작 버튼
+    public Button codexButton; // 도감 버튼
+    public Button exitButton; // 나가기 버튼
+    public TextMeshProUGUI gameTitleText; // 게임 제목 텍스트
+    public TextMeshProUGUI versionInfoText; // 버전 정보 텍스트
+
+    private List<Button> menuButtons; // 메뉴 버튼 목록
+    private int currentButtonIndex = 0; // 현재 선택된 버튼의 인덱스
+
+    void Awake()
+    {
+        // 메뉴 버튼 목록 초기화
+        menuButtons = new List<Button>
+        {
+            optionsButton,
+            startButton,
+            codexButton,
+            exitButton
+        };
+
+        // 게임 제목 설정 (예시)
+        if (gameTitleText == null)
+        {
+            gameTitleText.text = "Game Title"; // 실제 게임 제목으로 변경
+        }
+
+        // 버전 정보 표시
+        if (versionInfoText == null)
+        {
+            versionInfoText.text = "Version: " + Application.version; // Unity 프로젝트 설정의 버전 정보를 가져옵니다.
+        }
+    }
+
+
+    private void OnEnable()
+    {
+        if (InputManager.Instance != null)
+        {
+            // InputManager 이벤트 구독
+            InputManager.Instance.OnMove.AddListener(HandleMoveInput);
+            InputManager.Instance.OnSubmit.AddListener(HandleSubmitInput);
+            InputManager.Instance.OnCancel.AddListener(HandleCancelInput);
+        }
+        else
+        {
+            Debug.LogError("InputManager 인스턴스를 찾을 수 없습니다. MainMenuUI가 Inputy 이벤트를 구독할 수 없습니다.");
+        }
+
+    }
+
+    void Start()
+    {
+        // 씬 로드 시 커서를 '시작' 버튼에 위치시킵니다.
+        SetCursorPosition(startButton);
+    }
+
+    // WASD 및 방향키 입력 처리
+    private void HandleMoveInput(Vector2 input)
+    {
+        // 입력 벡터의 크기가 0에 가까우면 입력을 무시합니다. (Deadzone)
+        // 이는 조이스틱의 미세한 떨림 등으로 인해 의도치 않게 커서가 움직이는 것을 방지합니다.
+        if (input.magnitude < 0.5f)
+        {
+            return;
+        }
+
+        int previousButtonIndex = currentButtonIndex;
+
+        // 수직 입력(W, S, 위/아래 화살표)과 수평 입력(A, D, 좌/우 화살표) 중 어느 쪽의 입력이 더 강한지 확인합니다.
+        // 이를 통해 대각선 입력이 들어왔을 때 사용자의 의도에 더 가깝게 반응할 수 있습니다.
+        if (Mathf.Abs(input.y) > Mathf.Abs(input.x))
+        {
+            if (input.y > 0) // 위로 이동
+            {
+                currentButtonIndex--;
+            }
+            else // 아래로 이동
+            {
+                currentButtonIndex++;
+            }
+        }
+        else
+        {
+            if (input.x < 0) // 왼쪽으로 이동 (위와 동일하게 처리)
+            {
+                currentButtonIndex--;
+            }
+            else // 오른쪽으로 이동 (아래와 동일하게 처리)
+            {
+                currentButtonIndex++;
+            }
+        }
+
+        // 버튼 인덱스가 실제로 변경되었을 경우에만 커서 위치를 업데이트하고, 인덱스 범위를 벗어나지 않도록 처리합니다.
+        // 이렇게 하면 불필요한 함수 호출을 줄여 성능을 약간이나마 개선할 수 있습니다.
+        if (previousButtonIndex != currentButtonIndex)
+        {
+            if (currentButtonIndex < 0)
+            {
+                currentButtonIndex = menuButtons.Count - 1; // 목록의 맨 아래로 순환
+            }
+            else if (currentButtonIndex >= menuButtons.Count)
+            {
+                currentButtonIndex = 0; // 목록의 맨 위로 순환
+            }
+
+            SetCursorPosition(menuButtons[currentButtonIndex]);
+        }
+    }
+
+    // Enter 입력 처리 (버튼 선택)
+    private void HandleSubmitInput()
+    {
+        // 현재 선택된 버튼의 OnClick 이벤트를 호출합니다.
+        menuButtons[currentButtonIndex].onClick.Invoke();
+    }
+
+    // ESC 입력 처리 (나가기 또는 뒤로 가기)
+    private void HandleCancelInput()
+    {
+        // 메인 메뉴에서는 ESC를 누르면 게임 종료 버튼과 동일하게 작동합니다.
+        exitButton.onClick.Invoke();
+    }
+
+    // 커서 스프라이트의 위치를 설정합니다.
+    private void SetCursorPosition(Button targetButton)
+    {
+        if (cursorSprite != null && targetButton != null)
+        {
+            // 버튼의 위치에 따라 커서 스프라이트의 위치를 조정합니다.
+            // 정확한 위치 조정은 UI 디자인에 따라 달라질 수 있습니다.
+            cursorSprite.position = targetButton.transform.position;
+            // 커서 스프라이트를 버튼 옆으로 살짝 이동시키는 오프셋을 추가할 수 있습니다.
+            // cursorSprite.anchoredPosition = targetButton.GetComponent<RectTransform>().anchoredPosition + new Vector2(-targetButton.GetComponent<RectTransform>().sizeDelta.x / 2 - 10, 0);
+        }
+    }
+
+    // --- 버튼 클릭 이벤트 핸들러 --- //
+
+    public void OnOptionsButtonClicked()
+    {
+        Debug.Log("옵션 버튼 클릭!");
+        GameManager.Instance.ChangeState(GameManager.GameState.Pause); // 옵션 씬으로 이동 (Pause 씬에 옵션이 포함될 수 있음)
+    }
+
+    public void OnStartButtonClicked()
+    {
+        Debug.Log("시작 버튼 클릭!");
+        GameManager.Instance.ChangeState(GameManager.GameState.Allocation); // 캐릭터 선택 및 능력치 배분 씬으로 이동
+    }
+
+    public void OnCodexButtonClicked()
+    {
+        Debug.Log("도감 버튼 클릭!"); // Fixed: Added Debug.
+        GameManager.Instance.ChangeState(GameManager.GameState.Reward); // 도감 씬으로 이동 (임시로 Reward 씬으로 설정)
+    }
+
+    public void OnExitButtonClicked()
+    {
+        Debug.Log("나가기 버튼 클릭! 게임 종료.");
+        Application.Quit(); // 애플리케이션 종료
+    }
+
+    // --- 기타 --- //
+
+    void OnDestroy()
+    {
+        // 스크립트가 파괴될 때 InputManager 이벤트 구독 해제
+        if (InputManager.Instance != null)
+        {
+            InputManager.Instance.OnMove.RemoveListener(HandleMoveInput);
+            InputManager.Instance.OnSubmit.RemoveListener(HandleSubmitInput);
+            InputManager.Instance.OnCancel.RemoveListener(HandleCancelInput);
+        }
+    }
+}
