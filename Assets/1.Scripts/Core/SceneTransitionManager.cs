@@ -1,28 +1,28 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using System.Collections;
 
 public class SceneTransitionManager : MonoBehaviour
 {
-    public Image fadeOverlay; // Canvas À§¿¡ ÀÖ´Â Image ÄÄÆ÷³ÍÆ®
+    public Image fadeOverlay; // Canvas ìœ„ì— ìˆëŠ” Image ì»´í¬ë„ŒíŠ¸
 
     private void Awake()
     {
-        // Ã³À½ ÁøÀÔ ½Ã °ËÀº È­¸é¿¡¼­ Åõ¸íÀ¸·Î ÆäÀÌµå ÀÎ
+        // ì²˜ìŒ ì§„ì… ì‹œ ê²€ì€ í™”ë©´ì—ì„œ íˆ¬ëª…ìœ¼ë¡œ í˜ì´ë“œ ì¸
         StartCoroutine(FadeIn());
     }
 
     public void LoadScene(string sceneName)
     {
-        // È£Ãâ ½Ã Åõ¸í ¡æ °ËÀº È­¸éÀ¸·Î ÆäÀÌµå ¾Æ¿ô ÈÄ ¾À ·Îµå
+        // í˜¸ì¶œ ì‹œ íˆ¬ëª… â†’ ê²€ì€ í™”ë©´ìœ¼ë¡œ í˜ì´ë“œ ì•„ì›ƒ í›„ ì”¬ ë¡œë“œ
         StartCoroutine(FadeOutAndLoad(sceneName));
     }
 
     private IEnumerator FadeIn()
     {
         float t = 1f;
-        // ½ÃÀÛ »ö: °ËÁ¤(1), ³¡ »ö: Åõ¸í(0)
+        // ì‹œì‘ ìƒ‰: ê²€ì •(1), ë ìƒ‰: íˆ¬ëª…(0)
         while (t > 0)
         {
             t -= Time.deltaTime;
@@ -34,7 +34,7 @@ public class SceneTransitionManager : MonoBehaviour
     private IEnumerator FadeOutAndLoad(string sceneName)
     {
         float t = 0f;
-        // ½ÃÀÛ »ö: Åõ¸í(0), ³¡ »ö: °ËÁ¤(1)
+        // ì‹œì‘ ìƒ‰: íˆ¬ëª…(0), ë ìƒ‰: ê²€ì •(1)
         while (t < 1)
         {
             t += Time.deltaTime;

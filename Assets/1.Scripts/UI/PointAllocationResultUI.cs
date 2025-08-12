@@ -1,7 +1,7 @@
-/*
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections; // 코루틴 사용을 위해 추가
 
 /// <summary>
 /// 포인트 분배 결과 확인 및 게임 시작을 담당하는 UI 스크립트입니다.
@@ -10,10 +10,9 @@ using TMPro;
 /// </summary>
 public class PointAllocationResultUI : MonoBehaviour
 {
-    [Header("컨트롤러 참조")]
-    [SerializeField] private CharacterSelectController controller;
 
     [Header("UI 요소 참조")]
+    [SerializeField] private PointAllocationManager manager;
     [SerializeField] private TextMeshProUGUI finalStatsText; // 최종 능력치를 표시할 텍스트
     [SerializeField] private Button startGameButton; // 게임 시작 버튼
     [SerializeField] private Button backButton; // 뒤로가기 버튼
@@ -76,6 +75,12 @@ public class PointAllocationResultUI : MonoBehaviour
     private void OnStartGameClicked()
     {
         Debug.Log("게임 시작 버튼 최종 클릭됨. 게임 플레이 씬으로 전환합니다.");
+        StartCoroutine(LoadGameplaySceneAfterDelay(2f));
+    }
+
+    private IEnumerator LoadGameplaySceneAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
         GameManager.Instance.ChangeState(GameManager.GameState.Gameplay);
     }
 
@@ -85,17 +90,13 @@ public class PointAllocationResultUI : MonoBehaviour
     private void OnBackClicked()
     {
         Debug.Log("포인트 분배 결과 화면에서 뒤로가기 버튼 클릭됨. 포인트 분배 입력 화면으로 돌아갑니다.");
-        // PointAllocationUI의 패널을 활성화하고, 이 패널을 비활성화합니다.
-        // PointAllocationUI는 이 스크립트가 붙어있는 게임 오브젝트의 부모이므로, 직접 접근합니다.
-        if (transform.parent != null)
+        if (manager != null)
         {
-            GameObject parentPanel = transform.parent.gameObject; // PointAllocationUI가 붙어있는 Panel_PointAllocation
-            if (parentPanel != null)
-            {
-                parentPanel.SetActive(true); // PointAllocationUI 패널 활성화
-                gameObject.SetActive(false); // PointAllocationResultUI 패널 비활성화
-            }
+            manager.OnBackToAllocationInput();
+        }
+        else
+        {
+            Debug.LogError("PointAllocationManager 참조가 PointAllocationResultUI에 할당되지 않았습니다.");
         }
     }
 }
-*/

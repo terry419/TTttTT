@@ -1,4 +1,5 @@
 using UnityEngine;
+using BaseStats;
 
 /// <summary>
 /// 캐릭터(워리어, 아처, 메이지 등)의 고유한 기본 데이터를 정의하는 ScriptableObject입니다.

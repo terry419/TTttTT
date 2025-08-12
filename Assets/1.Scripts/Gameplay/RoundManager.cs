@@ -120,33 +120,53 @@ public class RoundManager : MonoBehaviour
     private void GenerateCardReward()
     {
         List<CardDataSO> allCards = DataManager.Instance.GetAllCards();
-        if (allCards == null || allCards.Count == 0)
+        if (allCards == null || allCards.Count < 3)
         {
-            Debug.LogError("카드 데이터가 없어 보상을 생성할 수 없습니다.");
+            Debug.LogError("카드 데이터가 3개 미만이어서 보상을 생성할 수 없습니다.");
             return;
         }
 
-        // TODO: 기획서에 따른 가중치 기반 랜덤 선택 로직 구현 필요
-        // 현재는 간단하게 전체 카드 중 3장을 랜덤으로 선택합니다.
         List<CardDataSO> rewardChoices = new List<CardDataSO>();
+        List<CardDataSO> selectableCards = new List<CardDataSO>(allCards);
+
         for (int i = 0; i < 3; i++)
         {
-            if (allCards.Count > 0)
+            // 전체 가중치 합산
+            float totalWeight = 0f;
+            foreach (var card in selectableCards)
             {
-                int randomIndex = Random.Range(0, allCards.Count);
-                rewardChoices.Add(allCards[randomIndex]);
-                // 중복 선택을 피하기 위해 리스트에서 제거 (간단한 방식)
-                allCards.RemoveAt(randomIndex);
+                totalWeight += card.rewardAppearanceWeight;
             }
+
+            // 랜덤 값 선택
+            float randomPoint = Random.Range(0, totalWeight);
+            float currentWeight = 0f;
+
+            // 가중치에 따라 카드 선택
+            CardDataSO selectedCard = null;
+            foreach (var card in selectableCards)
+            {
+                currentWeight += card.rewardAppearanceWeight;
+                if (randomPoint <= currentWeight)
+                {
+                    selectedCard = card;
+                    break;
+                }
+            }
+
+            // 만약 부동소수점 오류 등으로 선택이 안됐을 경우 마지막 카드 선택
+            if (selectedCard == null)
+            {
+                selectedCard = selectableCards[selectableCards.Count - 1];
+            }
+
+            rewardChoices.Add(selectedCard);
+            selectableCards.Remove(selectedCard); // 중복 선택 방지
         }
 
-        // RewardManager의 큐에 보상을 추가합니다.
-        // TODO: RewardManager에 List를 받는 Enqueue 메서드를 만들면 더 효율적입니다.
-        foreach (var card in rewardChoices)
-        {
-            RewardManager.Instance.EnqueueReward(card);
-        }
+        // RewardManager의 큐에 "선택지"로 구성된 리스트를 전달
+        RewardManager.Instance.EnqueueReward(rewardChoices);
 
-        Debug.Log($"{rewardChoices.Count}개의 카드 보상을 생성했습니다.");
+        Debug.Log($"{rewardChoices.Count}개의 가중치 기반 카드 보상을 생성했습니다.");
     }
 }

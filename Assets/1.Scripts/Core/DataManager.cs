@@ -135,10 +135,16 @@ public class DataManager : MonoBehaviour
             Application.Quit(); // 치명적인 오류: 게임 종료.
             return;
         }
-        // damageMultiplier는 음수가 아니어야 한다고 가정합니다.
-        if (cd.damageMultiplier < 0)
+        // 모든 능력치 배율은 음수가 아니어야 합니다.
+        if (cd.damageMultiplier < 0 ||
+            cd.attackSpeedMultiplier < 0 ||
+            cd.moveSpeedMultiplier < 0 ||
+            cd.healthMultiplier < 0 ||
+            cd.critRateMultiplier < 0 ||
+            cd.critDamageMultiplier < 0 ||
+            cd.lifestealPercentage < 0)
         {
-            Debug.LogError($"[DataManager] 카드 데미지 배율이 음수입니다: {cd.cardID} ({cd.damageMultiplier}). 애플리케이션을 종료합니다.");
+            Debug.LogError($"[DataManager] 카드 능력치 배율 중 음수가 있습니다: {cd.cardID}. 애플리케이션을 종료합니다.");
             Application.Quit(); // 치명적인 오류: 게임 종료.
             return;
         }
@@ -151,7 +157,7 @@ public class DataManager : MonoBehaviour
         if (ad == null)
         {
             Debug.LogError("[DataManager] 유효성 검사를 위한 유물 데이터가 null입니다. 애플리케이션을 종료합니다.");
-            Application.Quit(); // 치명적인 오류: 게임 종료.
+            Application.Quit(); // 치명적인 오류: 게임 데이터 로드 실패.
             return;
         }
         if (string.IsNullOrEmpty(ad.artifactID))

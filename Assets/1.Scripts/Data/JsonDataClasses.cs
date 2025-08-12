@@ -16,6 +16,7 @@ public class CardDataJson
 {
     public string cardID;
     public string cardName;
+    public string iconPath; // Sprite를 대체할 리소스 경로
     public string type; // CardType enum을 string으로 매핑
     public string rarity; // CardRarity enum을 string으로 매핑
 
@@ -28,6 +29,7 @@ public class CardDataJson
     public float lifestealPercentage;
     public string effectDescription;
 
+    public string effectType; // CardEffectType enum을 string으로 매핑
     public string triggerType; // TriggerType enum을 string으로 매핑
 
     public float rewardAppearanceWeight;
@@ -40,6 +42,7 @@ public class ArtifactDataJson
 {
     public string artifactID;
     public string artifactName;
+    public string iconPath; // Sprite를 대체할 리소스 경로
     public string rarity; // CardRarity enum을 string으로 매핑
 
     public float attackBoostRatio;
@@ -48,6 +51,26 @@ public class ArtifactDataJson
     public float critChanceBoostRatio;
     public float critDamageBoostRatio;
     public float lifestealBoostRatio;
-    // TODO: project_plan.md의 유물 시스템 섹션에 있는 구체적인 유물 효과들을 반영하여 필드 추가
-    // 예: 소유 카드 슬롯 증가, 장착 카드 사용 확률 증가, 상점 가격 변경 등
+    
+    // ArtifactDataSO에 추가된 필드들
+    public int ownedCardSlotBonus;
+    public float specificCardTriggerChanceBonus;
+}
+
+// ProgressionManager의 영구 데이터를 저장하기 위한 클래스
+[Serializable]
+public class ProgressionData
+{
+    public int knowledgeShards;
+    public int genePoints;
+
+    // JsonUtility는 Dictionary를 직접 직렬화할 수 없으므로 List 두 개로 변환하여 저장합니다.
+    public List<string> achievementIDs = new List<string>();
+    public List<bool> achievementStates = new List<bool>();
+
+    public List<string> bossKillIDs = new List<string>();
+    public List<bool> bossKillStates = new List<bool>();
+
+    // 캐릭터별 영구 스탯 데이터
+    public List<CharacterPermanentStats> characterPermanentStats = new List<CharacterPermanentStats>();
 }

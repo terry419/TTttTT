@@ -54,10 +54,16 @@ public class CodexController : MonoBehaviour
     {
         // --- 카드 도감 채우기 ---
         // 기존 UI 아이템들 삭제
+        List<GameObject> cardChildrenToDestroy = new List<GameObject>();
         foreach (Transform child in cardScrollRect.content)
         {
-            Destroy(child.gameObject);
+            cardChildrenToDestroy.Add(child.gameObject);
         }
+        foreach (GameObject child in cardChildrenToDestroy)
+        {
+            Destroy(child);
+        }
+
         // 모든 카드에 대해 UI 아이템 생성
         foreach (var card in allCards)
         {
@@ -68,10 +74,16 @@ public class CodexController : MonoBehaviour
         }
 
         // --- 유물 도감 채우기 ---
+        List<GameObject> artifactChildrenToDestroy = new List<GameObject>();
         foreach (Transform child in artifactScrollRect.content)
         {
-            Destroy(child.gameObject);
+            artifactChildrenToDestroy.Add(child.gameObject);
         }
+        foreach (GameObject child in artifactChildrenToDestroy)
+        {
+            Destroy(child);
+        }
+
         foreach (var artifact in allArtifacts)
         {
             GameObject itemUI = Instantiate(itemInfoPrefab, artifactScrollRect.content);

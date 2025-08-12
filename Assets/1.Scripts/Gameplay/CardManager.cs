@@ -3,20 +3,20 @@ using UnityEngine;
 
 public class CardManager : MonoBehaviour
 {
-    // ½Ì±ÛÅæ ÀÎ½ºÅÏ½º
+    // ì‹±ê¸€í†¤ ì¸ìŠ¤í„´ìŠ¤
     public static CardManager Instance { get; private set; }
 
-    [Header("¼ÒÀ¯ Ä«µå ¸ñ·Ï")]
-    public List<CardDataSO> ownedCards;         // DataManager·ÎºÎÅÍ ·Îµå
-    [Header("ÀåÂø Ä«µå ¸ñ·Ï")]
-    public List<CardDataSO> equippedCards;      // ·±Å¸ÀÓ¿¡ ÀåÂøµÈ Ä«µå
+    [Header("ì¹´ë“œ ëª©ë¡")]
+    public List<CardDataSO> ownedCards;         // í˜„ì¬ ì†Œìœ í•œ ì¹´ë“œ
+    public List<CardDataSO> equippedCards;      // í˜„ì¬ ì¥ì°©ëœ ì¹´ë“œ
 
-    [Header("ÀåÂø ½½·Ô Á¦ÇÑ")]
-    public int maxEquipSlots = 5;               // ÀÎ½ºÆåÅÍ¿¡¼­ Á¶Á¤ °¡´É
+    [Header("ìŠ¬ë¡¯ ì„¤ì •")]
+    public int maxOwnedSlots = 20;              // ìµœëŒ€ ì†Œìœ  ê°€ëŠ¥ ì¹´ë“œ ìˆ˜
+    public int maxEquipSlots = 5;               // ìµœëŒ€ ì¥ì°© ê°€ëŠ¥ ì¹´ë“œ ìˆ˜
 
     private void Awake()
     {
-        // ½Ì±ÛÅæ ÃÊ±âÈ­
+        // ì‹±ê¸€í†¤ ì´ˆê¸°í™”
         if (Instance == null)
         {
             Instance = this;
@@ -28,48 +28,81 @@ public class CardManager : MonoBehaviour
             return;
         }
 
-        // DataManager¿¡¼­ ¸ğµç Ä«µå µ¥ÀÌÅÍ ·Îµå
-        ownedCards = DataManager.Instance.GetAllCards();
+        // ê²Œì„ ì‹œì‘ ì‹œ ë¹ˆ ì¹´ë“œ ëª©ë¡ìœ¼ë¡œ ì´ˆê¸°í™”
+        ownedCards = new List<CardDataSO>();
         equippedCards = new List<CardDataSO>();
     }
 
-    /// <summary>Ä«µå¸¦ ÀåÂø ¸ñ·Ï¿¡ Ãß°¡</summary>
+    /// <summary>
+    /// ì†Œìœ  ëª©ë¡ì— ìƒˆ ì¹´ë“œë¥¼ ì¶”ê°€í•©ë‹ˆë‹¤. ìŠ¬ë¡¯ì´ ê°€ë“ ì°¼ë‹¤ë©´ ëœë¤í•œ ì¹´ë“œë¥¼ ì œê±°í•˜ê³  ì¶”ê°€í•©ë‹ˆë‹¤.
+    /// </summary>
+    /// <param name="cardToAdd">ì¶”ê°€í•  ì¹´ë“œ</param>
+    public void AddCard(CardDataSO cardToAdd)
+    {
+        if (ownedCards.Count >= maxOwnedSlots)
+        {
+            // ê¸°íšì„œ: ì†Œìœ  ìŠ¬ë¡¯ì´ ë§Œì„ì´ë©´ ëœë¤í•œ ì¹´ë“œ 1ì¥ ì†Œë©¸
+            int randomIndex = Random.Range(0, ownedCards.Count);
+            CardDataSO removedCard = ownedCards[randomIndex];
+            ownedCards.RemoveAt(randomIndex);
+            Debug.LogWarning($"ì†Œìœ  ì¹´ë“œ ìŠ¬ë¡¯ì´ ê°€ë“ ì°¨ì„œ ëœë¤ ì¹´ë“œ '{removedCard.cardName}'ì„(ë¥¼) ì œê±°í–ˆìŠµë‹ˆë‹¤.");
+
+            // ì œê±°ëœ ì¹´ë“œê°€ ì¥ì°© ì¤‘ì´ì—ˆë‹¤ë©´ ì¥ì°© í•´ì œ
+            if (equippedCards.Contains(removedCard))
+            {
+                Unequip(removedCard);
+            }
+        }
+
+        ownedCards.Add(cardToAdd);
+        Debug.Log($"ì¹´ë“œ íšë“: {cardToAdd.cardName}");
+        // TODO: ì¹´ë“œ íšë“ì— ëŒ€í•œ UI í”¼ë“œë°± (ì´ë²¤íŠ¸ í˜¸ì¶œ ë“±)
+    }
+
+
+    /// <summary>ì¹´ë“œë¥¼ ì¥ì°© ëª©ë¡ì— ì¶”ê°€</summary>
     public bool Equip(CardDataSO card)
     {
         if (equippedCards.Count >= maxEquipSlots)
         {
-            Debug.LogWarning("ÀåÂø ½½·ÔÀÌ °¡µæ Ã¡½À´Ï´Ù.");
+            Debug.LogWarning("ì¥ì°© ìŠ¬ë¡¯ì´ ê°€ë“ ì°¼ìŠµë‹ˆë‹¤.");
             return false;
         }
         if (!ownedCards.Contains(card))
         {
-            Debug.LogWarning($"¼ÒÀ¯ÇÏÁö ¾ÊÀº Ä«µå: {card.cardID}");
+            Debug.LogWarning($"ì†Œìœ í•˜ì§€ ì•Šì€ ì¹´ë“œ: {card.cardID}");
+            return false;
+        }
+        if (equippedCards.Contains(card))
+        {
+            Debug.LogWarning($"ì´ë¯¸ ì¥ì°©í•œ ì¹´ë“œ: {card.cardID}");
             return false;
         }
         equippedCards.Add(card);
         return true;
     }
 
-    /// <summary>ÀåÂø ¸ñ·Ï¿¡¼­ Ä«µå Á¦°Å</summary>
+    /// <summary>ì¥ì°© ëª©ë¡ì—ì„œ ì¹´ë“œ ì œê±°</summary>
     public bool Unequip(CardDataSO card)
     {
         return equippedCards.Remove(card);
     }
 
-    /// <summary>ÇöÀç ÀåÂøµÈ Ä«µå ¸ñ·Ï ¹İÈ¯</summary>
+    /// <summary>í˜„ì¬ ì¥ì°©ëœ ì¹´ë“œ ëª©ë¡ ë°˜í™˜</summary>
     public List<CardDataSO> GetEquippedCards()
     {
         return new List<CardDataSO>(equippedCards);
     }
 
-    /// <summary>ÁöÁ¤µÈ Æ®¸®°Å Å¸ÀÔ¿¡ ´ëÀÀÇÏ´Â ÀåÂø Ä«µå ¹ßµ¿</summary>
+    /// <summary>ì§€ì •ëœ íŠ¸ë¦¬ê±° íƒ€ì…ì— í•´ë‹¹í•˜ëŠ” ì¥ì°© ì¹´ë“œ íš¨ê³¼ ë°œë™</summary>
     public void HandleTrigger(TriggerType type)
     {
         foreach (var card in equippedCards)
         {
             if (card.triggerType == type)
             {
-                EffectExecutor.Instance.Execute(card);
+                // EffectExecutorì˜ ì‹œê·¸ë‹ˆì²˜ ë³€ê²½ì— ë”°ë¼ actualDamageDealt ë§¤ê°œë³€ìˆ˜ ì¶”ê°€
+                EffectExecutor.Instance.Execute(card, 0f);
             }
         }
     }

@@ -19,8 +19,12 @@ public class ArtifactDataSO : ScriptableObject
     public float critDamageBoostRatio;  // 치명타 피해 증폭 비율
     public float lifestealBoostRatio;   // 흡혈 효과 증폭 비율
 
+    [Header("슬롯 및 확률 보너스")]
+    public int ownedCardSlotBonus;      // 소유 카드 슬롯 증가량
+    public float specificCardTriggerChanceBonus; // 특정 카드 발동 확률 보너스
+
     // TODO: project_plan.md의 유물 시스템 섹션에 있는 구체적인 유물 효과들을 반영하여 필드 추가
-    // 예: 소유 카드 슬롯 증가, 장착 카드 사용 확률 증가, 상점 가격 변경 등
+    // 예: 상점 가격 변경 등
 
     [Header("시각 정보")]
     public Sprite icon;                // 유물 아이콘

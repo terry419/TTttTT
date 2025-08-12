@@ -30,3 +30,16 @@ public enum TriggerType
     OnSkillUse,  // 스킬 사용 시 발동
     OnLowHealth  // 체력이 낮을 때 발동 (project_plan.md 및 CardDataSO.cs 주석 참조)
 }
+
+/// <summary>
+/// 카드의 특수 효과 타입을 정의합니다.
+/// </summary>
+public enum CardEffectType
+{
+    None,       // 특수 효과 없음
+    SplitShot,  // 분열샷 (다중 공격)
+    Wave,       // 파동
+    Lightning,  // 번개
+    Spiral,     // 나선형 발사
+    // TODO: project_plan.md에 언급된 다른 특수 효과들 추가 (예: 독성, 과유불급 등)
+}

@@ -10,10 +10,10 @@ public class RewardManager : MonoBehaviour
 {
     public static RewardManager Instance { get; private set; }
 
-    // 유물 보상을 저장하는 FIFO 큐
     private readonly Queue<ArtifactDataSO> artifactRewardQueue = new Queue<ArtifactDataSO>();
-    // 카드 보상을 저장하는 FIFO 큐
-    private readonly Queue<CardDataSO> cardRewardQueue = new Queue<CardDataSO>();
+    private readonly Queue<List<CardDataSO>> cardRewardQueue = new Queue<List<CardDataSO>>();
+
+    private CharacterStats playerStats; // 플레이어 능력치 참조
 
     public bool IsRewardQueueEmpty => artifactRewardQueue.Count == 0 && cardRewardQueue.Count == 0;
 
@@ -31,7 +31,6 @@ public class RewardManager : MonoBehaviour
     /// <summary>
     /// 보상 큐에 새로운 유물을 추가합니다.
     /// </summary>
-    /// <param name="artifact">추가할 유물 데이터</param>
     public void EnqueueReward(ArtifactDataSO artifact)
     {
         if (artifact == null) 
@@ -44,18 +43,17 @@ public class RewardManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 보상 큐에 새로운 카드를 추가합니다.
+    /// 보상 큐에 새로운 카드 선택지를 추가합니다. (3장 중 1택)
     /// </summary>
-    /// <param name="card">추가할 카드 데이터</param>
-    public void EnqueueReward(CardDataSO card)
+    public void EnqueueReward(List<CardDataSO> cardChoices)
     {
-        if (card == null) 
+        if (cardChoices == null || cardChoices.Count == 0)
         {
-            Debug.LogError("[RewardManager] Null인 카드를 보상 큐에 추가할 수 없습니다.");
+            Debug.LogError("[RewardManager] Null이거나 비어있는 카드 목록을 보상 큐에 추가할 수 없습니다.");
             return;
         }
-        cardRewardQueue.Enqueue(card);
-        Debug.Log($"[RewardManager] 카드 보상 추가: {card.cardName}");
+        cardRewardQueue.Enqueue(cardChoices);
+        Debug.Log($"[RewardManager] 카드 보상 선택지 ({cardChoices.Count}개) 추가");
     }
 
     /// <summary>
@@ -63,57 +61,84 @@ public class RewardManager : MonoBehaviour
     /// </summary>
     public void ProcessNextReward()
     {
+        // 플레이어 능력치 참조가 없으면 찾아옵니다.
+        if (playerStats == null)
+        {
+            playerStats = FindObjectOfType<CharacterStats>(); // Player 태그를 가진 오브젝트에서 찾기
+            if (playerStats == null)
+            {
+                Debug.LogError("[RewardManager] 플레이어의 CharacterStats를 찾을 수 없어 보상 처리를 중단합니다.");
+                return;
+            }
+        }
+
         // 기획서 규칙: 유물 보상을 항상 우선 처리합니다.
         if (artifactRewardQueue.Count > 0)
         {
             ArtifactDataSO nextArtifact = artifactRewardQueue.Dequeue();
             Debug.Log($"[RewardManager] 다음 유물 보상 처리 시작: {nextArtifact.artifactName}");
             
-            // TODO: 유물 획득 로직 실행
-            // 이 부분은 플레이어의 유물 목록에 직접 추가하거나, 유물 획득 전용 UI를 띄우는 방식으로 구현될 수 있습니다.
-            // Player.Instance.AddArtifact(nextArtifact);
+            // 유물 획득 로직 실행: 플레이어 능력치에 직접 적용
+            ApplyArtifactEffect(nextArtifact);
 
-            // 유물 획득 후, 다음 보상이 있는지 다시 확인합니다.
+            // 유물 획득 후, 다음 보상이 있는지 재귀적으로 다시 확인합니다.
             ProcessNextReward();
         }
         else if (cardRewardQueue.Count > 0)
         {
-            CardDataSO nextCard = cardRewardQueue.Dequeue();
-            Debug.Log($"[RewardManager] 다음 카드 보상 처리 시작: {nextCard.cardName}");
+            List<CardDataSO> nextCardChoices = cardRewardQueue.Dequeue();
+            Debug.Log($"[RewardManager] 다음 카드 보상 처리 시작: {nextCardChoices.Count}개의 선택지 제공");
 
-            // 카드 보상 UI를 활성화하고, 선택할 카드 목록을 전달합니다.
-            // CardRewardController는 이 데이터를 받아 UI를 구성합니다.
             if (CardRewardController.Instance != null)
             {
-                // TODO: CardRewardController에 카드 목록을 전달하는 메서드 호출
-                // 현재는 단일 카드만 처리하지만, 향후 여러 카드 중 선택하는 로직으로 확장해야 합니다.
-                // List<CardDataSO> cardChoices = GenerateCardChoices();
-                // CardRewardController.Instance.Initialize(cardChoices);
+                // CardRewardController에 카드 목록을 전달하여 UI 표시 요청
+                CardRewardController.Instance.Initialize(nextCardChoices);
             }
             else
-            {
+            { 
                 Debug.LogError("[RewardManager] CardRewardController 인스턴스를 찾을 수 없습니다!");
             }
         }
         else
         {
-            // 모든 보상 처리가 끝났을 때의 로직
             Debug.Log("[RewardManager] 모든 보상 처리가 완료되었습니다.");
             // TODO: 맵(루트 선택) 화면으로 전환하거나, 다음 라운드를 시작하는 로직 호출
             // GameManager.Instance.ChangeState(GameManager.GameState.MapSelect);
         }
     }
 
+    private void ApplyArtifactEffect(ArtifactDataSO artifact)
+    {
+        if (playerStats == null) return;
+
+        // 유물 효과를 플레이어의 artifact...Ratio 변수에 더합니다.
+        playerStats.artifactDamageRatio += artifact.attackBoostRatio;
+        playerStats.artifactHealthRatio += artifact.healthBoostRatio;
+        playerStats.artifactMoveSpeedRatio += artifact.moveSpeedBoostRatio;
+        playerStats.artifactCritRateRatio += artifact.critChanceBoostRatio;
+        playerStats.artifactCritDamageRatio += artifact.critDamageBoostRatio;
+        // TODO: lifesteal 등 다른 효과들도 추가
+
+        // CardManager의 슬롯 수도 변경
+        if (CardManager.Instance != null)
+        {
+            CardManager.Instance.maxOwnedSlots += artifact.ownedCardSlotBonus;
+        }
+
+        // 능력치 변경 후에는 반드시 최종 능력치 재계산을 호출해야 합니다.
+        playerStats.CalculateFinalStats();
+        Debug.Log($"{artifact.artifactName} 효과 적용 완료. 최종 공격력: {playerStats.finalDamage}");
+    }
+
     /// <summary>
     /// 카드 보상 선택이 완료되었을 때 CardRewardController에 의해 호출됩니다.
     /// </summary>
-    /// <param name="selectedCard">플레이어가 선택한 카드</param>
     public void OnCardRewardConfirmed(CardDataSO selectedCard)
     {
         Debug.Log($"[RewardManager] 플레이어가 카드 보상을 확정했습니다: {selectedCard.cardName}");
 
-        // TODO: 슬롯 과부하 처리 로직 (기획서 내용)
-        // CardManager.Instance.AddCard(selectedCard);
+        // CardManager에 카드 추가 요청
+        CardManager.Instance.AddCard(selectedCard);
 
         // 현재 카드 보상 절차가 끝났으므로, 다음 보상을 처리합니다.
         ProcessNextReward();

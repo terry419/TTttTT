@@ -21,9 +21,47 @@ public class StatusEffectDataSO : ScriptableObject
     public float damageRatioBonus;      // 공격력 비율 보너스
     public float attackSpeedRatioBonus; // 공격 속도 비율 보너스
     public float moveSpeedRatioBonus;   // 이동 속도 비율 보너스
-    // ... 기타 필요한 스탯 보너스 ...
+    public float healthRatioBonus;      // 체력 비율 보너스
+    public float critRateRatioBonus;    // 치명타 확률 비율 보너스
+    public float critDamageRatioBonus;  // 치명타 피해 비율 보너스
 
     [Header("지속 피해/회복 효과")]
     public float damageOverTime;    // 초당 입히는 데미지 (디버프)
     public float healOverTime;      // 초당 회복하는 체력 (버프)
+
+    /// <summary>
+    /// 대상 캐릭터에게 이 상태 효과의 능력치 보너스를 적용합니다.
+    /// </summary>
+    /// <param name="targetStats">효과를 적용할 대상의 CharacterStats</param>
+    public void ApplyEffect(CharacterStats targetStats)
+    {
+        if (targetStats == null) return;
+
+        targetStats.buffDamageRatio += damageRatioBonus;
+        targetStats.buffAttackSpeedRatio += attackSpeedRatioBonus;
+        targetStats.buffMoveSpeedRatio += moveSpeedRatioBonus;
+        targetStats.buffHealthRatio += healthRatioBonus;
+        targetStats.buffCritRateRatio += critRateRatioBonus;
+        targetStats.buffCritDamageRatio += critDamageRatioBonus;
+
+        targetStats.CalculateFinalStats();
+    }
+
+    /// <summary>
+    /// 대상 캐릭터에게서 이 상태 효과의 능력치 보너스를 제거합니다.
+    /// </summary>
+    /// <param name="targetStats">효과를 제거할 대상의 CharacterStats</param>
+    public void RemoveEffect(CharacterStats targetStats)
+    {
+        if (targetStats == null) return;
+
+        targetStats.buffDamageRatio -= damageRatioBonus;
+        targetStats.buffAttackSpeedRatio -= attackSpeedRatioBonus;
+        targetStats.buffMoveSpeedRatio -= moveSpeedRatioBonus;
+        targetStats.buffHealthRatio -= healthRatioBonus;
+        targetStats.buffCritRateRatio -= critRateRatioBonus;
+        targetStats.buffCritDamageRatio -= critDamageRatioBonus;
+
+        targetStats.CalculateFinalStats();
+    }
 }

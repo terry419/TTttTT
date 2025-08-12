@@ -19,7 +19,8 @@ public class GameManager : MonoBehaviour
         Allocation,     // 캐릭터 선택 및 능력치 배분 화면
         Gameplay,       // 게임 플레이 화면
         Reward,         // 라운드 클리어 보상 화면
-        Pause           // 일시정지 화면
+        Pause,          // 일시정지 화면
+        Codex           // --- 수정된 부분: 도감 상태 추가 ---
     }
 
     // 게임의 현재 상태를 저장하는 변수입니다.
@@ -96,22 +97,23 @@ public class GameManager : MonoBehaviour
                 break;
             case GameState.Gameplay:
                 sceneTransitionManager.LoadScene("Gameplay"); // Gameplay 씬 로드
-                // 씬 로드가 완료된 후 RoundManager를 찾아 라운드를 시작해야 합니다.
-                // 이를 위해 코루틴을 사용하거나, 씬 로드 완료 콜백을 받는 것이 좋습니다.
-                // 여기서는 간단하게 씬 로드 후 다음 프레임에 실행을 시도합니다.
                 StartCoroutine(StartRoundAfterSceneLoad());
                 break;
             case GameState.Reward:
                 sceneTransitionManager.LoadScene("CardReward");
                 if (uiManager != null) uiManager.ShowPanel("CardRewardPanel");
                 Time.timeScale = 0; // 보상 화면에서는 게임 시간 정지
-                // TODO: Reward 상태에서 Gameplay 또는 MainMenu로 전환하는 로직은
-                // CardRewardController 등에서 GameManager.ChangeState를 다시 호출하여 처리해야 합니다.
                 break;
             case GameState.Pause:
-                // Pause 상태는 씬 전환이 아니므로 씬 로드를 하지 않습니다。
                 Time.timeScale = 0; // 게임 시간 정지
                 if (uiManager != null) uiManager.ShowPanel("PausePanel");
+                break;
+
+            // --- 수정된 부분: Codex 케이스 추가 ---
+            case GameState.Codex:
+                sceneTransitionManager.LoadScene("Codex");
+                if (uiManager != null) uiManager.ShowPanel("CodexPanel"); // Codex 씬의 UI 패널 이름
+                Time.timeScale = 1; // 도감에서는 시간 정상화
                 break;
         }
     }
@@ -119,7 +121,7 @@ public class GameManager : MonoBehaviour
     private IEnumerator StartRoundAfterSceneLoad()
     {
         // 씬이 완전히 로드될 때까지 한 프레임 대기합니다.
-        yield return null; 
+        yield return null;
 
         RoundManager roundManager = FindObjectOfType<RoundManager>();
         if (roundManager != null)

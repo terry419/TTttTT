@@ -12,7 +12,6 @@ public class MonsterController : MonoBehaviour
     [SerializeField] private float moveSpeed = 3f;
 
     [Header("참조")]
-    [SerializeField] private GameObject monsterPrefab; // 이 몬스터의 원본 프리팹 (PoolManager.Release에 필요)
     private Transform playerTransform; // 추적할 플레이어의 위치
 
     private float currentHealth;
@@ -28,18 +27,15 @@ public class MonsterController : MonoBehaviour
     {
         currentHealth = maxHealth;
 
-        // 플레이어를 찾아 추적 대상으로 설정합니다.
-        // 성능을 위해 FindObjectOfType은 가급적 Start에서 한 번만 호출하는 것이 좋습니다.
-        GameObject player = GameObject.FindGameObjectWithTag("Player");
-        if (player != null)
+        // PlayerController 싱글톤을 통해 플레이어 참조를 가져옵니다.
+        if (PlayerController.Instance != null)
         {
-            playerTransform = player.transform;
+            playerTransform = PlayerController.Instance.transform;
         }
         else
         {
-            Debug.LogError("태그가 'Player'인 게임 오브젝트를 찾을 수 없습니다!");
-            // 플레이어가 없으면 몬스터는 비활성화하거나 제자리에 머물도록 처리
-            this.enabled = false;
+            Debug.LogError("PlayerController 인스턴스를 찾을 수 없습니다! 몬스터가 플레이어를 추적할 수 없습니다.");
+            this.enabled = false; // 플레이어가 없으면 몬스터 비활성화
         }
     }
 
@@ -100,7 +96,8 @@ public class MonsterController : MonoBehaviour
             RoundManager.Instance.RegisterKill();
         }
 
-        PoolManager.Instance.Release(monsterPrefab, gameObject);
+        // PoolManager를 통해 오브젝트를 풀로 반환합니다.
+        PoolManager.Instance.Release(gameObject);
 
         // TODO: 죽음 이펙트(폭발 등)나 아이템 드랍 로직 추가
     }
@@ -123,9 +120,9 @@ public class MonsterController : MonoBehaviour
             }
 
             // PoolManager를 통해 총알을 풀에 반환합니다.
-            if (hitBullet != null && hitBullet.gameObject != null && hitBullet.bulletPrefab != null)
+            if (hitBullet != null && hitBullet.gameObject != null) // hitBullet.bulletPrefab != null 조건 제거
             {
-                PoolManager.Instance.Release(hitBullet.bulletPrefab, hitBullet.gameObject);
+                PoolManager.Instance.Release(hitBullet.gameObject);
             }
         }
     }

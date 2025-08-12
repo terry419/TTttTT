@@ -1,5 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.IO; // 파일 입출력을 위해 추가
+using System.Linq; // Linq 사용을 위해 추가
 
 /// <summary>
 /// 메타 프로그레션(도전 과제, 보스 최초 처치 보상, 영구 재화 등) 데이터를 관리하고,
@@ -11,19 +13,13 @@ public class ProgressionManager : MonoBehaviour
     public static ProgressionManager Instance { get; private set; }
 
     // --- 영구 데이터 필드 --- //
-    // 실제 게임에서는 이 데이터들을 PlayerPrefs, JSON 파일 등으로 저장하고 불러와야 합니다.
-
-    // 데이터 증강 모듈 (도감 힌트 구매 등에 사용되는 재화)
     public int KnowledgeShards { get; private set; }
-    
-    // 유전자 증폭제 포인트 (캐릭터 영구 능력치 강화용 재화)
     public int GenePoints { get; private set; }
-
-    // 도전 과제 달성 여부를 저장하는 딕셔너리 (Key: 도전 과제 ID, Value: 달성 여부)
     private Dictionary<string, bool> achievementsUnlocked = new Dictionary<string, bool>();
-
-    // 보스 최초 처치 여부를 저장하는 딕셔너리 (Key: 보스 ID, Value: 처치 여부)
     private Dictionary<string, bool> bossFirstKills = new Dictionary<string, bool>();
+    private Dictionary<string, CharacterPermanentStats> permanentStatsDict = new Dictionary<string, CharacterPermanentStats>();
+
+    private string savePath; // 저장 파일 경로
 
     void Awake()
     {
@@ -35,15 +31,15 @@ public class ProgressionManager : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
-        // TODO: 실제 게임에서는 여기서 LoadData()를 호출해야 합니다.
-        LoadDummyData(); // 임시 더미 데이터 로드
+        // 저장 경로 설정
+        savePath = Path.Combine(Application.persistentDataPath, "progression.json");
+
+        LoadData(); // 데이터 로드
     }
 
     /// <summary>
     /// 영구 재화를 추가합니다.
     /// </summary>
-    /// <param name="type">재화 종류</param>
-    /// <param name="amount">추가할 양</param>
     public void AddCurrency(MetaCurrencyType type, int amount)
     {
         if (amount < 0) 
@@ -64,15 +60,12 @@ public class ProgressionManager : MonoBehaviour
                 break;
         }
         // TODO: UI에 재화 변경 사항 업데이트 알림 (이벤트 호출 등)
-        // TODO: SaveData() 호출
+        SaveData();
     }
 
     /// <summary>
     /// 영구 재화를 사용합니다.
     /// </summary>
-    /// <param name="type">재화 종류</param>
-    /// <param name="amount">사용할 양</param>
-    /// <returns>사용 성공 여부</returns>
     public bool SpendCurrency(MetaCurrencyType type, int amount)
     {
         if (amount < 0) 
@@ -81,6 +74,7 @@ public class ProgressionManager : MonoBehaviour
             return false;
         }
 
+        bool success = false;
         switch (type)
         {
             case MetaCurrencyType.KnowledgeShards:
@@ -88,8 +82,7 @@ public class ProgressionManager : MonoBehaviour
                 {
                     KnowledgeShards -= amount;
                     Debug.Log($"지식의 파편 {amount} 사용. 현재: {KnowledgeShards}");
-                    // TODO: SaveData() 호출
-                    return true;
+                    success = true;
                 }
                 break;
             case MetaCurrencyType.GenePoints:
@@ -97,20 +90,26 @@ public class ProgressionManager : MonoBehaviour
                 {
                     GenePoints -= amount;
                     Debug.Log($"유전자 증폭제 포인트 {amount} 사용. 현재: {GenePoints}");
-                    // TODO: SaveData() 호출
-                    return true;
+                    success = true;
                 }
                 break;
         }
 
-        Debug.LogWarning($"{type} 재화가 부족하여 {amount}를 사용할 수 없습니다.");
-        return false;
+        if (success)
+        {
+            SaveData();
+            return true;
+        }
+        else
+        {
+            Debug.LogWarning($"{type} 재화가 부족하여 {amount}를 사용할 수 없습니다.");
+            return false;
+        }
     }
 
     /// <summary>
     /// 도전 과제 달성을 기록하고 보상을 지급합니다.
     /// </summary>
-    /// <param name="achievementID">달성한 도전 과제의 고유 ID</param>
     public void TrackAchievement(string achievementID)
     {
         if (!achievementsUnlocked.ContainsKey(achievementID) || achievementsUnlocked[achievementID] == false)
@@ -122,14 +121,13 @@ public class ProgressionManager : MonoBehaviour
             // AchievementData data = DataManager.Instance.GetAchievement(achievementID);
             // AddCurrency(data.rewardType, data.rewardAmount);
 
-            // TODO: SaveData() 호출
+            SaveData();
         }
     }
 
     /// <summary>
     /// 보스 최초 처치를 기록하고 보상을 지급합니다.
     /// </summary>
-    /// <param name="bossID">처치한 보스의 고유 ID</param>
     public void RegisterBossFirstKill(string bossID)
     {
         if (!bossFirstKills.ContainsKey(bossID) || bossFirstKills[bossID] == false)
@@ -141,16 +139,104 @@ public class ProgressionManager : MonoBehaviour
             // BossData data = DataManager.Instance.GetBoss(bossID);
             // AddCurrency(data.firstKillRewardType, data.firstKillRewardAmount);
 
-            // TODO: SaveData() 호출
+            SaveData();
         }
     }
 
-    // --- 데이터 저장/로드 (실제 구현 시 확장 필요) ---
-    private void LoadDummyData()
+    /// <summary>
+    /// 특정 캐릭터의 영구 스탯 데이터를 가져옵니다. 없으면 새로 생성합니다.
+    /// </summary>
+    public CharacterPermanentStats GetPermanentStatsFor(string characterId)
     {
-        KnowledgeShards = 100;
-        GenePoints = 50;
-        Debug.Log("임시 더미 메타 데이터를 로드했습니다.");
+        if (!permanentStatsDict.TryGetValue(characterId, out var stats))
+        {
+            stats = new CharacterPermanentStats(characterId);
+            permanentStatsDict[characterId] = stats;
+            Debug.Log($"{characterId}에 대한 새로운 영구 스탯 데이터를 생성했습니다.");
+        }
+        return stats;
+    }
+
+
+    // --- 데이터 저장/로드 ---
+    
+    /// <summary>
+    /// 현재 진행 상황을 JSON 파일로 저장합니다.
+    /// </summary>
+    public void SaveData()
+    {
+        ProgressionData data = new ProgressionData
+        {
+            knowledgeShards = this.KnowledgeShards,
+            genePoints = this.GenePoints,
+            
+            // Dictionary를 List 두 개로 변환
+            achievementIDs = achievementsUnlocked.Keys.ToList(),
+            achievementStates = achievementsUnlocked.Values.ToList(),
+            
+            bossKillIDs = bossFirstKills.Keys.ToList(),
+            bossKillStates = bossFirstKills.Values.ToList(),
+
+            // 캐릭터 영구 스탯 저장
+            characterPermanentStats = permanentStatsDict.Values.ToList()
+        };
+
+        string json = JsonUtility.ToJson(data, true); // 'true' for pretty print
+        File.WriteAllText(savePath, json);
+        Debug.Log($"데이터 저장 완료: {savePath}");
+    }
+
+    /// <summary>
+    /// JSON 파일에서 진행 상황을 불러옵니다.
+    /// </summary>
+    public void LoadData()
+    {
+        if (File.Exists(savePath))
+        {
+            string json = File.ReadAllText(savePath);
+            ProgressionData data = JsonUtility.FromJson<ProgressionData>(json);
+
+            KnowledgeShards = data.knowledgeShards;
+            GenePoints = data.genePoints;
+
+            // List 두 개를 다시 Dictionary로 변환
+            achievementsUnlocked = new Dictionary<string, bool>();
+            for (int i = 0; i < data.achievementIDs.Count; i++)
+            {
+                achievementsUnlocked[data.achievementIDs[i]] = data.achievementStates[i];
+            }
+
+            bossFirstKills = new Dictionary<string, bool>();
+            for (int i = 0; i < data.bossKillIDs.Count; i++)
+            {
+                bossFirstKills[data.bossKillIDs[i]] = data.bossKillStates[i];
+            }
+
+            // 캐릭터 영구 스탯 로드
+            permanentStatsDict = new Dictionary<string, CharacterPermanentStats>();
+            foreach (var stats in data.characterPermanentStats)
+            {
+                permanentStatsDict[stats.characterId] = stats;
+            }
+
+            Debug.Log($"데이터 로드 완료: {savePath}");
+        }
+        else
+        {
+            // 세이브 파일이 없으면 기본값으로 시작
+            Debug.Log("세이브 파일이 없어 새 게임을 시작합니다.");
+            KnowledgeShards = 0;
+            GenePoints = 0;
+            achievementsUnlocked = new Dictionary<string, bool>();
+            bossFirstKills = new Dictionary<string, bool>();
+            permanentStatsDict = new Dictionary<string, CharacterPermanentStats>();
+        }
+    }
+
+    // 게임 종료 시 자동 저장
+    private void OnApplicationQuit()
+    {
+        SaveData();
     }
 }
 
