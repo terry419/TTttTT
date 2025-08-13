@@ -20,21 +20,18 @@ public class HUDController : MonoBehaviour
     void Start()
     {
         // 플레이어를 찾아 체력 정보와 연결합니다.
-        GameObject player = GameObject.FindGameObjectWithTag("Player");
-        if (player != null)
+        if (PlayerController.Instance != null)
         {
-            playerStats = player.GetComponent<CharacterStats>();
+            playerStats = PlayerController.Instance.GetComponent<CharacterStats>();
         }
         else
         {
-            Debug.LogError("태그가 'Player'인 게임 오브젝트를 찾을 수 없습니다!");
+            Debug.LogError("PlayerController 인스턴스를 찾을 수 없습니다! HUD가 플레이어 정보를 가져올 수 없습니다.");
         }
     }
 
     void Update()
     {
-        // 플레이어의 체력이 변경될 수 있으므로 매 프레임 업데이트합니다.
-        // 성능 최적화가 필요하다면, 체력이 변경될 때만 호출되는 이벤트 기반 방식으로 변경할 수 있습니다.
         if (playerStats != null)
         {
             UpdateHealthBar(playerStats.GetCurrentHealth(), playerStats.finalHealth);
@@ -44,12 +41,10 @@ public class HUDController : MonoBehaviour
     /// <summary>
     /// 타이머 텍스트를 업데이트합니다.
     /// </summary>
-    /// <param name="time">남은 시간(초)</param>
     public void UpdateTimer(float time)
     {
         if (timerText == null) return;
 
-        // 시간을 mm:ss 형식으로 변환합니다.
         time = Mathf.Max(0, time);
         int minutes = (int)time / 60;
         int seconds = (int)time % 60;
@@ -57,21 +52,17 @@ public class HUDController : MonoBehaviour
     }
 
     /// <summary>
-    /// 킬 카운트 텍스트를 업데이트합니다.
+    /// 킬 카운트 텍스트와 남은 적 수를 업데이트합니다.
     /// </summary>
-    /// <param name="currentKills">현재 킬 수</param>
-    /// <param name="goalKills">목표 킬 수</param>
     public void UpdateKillCount(int currentKills, int goalKills)
     {
-        if (killCountText == null) return;
-        killCountText.text = $"Kills: {currentKills} / {goalKills}";
+        if (killCountText != null) killCountText.text = $"Kills: {currentKills} / {goalKills}";
+        if (remainingEnemiesText != null) remainingEnemiesText.text = $"남은 적: {goalKills - currentKills}";
     }
 
     /// <summary>
     /// 체력 바를 업데이트합니다.
     /// </summary>
-    /// <param name="currentHealth">현재 체력</param>
-    /// <param name="maxHealth">최대 체력</param>
     public void UpdateHealthBar(float currentHealth, float maxHealth)
     {
         if (healthBar == null) return;

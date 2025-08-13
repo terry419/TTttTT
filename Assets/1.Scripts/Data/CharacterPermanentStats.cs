@@ -2,47 +2,71 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
-/// <summary>
-/// 유전자 증폭제 강화를 통해 얻는 영구적인 능력치 종류를 정의합니다.
-/// </summary>
-public enum StatType { Attack, AttackSpeed, MoveSpeed, Health, CritMultiplier }
+// StatType 열거형은 Enums.cs 파일로 이동/통합하는 것을 권장합니다.
+// public enum StatType { ... } 
 
-/// <summary>
-/// 캐릭터 한 명의 영구 스탯 정보(해금 여부, 투자된 비율)를 담고 관리하는 클래스입니다.
-/// 이 클래스의 인스턴스는 파일로 저장되고 로드되어 영속성을 가집니다.
-/// </summary>
-[System.Serializable] // 파일 저장을 위해 직렬화 가능하도록 설정
+[System.Serializable]
 public class CharacterPermanentStats
 {
     public string characterId;
-    
-    // 각 스탯의 해금 여부를 저장합니다.
+
+    // ✨ [1번 문제 해결] Inspector에서 테스트를 위해 해금 상태를 쉽게 제어할 수 있도록 리스트로 변경
+    [Tooltip("테스트 시 해금할 스탯을 여기에 추가하세요. 실제 게임에서는 룰렛을 통해 해금됩니다.")]
+    public List<StatType> defaultUnlockedStats = new List<StatType> { StatType.Health, StatType.Attack, StatType.AttackSpeed, StatType.MoveSpeed, StatType.CritMultiplier, StatType.CritRate };
+
     public Dictionary<StatType, bool> unlockedStatus = new Dictionary<StatType, bool>();
-    
-    // 각 스탯에 투자된 포인트로 인해 증가한 비율 값을 저장합니다.
     public Dictionary<StatType, float> investedRatios = new Dictionary<StatType, float>();
 
-    /// <summary>
-    /// 새 캐릭터를 위한 기본 생성자입니다.
-    /// </summary>
-    public CharacterPermanentStats(string charId)
+    // JSON 저장을 위한 헬퍼 프로퍼티 (기존 로직 유지)
+    public StatDictionaryData statData
     {
-        characterId = charId;
-        // 모든 StatType에 대해 초기값을 설정합니다.
-        foreach (StatType type in System.Enum.GetValues(typeof(StatType)))
+        get
         {
-            // 기획서: 체력은 기본적으로 해금
-            unlockedStatus[type] = (type == StatType.Health);
-            investedRatios[type] = 0f;
+            // ... 기존 get 로직 ...
+            StatDictionaryData data = new StatDictionaryData();
+            foreach (var kvp in unlockedStatus)
+            {
+                data.statTypes.Add(kvp.Key);
+                data.unlockedStatuses.Add(kvp.Value);
+            }
+            foreach (var kvp in investedRatios)
+            {
+                data.investedRatios.Add(kvp.Value);
+            }
+            return data;
+        }
+        set
+        {
+            // ... 기존 set 로직 ...
+            unlockedStatus.Clear();
+            investedRatios.Clear();
+            if (value != null)
+            {
+                for (int i = 0; i < value.statTypes.Count; i++)
+                {
+                    unlockedStatus[value.statTypes[i]] = value.unlockedStatuses[i];
+                    investedRatios[value.statTypes[i]] = value.investedRatios[i];
+                }
+            }
         }
     }
 
-    /// <summary>
-    /// 모든 스탯이 해금되었는지 확인합니다.
-    /// </summary>
-    public bool AllStatsUnlocked()
+    public CharacterPermanentStats(string charId)
     {
-        return unlockedStatus.Values.All(unlocked => unlocked);
+        characterId = charId;
+
+        // 모든 스탯을 일단 '잠금' 상태로 초기화
+        foreach (StatType type in System.Enum.GetValues(typeof(StatType)))
+        {
+            unlockedStatus[type] = false;
+            investedRatios[type] = 0f;
+        }
+
+        // ✨ defaultUnlockedStats 리스트에 있는 스탯들만 '해금' 상태로 변경
+        foreach (StatType type in defaultUnlockedStats)
+        {
+            unlockedStatus[type] = true;
+        }
     }
 
     /// <summary>
@@ -54,8 +78,21 @@ public class CharacterPermanentStats
     }
 
     /// <summary>
-    /// 지정된 스탯의 해금 상태를 true로 변경합니다.
+    /// ✨ [오류 3 해결] 해금된 스탯 목록 전체를 반환하는 public 메서드입니다.
     /// </summary>
+    public List<StatType> GetUnlockedStats()
+    {
+        return unlockedStatus.Where(kvp => kvp.Value).Select(kvp => kvp.Key).ToList();
+
+    }
+
+    // --- 나머지 메서드들은 기존 로직과 동일 ---
+
+    public bool AllStatsUnlocked()
+    {
+        return unlockedStatus.Values.All(unlocked => unlocked);
+    }
+
     public void UnlockStat(StatType stat)
     {
         if (unlockedStatus.ContainsKey(stat))
@@ -64,38 +101,25 @@ public class CharacterPermanentStats
         }
     }
 
-    /// <summary>
-    /// 투자된 포인트를 해금된 능력치들에 랜덤하게 배분합니다.
-    /// </summary>
     public void DistributePoints(int points)
     {
-        List<StatType> unlockedStats = unlockedStatus.Where(kvp => kvp.Value).Select(kvp => kvp.Key).ToList();
-        if (unlockedStats.Count == 0) return;
+        List<StatType> unlocked = GetUnlockedStats(); // 새로 만든 메서드 활용
+        if (unlocked.Count == 0) return;
 
         for (int i = 0; i < points; i++)
         {
-            // 해금된 스탯 중 하나를 랜덤하게 골라 가중치를 더합니다.
-            StatType targetStat = unlockedStats[Random.Range(0, unlockedStats.Count)];
+            StatType targetStat = unlocked[Random.Range(0, unlocked.Count)];
             float weight = GetWeightForStat(targetStat);
             investedRatios[targetStat] += weight;
         }
     }
 
-    /// <summary>
-    /// 기획서에 명시된 스탯별 1포인트당 가중치를 반환합니다.
-    /// </summary>
     private float GetWeightForStat(StatType stat)
     {
         switch (stat)
         {
-            case StatType.Health:
-                return 0.02f;
-            case StatType.Attack:
-            case StatType.AttackSpeed:
-            case StatType.MoveSpeed:
-            case StatType.CritMultiplier:
-            default:
-                return 0.01f;
+            case StatType.Health: return 0.02f;
+            default: return 0.01f;
         }
     }
 }

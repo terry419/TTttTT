@@ -21,6 +21,9 @@ public class CodexController : MonoBehaviour
     private List<CardDataSO> allCards;
     private List<ArtifactDataSO> allArtifacts;
 
+    // 힌트 구매 시 업데이트할 CodexItemDisplay 인스턴스를 저장
+    private Dictionary<string, CodexItemDisplay> displayedCodexItems = new Dictionary<string, CodexItemDisplay>();
+
     void Awake()
     {
         // 탭 버튼 리스너 연결
@@ -52,44 +55,51 @@ public class CodexController : MonoBehaviour
     /// </summary>
     private void PopulateCodex()
     {
+        displayedCodexItems.Clear(); // 기존에 저장된 아이템 참조 초기화
+
         // --- 카드 도감 채우기 ---
-        // 기존 UI 아이템들 삭제
-        List<GameObject> cardChildrenToDestroy = new List<GameObject>();
+        // 안전하게 자식 오브젝트 삭제
         foreach (Transform child in cardScrollRect.content)
         {
-            cardChildrenToDestroy.Add(child.gameObject);
+            Destroy(child.gameObject);
         }
-        foreach (GameObject child in cardChildrenToDestroy)
-        {
-            Destroy(child);
-        }
+        cardScrollRect.content.DetachChildren();
 
         // 모든 카드에 대해 UI 아이템 생성
         foreach (var card in allCards)
         {
             GameObject itemUI = Instantiate(itemInfoPrefab, cardScrollRect.content);
-            // TODO: ProgressionManager에서 해당 카드의 해금 상태를 가져와야 함
-            // bool isUnlocked = ProgressionManager.Instance.IsCardUnlocked(card.cardID);
-            // itemUI.GetComponent<CodexItemDisplay>().Setup(card, isUnlocked);
+            CodexItemDisplay display = itemUI.GetComponent<CodexItemDisplay>();
+            if (display != null)
+            {
+                bool isUnlocked = ProgressionManager.Instance.IsCodexItemUnlocked(card.cardID);
+                display.SetupForCard(card, isUnlocked);
+                // 힌트 버튼 클릭 리스너 연결
+                display.SetHintButtonClickListener(card.cardID, PurchaseHint);
+                displayedCodexItems[card.cardID] = display;
+            }
         }
 
         // --- 유물 도감 채우기 ---
-        List<GameObject> artifactChildrenToDestroy = new List<GameObject>();
+        // 안전하게 자식 오브젝트 삭제
         foreach (Transform child in artifactScrollRect.content)
         {
-            artifactChildrenToDestroy.Add(child.gameObject);
+            Destroy(child.gameObject);
         }
-        foreach (GameObject child in artifactChildrenToDestroy)
-        {
-            Destroy(child);
-        }
+        artifactScrollRect.content.DetachChildren();
 
         foreach (var artifact in allArtifacts)
         {
             GameObject itemUI = Instantiate(itemInfoPrefab, artifactScrollRect.content);
-            // TODO: ProgressionManager에서 해당 유물의 해금 상태를 가져와야 함
-            // bool isUnlocked = ProgressionManager.Instance.IsArtifactUnlocked(artifact.artifactID);
-            // itemUI.GetComponent<CodexItemDisplay>().Setup(artifact, isUnlocked);
+            CodexItemDisplay display = itemUI.GetComponent<CodexItemDisplay>();
+            if (display != null)
+            {
+                bool isUnlocked = ProgressionManager.Instance.IsCodexItemUnlocked(artifact.artifactID);
+                display.SetupForArtifact(artifact, isUnlocked);
+                // 힌트 버튼 클릭 리스너 연결
+                display.SetHintButtonClickListener(artifact.artifactID, PurchaseHint);
+                displayedCodexItems[artifact.artifactID] = display;
+            }
         }
         Debug.Log("도감 데이터를 기반으로 UI를 모두 생성했습니다.");
     }
@@ -101,7 +111,9 @@ public class CodexController : MonoBehaviour
     {
         cardCodexPanel.SetActive(true);
         artifactCodexPanel.SetActive(false);
-        // TODO: 탭 버튼의 비주얼을 업데이트하여 현재 선택된 탭을 표시
+        // 탭 버튼의 비주얼 업데이트
+        cardTabButton.image.color = Color.white; // 선택됨
+        artifactTabButton.image.color = Color.gray; // 선택 안됨
     }
 
     /// <summary>
@@ -111,7 +123,9 @@ public class CodexController : MonoBehaviour
     {
         cardCodexPanel.SetActive(false);
         artifactCodexPanel.SetActive(true);
-        // TODO: 탭 버튼의 비주얼을 업데이트하여 현재 선택된 탭을 표시
+        // 탭 버튼의 비주얼 업데이트
+        cardTabButton.image.color = Color.gray; // 선택 안됨
+        artifactTabButton.image.color = Color.white; // 선택됨
     }
 
     /// <summary>
@@ -120,18 +134,24 @@ public class CodexController : MonoBehaviour
     /// <param name="itemId">힌트를 구매할 아이템의 ID</param>
     public void PurchaseHint(string itemId)
     {
-        // TODO: 힌트 구매 비용 정의 (예: 10 지식의 파편)
-        int hintCost = 10;
+        int hintCost = 10; // 힌트 구매 비용
         if (ProgressionManager.Instance.SpendCurrency(MetaCurrencyType.KnowledgeShards, hintCost))
         {
             Debug.Log($"{itemId}의 힌트를 구매했습니다.");
-            // TODO: 해당 아이템 UI의 힌트를 표시하도록 업데이트
-            // PopupController로 구매 성공 알림 표시
+            // 해당 아이템 UI의 힌트를 표시하도록 업데이트
+            if (displayedCodexItems.TryGetValue(itemId, out CodexItemDisplay display))
+            {
+                // CodexItemDisplay에 힌트 표시 메서드가 있다고 가정
+                // display.ShowHint(); 
+                // 임시로 Debug.Log로 대체
+                Debug.Log($"[Codex] {itemId} 힌트 표시 요청");
+            }
+            PopupController.Instance.ShowError("힌트 구매 성공!", 1.5f); // 성공 알림
         }
         else
-        { 
+        {
             Debug.LogWarning("힌트 구매에 필요한 지식의 파편이 부족합니다.");
-            // PopupController로 재화 부족 알림 표시
+            PopupController.Instance.ShowError("지식의 파편이 부족합니다!", 1.5f); // 실패 알림
         }
     }
 }

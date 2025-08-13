@@ -1,102 +1,56 @@
-using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
-using System.Collections; // 코루틴 사용을 위해 추가
+// --- 파일명: PointAllocationResultUI.cs (최종 수정본) ---
 
-/// <summary>
-/// 포인트 분배 결과 확인 및 게임 시작을 담당하는 UI 스크립트입니다.
-/// CharacterSelectController로부터 계산된 최종 능력치를 받아와 표시하고,
-/// 사용자의 최종 확인을 거쳐 게임 플레이 씬으로 전환합니다.
-/// </summary>
+using UnityEngine;
+using TMPro;
+using System.Collections.Generic;
+
 public class PointAllocationResultUI : MonoBehaviour
 {
+    // ... (UI 참조 변수들은 이전과 동일) ...
+    [SerializeField] private TextMeshProUGUI damageText;
+    [SerializeField] private TextMeshProUGUI attackSpeedText;
+    [SerializeField] private TextMeshProUGUI moveSpeedText;
+    [SerializeField] private TextMeshProUGUI healthText;
+    [SerializeField] private TextMeshProUGUI critRateText;
+    [SerializeField] private TextMeshProUGUI critDamageText;
 
-    [Header("UI 요소 참조")]
-    [SerializeField] private PointAllocationManager manager;
-    [SerializeField] private TextMeshProUGUI finalStatsText; // 최종 능력치를 표시할 텍스트
-    [SerializeField] private Button startGameButton; // 게임 시작 버튼
-    [SerializeField] private Button backButton; // 뒤로가기 버튼
-
-    void Awake()
+    // ✨ [1번 문제 해결] 파라미터를 분배된 포인트 딕셔너리로 변경
+    public void UpdateDisplay(BaseStats baseStats, Dictionary<StatType, int> distributedPoints)
     {
-        startGameButton.onClick.AddListener(OnStartGameClicked);
-        if (backButton != null) backButton.onClick.AddListener(OnBackClicked);
-    }
-
-    void OnEnable()
-    {
-        // InputManager 이벤트 구독 (ESC 키 처리)
-        if (InputManager.Instance != null)
+        if (distributedPoints == null) // Confirm 전
         {
-            InputManager.Instance.OnCancel.AddListener(OnBackClicked);
+            damageText.text = $"Base Damage ({baseStats.baseDamage:F0}) + Gene Boost (??) = ???";
+            attackSpeedText.text = $"Base Attack Speed ({baseStats.baseAttackSpeed:F1}) + Gene Boost (??) = ???";
+            moveSpeedText.text = $"Base Move Speed ({baseStats.baseMoveSpeed:F1}) + Gene Boost (??) = ???";
+            healthText.text = $"Base Health ({baseStats.baseHealth:F0}) + Gene Boost (??) = ???";
+            critRateText.text = $"Base Crit Rate ({baseStats.baseCritRate:F0}%) + Gene Boost (??) = ???";
+            critDamageText.text = $"Base Crit Damage ({baseStats.baseCritDamage:F0}%) + Gene Boost (??) = ???";
         }
-    }
-
-    void Start()
-    {
-        // UpdateFinalStatsDisplay()는 PointAllocationUI에서 명시적으로 호출됩니다.
-        // 기획서에 따라 1초간 입력을 받지 않는 로직 (선택적 구현)
-        // StartCoroutine(DisableInputForDuration(1f));
-    }
-
-    void OnDisable()
-    {
-        // 패널이 비활성화될 때 InputManager 이벤트 구독 해제
-        if (InputManager.Instance != null)
+        else // Confirm 후
         {
-            InputManager.Instance.OnCancel.RemoveListener(OnBackClicked);
-        }
-    }
+            // 각 스탯에 실제 분배된 포인트 개수를 가져옴
+            int attackPoints = distributedPoints[StatType.Attack];
+            int attackSpeedPoints = distributedPoints[StatType.AttackSpeed];
+            int moveSpeedPoints = distributedPoints[StatType.MoveSpeed];
+            int healthPoints = distributedPoints[StatType.Health];
+            float baseCritRatePercent = baseStats.baseCritRate / 100f;
+            float baseCritDmgPercent = baseStats.baseCritDamage / 100f;
+            int critDmgPoints = distributedPoints[StatType.CritMultiplier];
 
-    /// <summary>
-    /// 컨트롤러로부터 전달받은 최종 능력치를 UI에 표시합니다.
-    /// </summary>
-    /// <param name="finalStats">계산된 최종 능력치</param>
-    public void UpdateFinalStatsDisplay(BaseStats finalStats)
-    {
-        if (finalStats == null)
-        {
-            finalStatsText.text = "오류: 최종 능력치 정보가 없습니다.";
-            return;
-        }
+            // 최종 능력치 계산
+            float finalDamage = baseStats.baseDamage * (1 + attackPoints * 0.01f);
+            float finalAttackSpeed = baseStats.baseAttackSpeed * (1 + attackSpeedPoints * 0.01f);
+            float finalMoveSpeed = baseStats.baseMoveSpeed * (1 + moveSpeedPoints * 0.01f);
+            float finalHealth = baseStats.baseHealth * (1 + healthPoints * 0.02f);
+            float finalCritDamage = baseCritDmgPercent * (1 + critDmgPoints * 0.01f);
 
-        string statsDisplay = "<능력치 분배 결과>\n\n";
-        statsDisplay += $ "체력: {finalStats.baseHealth:F2}\n"; // :F2는 소수점 둘째 자리까지 표시
-        statsDisplay += $ "공격력: {finalStats.baseDamage:F2}\n";
-        statsDisplay += $ "공격 속도: {finalStats.baseAttackSpeed:F2}\n"; // 추가된 부분
-        statsDisplay += $ "이동 속도: {finalStats.baseMoveSpeed:F2}\n";
-        statsDisplay += $ "치명타 확률: {finalStats.baseCritRate:F2}\n";
-        statsDisplay += $ "치명타 피해량: {finalStats.baseCritDamage:F2}\n";
-
-        finalStatsText.text = statsDisplay;
-        Debug.Log("최종 능력치 표시가 업데이트되었습니다.");
-    }
-
-    private void OnStartGameClicked()
-    {
-        Debug.Log("게임 시작 버튼 최종 클릭됨. 게임 플레이 씬으로 전환합니다.");
-        StartCoroutine(LoadGameplaySceneAfterDelay(2f));
-    }
-
-    private IEnumerator LoadGameplaySceneAfterDelay(float delay)
-    {
-        yield return new WaitForSeconds(delay);
-        GameManager.Instance.ChangeState(GameManager.GameState.Gameplay);
-    }
-
-    /// <summary>
-    /// 뒤로가기 버튼 클릭 시 호출됩니다.
-    /// </summary>
-    private void OnBackClicked()
-    {
-        Debug.Log("포인트 분배 결과 화면에서 뒤로가기 버튼 클릭됨. 포인트 분배 입력 화면으로 돌아갑니다.");
-        if (manager != null)
-        {
-            manager.OnBackToAllocationInput();
-        }
-        else
-        {
-            Debug.LogError("PointAllocationManager 참조가 PointAllocationResultUI에 할당되지 않았습니다.");
+            // ✨ 실제 분배된 포인트 개수를 UI에 표시
+            damageText.text = $"Base Damage ({baseStats.baseDamage:F0}) + Gene Boost ({attackPoints}) = {finalDamage:F2}";
+            attackSpeedText.text = $"Base Attack Speed ({baseStats.baseAttackSpeed:F1}) + Gene Boost ({attackSpeedPoints}) = {finalAttackSpeed:F2}";
+            moveSpeedText.text = $"Base Move Speed ({baseStats.baseMoveSpeed:F1}) + Gene Boost ({moveSpeedPoints}) = {finalMoveSpeed:F2}";
+            healthText.text = $"Base Health ({baseStats.baseHealth:F0}) + Gene Boost ({healthPoints}) = {finalHealth:F2}";
+            critRateText.text = $"Base Crit Rate ({baseStats.baseCritRate:F0}%) + Gene Boost (0) = {baseCritRatePercent * 100:F0}%";
+            critDamageText.text = $"Base Crit Damage ({baseStats.baseCritDamage:F0}%) + Gene Boost ({critDmgPoints}) = {finalCritDamage * 100:F0}%";
         }
     }
 }

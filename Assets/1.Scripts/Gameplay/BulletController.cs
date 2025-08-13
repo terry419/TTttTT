@@ -6,7 +6,7 @@ using UnityEngine;
 public class BulletController : MonoBehaviour
 {
     private Vector2 _direction; // 총알의 이동 방향
-    private float _speed;       // 총알의 속도
+    public float speed;       // 총알의 속도 (외부에서 접근 가능하도록 public으로 변경)
     public float damage;        // 총알의 데미지 (PlayerController가 설정해 줌)
     public float lifetime = 3f; // 총알의 최대 생존 시간
 
@@ -14,12 +14,12 @@ public class BulletController : MonoBehaviour
     /// 총알을 초기화하고 발사합니다.
     /// </summary>
     /// <param name="direction">총알의 이동 방향 (정규화된 벡터)</param>
-    /// <param name="speed">총알의 속도</param>
+    /// <param name="initialSpeed">총알의 초기 속도</param>
     /// <param name="damage">총알이 줄 데미지</param>
-    public void Initialize(Vector2 direction, float speed, float damage)
+    public void Initialize(Vector2 direction, float initialSpeed, float damage)
     {
         _direction = direction.normalized; // 방향 벡터 정규화
-        _speed = speed;
+        speed = initialSpeed; // 초기 속도 설정
         this.damage = damage; // 전달받은 데미지 설정
 
         // 총알의 초기 회전 설정 (선택 사항: 방향에 따라 총알 스프라이트 회전)
@@ -35,7 +35,7 @@ public class BulletController : MonoBehaviour
     void Update()
     {
         // 매 프레임 지정된 방향으로 이동합니다.
-        transform.Translate(_direction * _speed * Time.deltaTime, Space.World);
+        transform.Translate(_direction * speed * Time.deltaTime, Space.World);
     }
 
     private void Deactivate()

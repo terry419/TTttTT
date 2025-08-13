@@ -1,5 +1,8 @@
 
 
+using UnityEngine;
+using UnityEngine.Events;
+
 [RequireComponent(typeof(CharacterStats))]
 public class CharacterStats : MonoBehaviour
 {
@@ -30,6 +33,14 @@ public class CharacterStats : MonoBehaviour
     public float buffCritRateRatio;
     public float buffCritDamageRatio;
 
+    [Header("유전자 증폭제 효과 비율")]
+    public float boosterDamageRatio;
+    public float boosterAttackSpeedRatio;
+    public float boosterMoveSpeedRatio;
+    public float boosterHealthRatio;
+    public float boosterCritRateRatio;
+    public float boosterCritDamageRatio;
+
     [Header("최종 능력치 (계산 결과)")]
     public float finalDamage;
     public float finalAttackSpeed;
@@ -41,6 +52,9 @@ public class CharacterStats : MonoBehaviour
     [Header("현재 상태 (런타임)")]
     public float currentHealth;
 
+    [Header("이벤트")]
+    public UnityEvent OnFinalStatsCalculated = new UnityEvent();
+
     void Awake()
     {
         CalculateFinalStats();
@@ -50,19 +64,23 @@ public class CharacterStats : MonoBehaviour
     // 최종 능력치 계산
     public void CalculateFinalStats()
     {
-        float dmgRatio = buffDamageRatio + cardDamageRatio + artifactDamageRatio;
-        float atkSpdRatio = buffAttackSpeedRatio + cardAttackSpeedRatio + artifactAttackSpeedRatio;
-        float moveRatio = buffMoveSpeedRatio + cardMoveSpeedRatio + artifactMoveSpeedRatio;
-        float hpRatio = buffHealthRatio + cardHealthRatio + artifactHealthRatio;
-        float critRateRatio = buffCritRateRatio + cardCritRateRatio + artifactCritRateRatio;
-        float critDmgRatio = buffCritDamageRatio + cardCritDamageRatio + artifactCritDamageRatio;
+        // 유전자 증폭제 비율도 함께 합산
+        float dmgRatio = boosterDamageRatio + buffDamageRatio + cardDamageRatio + artifactDamageRatio;
+        float atkSpdRatio = boosterAttackSpeedRatio + buffAttackSpeedRatio + cardAttackSpeedRatio + artifactAttackSpeedRatio;
+        float moveRatio = boosterMoveSpeedRatio + buffMoveSpeedRatio + cardMoveSpeedRatio + artifactMoveSpeedRatio;
+        float hpRatio = boosterHealthRatio + buffHealthRatio + cardHealthRatio + artifactHealthRatio;
+        float critRateRatio = boosterCritRateRatio + buffCritRateRatio + cardCritRateRatio + artifactCritRateRatio;
+        float critDmgRatio = boosterCritDamageRatio + buffCritDamageRatio + cardCritDamageRatio + artifactCritDamageRatio;
 
         finalDamage = stats.baseDamage * (1 + dmgRatio);
         finalAttackSpeed = stats.baseAttackSpeed * (1 + atkSpdRatio);
         finalMoveSpeed = stats.baseMoveSpeed * (1 + moveRatio);
+        // 체력은 기본 체력에 비율을 적용한 후, 유전자 증폭제 포인트로 얻은 추가 체력을 더해줍니다.
         finalHealth = stats.baseHealth * (1 + hpRatio);
         finalCritRate = stats.baseCritRate * (1 + critRateRatio);
         finalCritDamage = stats.baseCritDamage * (1 + critDmgRatio);
+
+        OnFinalStatsCalculated?.Invoke();
 
         // 음수 검사
         if (finalDamage < 0 || finalAttackSpeed < 0 || finalMoveSpeed < 0 ||

@@ -74,3 +74,14 @@ public class ProgressionData
     // 캐릭터별 영구 스탯 데이터
     public List<CharacterPermanentStats> characterPermanentStats = new List<CharacterPermanentStats>();
 }
+
+// CharacterPermanentStats 클래스의 Dictionary를 직렬화하기 위한 헬퍼 클래스
+[Serializable]
+public class StatDictionaryData
+{
+    public List<StatType> statTypes = new List<StatType>();
+    public List<bool> unlockedStatuses = new List<bool>();
+    public List<float> investedRatios = new List<float>();
+}
+
+

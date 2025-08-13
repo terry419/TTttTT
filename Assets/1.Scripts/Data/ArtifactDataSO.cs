@@ -6,6 +6,8 @@ public class ArtifactDataSO : ScriptableObject
     [Header("기본 정보")]
     public string artifactID;      // 유물의 고유 ID (예: "artifact_common_001")
     public string artifactName;    // UI에 표시될 유물 이름
+    [TextArea(3, 5)]
+    public string description;     // 유물에 대한 설명
 
     [Header("유물 속성")]
     public CardRarity rarity;      // 유물의 희귀도 (CardRarity 열거형 사용)

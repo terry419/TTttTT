@@ -43,3 +43,13 @@ public enum CardEffectType
     Spiral,     // 나선형 발사
     // TODO: project_plan.md에 언급된 다른 특수 효과들 추가 (예: 독성, 과유불급 등)
 }
+
+public enum StatType
+{
+    Attack,
+    AttackSpeed,
+    MoveSpeed,
+    Health,
+    CritMultiplier,
+    CritRate // ✨ [4번 오류 해결] 누락된 CritRate 추가
+}

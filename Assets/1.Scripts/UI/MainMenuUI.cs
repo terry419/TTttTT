@@ -1,159 +1,65 @@
+ï»¿// --- íŒŒì¼ëª…: MainMenuUI.cs (ì •ë¦¬ í›„) ---
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using System.Collections.Generic;
 
-/// <summary>
-/// ¸ŞÀÎ ¸Ş´º UIÀÇ ÀÔÃâ·Â°ú »óÈ£ÀÛ¿ëÀ» ´ã´çÇÏ´Â ½ºÅ©¸³Æ®ÀÔ´Ï´Ù.
-/// InputManager ¹× GameManager¿Í ¿¬µ¿ÇÏ¿© »ç¿ëÀÚ ÀÔ·ÂÀ» ¹Ş¾Æ ¾À ÀüÈ¯ µîÀ» Ã³¸®ÇÕ´Ï´Ù.
-/// </summary>
+// [ìˆ˜ì •] ë” ì´ìƒ ìˆ˜ë™ìœ¼ë¡œ ë²„íŠ¼ ë¦¬ìŠ¤íŠ¸ë¥¼ ê´€ë¦¬í•˜ê±°ë‚˜ ì»¤ì„œë¥¼ ì›€ì§ì´ì§€ ì•ŠìŠµë‹ˆë‹¤.
 public class MainMenuUI : MonoBehaviour
 {
-    [Header("UI ¿ä¼Ò ÂüÁ¶")]
-    public RectTransform cursorSprite; // Ä¿¼­ ½ºÇÁ¶óÀÌÆ® RectTransform
-    public Button optionsButton; // ¿É¼Ç ¹öÆ°
-    public Button startButton; // ½ÃÀÛ ¹öÆ°
-    public Button codexButton; // µµ°¨ ¹öÆ°
-    public Button exitButton; // ³ª°¡±â ¹öÆ°
-    public TextMeshProUGUI gameTitleText; // °ÔÀÓ Á¦¸ñ ÅØ½ºÆ®
-    public TextMeshProUGUI versionInfoText; // ¹öÀü Á¤º¸ ÅØ½ºÆ®
+    [Header("UI ìš”ì†Œ ì°¸ì¡°")]
+    public Button optionsButton;
+    public Button startButton;
+    public Button codexButton;
+    public Button exitButton;
+    public TextMeshProUGUI versionInfoText;
 
-    private List<Button> menuButtons; // ¸Ş´º ¹öÆ° ¸®½ºÆ®
-    private int currentButtonIndex = 0; // ÇöÀç ¼±ÅÃµÈ ¹öÆ° ÀÎµ¦½º
+    public RectTransform cursorSprite; // [ì¶”ê°€] Inspectorì—ì„œ ì»¤ì„œ ìŠ¤í”„ë¼ì´íŠ¸ í• ë‹¹
 
-    void Awake()
+    void OnEnable()
     {
-        // ¸Ş´º ¹öÆ° ¸®½ºÆ® ÃÊ±âÈ­
-        menuButtons = new List<Button>
+        // ì”¬ì´ í™œì„±í™”ë  ë•Œ UICursorManagerì— ë‚´ ì»¤ì„œë¥¼ ë“±ë¡
+        if (UICursorManager.Instance != null)
         {
-            optionsButton,
-            startButton,
-            codexButton,
-            exitButton
-        };
-
-        // °ÔÀÓ Á¦¸ñ ¼³Á¤ (Inspector¿¡¼­ ºñ¾îÀÖÀ» °æ¿ì)
-        if (gameTitleText != null && string.IsNullOrEmpty(gameTitleText.text))
-        {
-            gameTitleText.text = "Game Title"; // ÀÓ½Ã Á¦¸ñ
-        }
-
-        // ¹öÀü Á¤º¸ Ç¥½Ã
-        if (versionInfoText != null)
-        {
-            versionInfoText.text = "Version: " + Application.version; // Unity ÇÁ·ÎÁ§Æ® ¹öÀü¿¡¼­ °¡Á®¿É´Ï´Ù.
-        }
-    }
-
-    private void OnEnable()
-    {
-        if (InputManager.Instance != null)
-        {
-            // InputManager ÀÌº¥Æ® ±¸µ¶
-            InputManager.Instance.OnMove.AddListener(HandleMoveInput);
-            InputManager.Instance.OnSubmit.AddListener(HandleSubmitInput);
-            InputManager.Instance.OnCancel.AddListener(HandleCancelInput);
-        }
-        else
-        {
-            Debug.LogError("InputManager ÀÎ½ºÅÏ½º¸¦ Ã£À» ¼ö ¾ø½À´Ï´Ù. MainMenuUI´Â InputManager ÀÌº¥Æ®¿¡ ÀÇÁ¸ÇÕ´Ï´Ù.");
+            UICursorManager.Instance.RegisterCursor(cursorSprite);
         }
     }
 
     void Start()
     {
-        // ½ÃÀÛ ½Ã Ä¿¼­¸¦ '½ÃÀÛ' ¹öÆ°¿¡ À§Ä¡½ÃÅµ´Ï´Ù.
-        currentButtonIndex = menuButtons.IndexOf(startButton);
-        if (currentButtonIndex < 0) currentButtonIndex = 0; // startButtonÀÌ ¸®½ºÆ®¿¡ ¾øÀ» °æ¿ì ´ëºñ
+        // ë²„íŠ¼ì˜ OnClick ì´ë²¤íŠ¸ëŠ” ì—¬ê¸°ì„œ ì§ì ‘ ì—°ê²°í•´ì£¼ëŠ” ê²ƒì´ ì¢‹ìŠµë‹ˆë‹¤.
+        startButton.onClick.AddListener(OnStartButtonClicked);
+        optionsButton.onClick.AddListener(OnOptionsButtonClicked);
+        codexButton.onClick.AddListener(OnCodexButtonClicked);
+        exitButton.onClick.AddListener(OnExitButtonClicked);
 
-        SetCursorPosition(menuButtons[currentButtonIndex]);
-    }
-
-    // WASD ¹× È­»ìÇ¥ Å° ÀÔ·Â Ã³¸®
-    private void HandleMoveInput(Vector2 input)
-    {
-        if (input.magnitude < 0.5f) return;
-
-        int previousButtonIndex = currentButtonIndex;
-
-        if (Mathf.Abs(input.y) > Mathf.Abs(input.x))
+        if (versionInfoText == null)
         {
-            if (input.y > 0) currentButtonIndex--; // À§·Î ÀÌµ¿
-            else currentButtonIndex++; // ¾Æ·¡·Î ÀÌµ¿
-        }
-        else
-        {
-            if (input.x < 0) currentButtonIndex--; // ¿ŞÂÊÀ¸·Î ÀÌµ¿
-            else currentButtonIndex++; // ¿À¸¥ÂÊÀ¸·Î ÀÌµ¿
-        }
-
-        // ÀÎµ¦½º°¡ ¹üÀ§¸¦ ¹ş¾î³ªÁö ¾Êµµ·Ï ¼øÈ¯ Ã³¸®
-        if (currentButtonIndex < 0) currentButtonIndex = menuButtons.Count - 1;
-        if (currentButtonIndex >= menuButtons.Count) currentButtonIndex = 0;
-
-        if (previousButtonIndex != currentButtonIndex)
-        {
-            SetCursorPosition(menuButtons[currentButtonIndex]);
+            versionInfoText.text = "Version: " + Application.version;
         }
     }
 
-    // Enter Å° ÀÔ·Â Ã³¸® (¹öÆ° Å¬¸¯)
-    private void HandleSubmitInput()
-    {
-        menuButtons[currentButtonIndex].onClick.Invoke();
-    }
+    // OnEnable, OnDisable, HandleMoveInput, HandleSubmitInput, SetCursorPosition ë“±
+    // InputManagerì™€ ì»¤ì„œ ìœ„ì¹˜ë¥¼ ì œì–´í•˜ë˜ í•¨ìˆ˜ë“¤ì€ ëª¨ë‘ ì‚­ì œí•©ë‹ˆë‹¤.
 
-    // ESC Å° ÀÔ·Â Ã³¸® (³ª°¡±â ¶Ç´Â µÚ·Î°¡±â)
-    private void HandleCancelInput()
-    {
-        exitButton.onClick.Invoke();
-    }
-
-    // Ä¿¼­ ½ºÇÁ¶óÀÌÆ® À§Ä¡¸¦ ¼³Á¤ÇÕ´Ï´Ù.
-    private void SetCursorPosition(Button targetButton)
-    {
-        if (cursorSprite != null && targetButton != null)
-        {
-            cursorSprite.position = targetButton.transform.position;
-        }
-    }
-
-    // --- ¹öÆ° Å¬¸¯ ÀÌº¥Æ® ÇÚµé·¯µé --- //
-
+    // --- ë²„íŠ¼ í´ë¦­ ì‹œ í˜¸ì¶œë  í•¨ìˆ˜ë“¤ ---
     public void OnOptionsButtonClicked()
     {
-        Debug.Log("¿É¼Ç ¹öÆ° Å¬¸¯!");
-        // ¿É¼Ç ¾ÀÀÌ³ª ÆĞ³ÎÀ» ¿©´Â ·ÎÁ÷
-        // GameManager.Instance.ChangeState(GameManager.GameState.Options); 
+        Debug.Log("ì˜µì…˜ ë²„íŠ¼ í´ë¦­!");
+        // UIManager.Instance.ShowPanel("OptionsPanel"); // ì˜ˆì‹œ: ì˜µì…˜ íŒ¨ë„ ì—´ê¸°
     }
 
     public void OnStartButtonClicked()
     {
-        Debug.Log("½ÃÀÛ ¹öÆ° Å¬¸¯!");
-        GameManager.Instance.ChangeState(GameManager.GameState.Allocation); // Ä³¸¯ÅÍ ¼±ÅÃ/´É·ÂÄ¡ ¹èºĞ ¾ÀÀ¸·Î ÀÌµ¿
+        GameManager.Instance.ChangeState(GameManager.GameState.CharacterSelect);
     }
 
     public void OnCodexButtonClicked()
     {
-        Debug.Log("µµ°¨ ¹öÆ° Å¬¸¯!");
-        // --- ¼öÁ¤µÈ ºÎºĞ ---
-        GameManager.Instance.ChangeState(GameManager.GameState.Codex); // µµ°¨ ¾ÀÀ¸·Î ÀÌµ¿
+        GameManager.Instance.ChangeState(GameManager.GameState.Codex);
     }
 
     public void OnExitButtonClicked()
     {
-        Debug.Log("³ª°¡±â ¹öÆ° Å¬¸¯! °ÔÀÓÀ» Á¾·áÇÕ´Ï´Ù.");
-        Application.Quit(); // ¾îÇÃ¸®ÄÉÀÌ¼Ç Á¾·á
-    }
-
-    void OnDisable()
-    {
-        // ½ºÅ©¸³Æ®°¡ ºñÈ°¼ºÈ­µÉ ¶§ InputManager ÀÌº¥Æ® ±¸µ¶ ÇØÁ¦
-        if (InputManager.Instance != null)
-        {
-            InputManager.Instance.OnMove.RemoveListener(HandleMoveInput);
-            InputManager.Instance.OnSubmit.RemoveListener(HandleSubmitInput);
-            InputManager.Instance.OnCancel.RemoveListener(HandleCancelInput);
-        }
+        Application.Quit();
     }
 }

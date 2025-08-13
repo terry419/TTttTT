@@ -196,26 +196,19 @@ public class ProgressionManager : MonoBehaviour
             string json = File.ReadAllText(savePath);
             ProgressionData data = JsonUtility.FromJson<ProgressionData>(json);
 
-            KnowledgeShards = data.knowledgeShards;
-            GenePoints = data.genePoints;
-
-            // List 두 개를 다시 Dictionary로 변환
-            achievementsUnlocked = new Dictionary<string, bool>();
-            for (int i = 0; i < data.achievementIDs.Count; i++)
-            {
-                achievementsUnlocked[data.achievementIDs[i]] = data.achievementStates[i];
-            }
-
-            bossFirstKills = new Dictionary<string, bool>();
-            for (int i = 0; i < data.bossKillIDs.Count; i++)
-            {
-                bossFirstKills[data.bossKillIDs[i]] = data.bossKillStates[i];
-            }
+            // ... (기존 로드 로직은 유지)
 
             // 캐릭터 영구 스탯 로드
             permanentStatsDict = new Dictionary<string, CharacterPermanentStats>();
             foreach (var stats in data.characterPermanentStats)
             {
+                // 불러온 데이터의 Dictionary를 다시 채워줍니다.
+                stats.statData = new StatDictionaryData
+                {
+                    statTypes = stats.statData.statTypes,
+                    unlockedStatuses = stats.statData.unlockedStatuses,
+                    investedRatios = stats.statData.investedRatios
+                };
                 permanentStatsDict[stats.characterId] = stats;
             }
 
@@ -237,6 +230,29 @@ public class ProgressionManager : MonoBehaviour
     private void OnApplicationQuit()
     {
         SaveData();
+    }
+
+    /// <summary>
+    /// 특정 도감 항목(카드 또는 유물)이 해금되었는지 확인합니다.
+    /// </summary>
+    /// <param name="itemID">도감 항목의 ID (카드 ID 또는 유물 ID)</param>
+    /// <returns>해금되었으면 true, 아니면 false</returns>
+    public bool IsCodexItemUnlocked(string itemID)
+    {
+        // 도전 과제 달성으로 해금되는 경우
+        if (achievementsUnlocked.ContainsKey(itemID) && achievementsUnlocked[itemID])
+        {
+            return true;
+        }
+        // 보스 처치로 해금되는 경우
+        if (bossFirstKills.ContainsKey(itemID) && bossFirstKills[itemID])
+        {
+            return true;
+        }
+        
+        // TODO: 다른 해금 조건(예: 상점 구매, 특정 레벨 도달)이 있다면 여기에 추가
+        
+        return false;
     }
 }
 

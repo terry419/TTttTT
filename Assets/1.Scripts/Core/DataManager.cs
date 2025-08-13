@@ -166,6 +166,18 @@ public class DataManager : MonoBehaviour
             Application.Quit(); // 치명적인 오류: 게임 종료.
             return;
         }
+        if (string.IsNullOrEmpty(ad.artifactName))
+        {
+            Debug.LogError($"[DataManager] 유물 이름이 비어 있습니다: {ad.artifactID}. 애플리케이션을 종료합니다.");
+            Application.Quit(); // 치명적인 오류: 게임 종료.
+            return;
+        }
+        if (string.IsNullOrEmpty(ad.description))
+        {
+            Debug.LogError($"[DataManager] 유물 설명이 비어 있습니다: {ad.artifactID}. 애플리케이션을 종료합니다.");
+            Application.Quit(); // 치명적인 오류: 게임 종료.
+            return;
+        }
         // ArtifactDataSO에 정의된 각 부스트 비율이 음수가 아닌지 확인합니다.
         if (ad.attackBoostRatio < 0 || ad.healthBoostRatio < 0 || ad.moveSpeedBoostRatio < 0 ||
             ad.critChanceBoostRatio < 0 || ad.critDamageBoostRatio < 0 || ad.lifestealBoostRatio < 0)
