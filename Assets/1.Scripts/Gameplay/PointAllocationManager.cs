@@ -9,30 +9,22 @@ public class PointAllocationManager : MonoBehaviour
 {
     [Header("UI 참조")]
     [SerializeField] private PointAllocationResultUI resultUI;
-    [SerializeField] private TMP_InputField pointsToInvestInput;
+    [SerializeField] private TMP_InputField pointsToInvestInput_Actual;
+    [SerializeField] private Button inputActivationButton;
+    [SerializeField] private TextMeshProUGUI inputActivationButtonText;
     [SerializeField] private Button confirmButton;
     [SerializeField] private Button backButton;
     [SerializeField] private TextMeshProUGUI totalPointsText;
-    [SerializeField] private RectTransform cursorSprite;
 
     private CharacterDataSO selectedCharacter;
     private int totalCharacterPoints;
 
-    void OnEnable()
-    {
-        // 씬이 활성화될 때 UICursorManager에 이 씬의 커서를 등록합니다.
-        if (UICursorManager.Instance != null)
-        {
-            UICursorManager.Instance.RegisterCursor(cursorSprite);
-        }
-    }
-
     private void Awake()
     {
+        inputActivationButton.onClick.AddListener(ActivateInputMode);
         confirmButton.onClick.AddListener(OnConfirmAllocationClicked);
         backButton.onClick.AddListener(OnBackClicked);
-        pointsToInvestInput.onEndEdit.AddListener(OnInputEndEdit);
-        pointsToInvestInput.contentType = TMP_InputField.ContentType.IntegerNumber;
+        pointsToInvestInput_Actual.onEndEdit.AddListener(DeactivateInputMode);
     }
 
     void Start()
@@ -43,21 +35,36 @@ public class PointAllocationManager : MonoBehaviour
             resultUI.gameObject.SetActive(true);
             resultUI.UpdateDisplay(selectedCharacter.baseStats, null);
         }
-        pointsToInvestInput.Select();
+        pointsToInvestInput_Actual.gameObject.SetActive(false);
     }
 
-    private void OnInputEndEdit(string text)
+    public void ActivateInputMode()
     {
-        ValidateInputValue();
-        if (Input.GetButtonDown("Submit"))
+        inputActivationButton.gameObject.SetActive(false);
+        pointsToInvestInput_Actual.gameObject.SetActive(true);
+        EventSystem.current.SetSelectedGameObject(pointsToInvestInput_Actual.gameObject);
+        pointsToInvestInput_Actual.ActivateInputField();
+    }
+
+    private void DeactivateInputMode(string text)
+    {
+        if (string.IsNullOrEmpty(text))
         {
-            EventSystem.current.SetSelectedGameObject(confirmButton.gameObject);
+            inputActivationButtonText.text = "포인트 입력...";
         }
+        else
+        {
+            inputActivationButtonText.text = text;
+        }
+        ValidateInputValue();
+        pointsToInvestInput_Actual.gameObject.SetActive(false);
+        inputActivationButton.gameObject.SetActive(true);
+        EventSystem.current.SetSelectedGameObject(inputActivationButton.gameObject);
     }
 
     private void OnConfirmAllocationClicked()
     {
-        if (!int.TryParse(pointsToInvestInput.text, out int allocatedPoints))
+        if (!int.TryParse(pointsToInvestInput_Actual.text, out int allocatedPoints))
         {
             allocatedPoints = 0;
         }
@@ -69,24 +76,24 @@ public class PointAllocationManager : MonoBehaviour
 
         confirmButton.interactable = false;
         backButton.interactable = false;
-        pointsToInvestInput.interactable = false;
+        inputActivationButton.interactable = false;
 
         StartCoroutine(StartSceneTransitionAfterDelay(2f));
     }
 
     private void InitializeAllocation()
     {
-        selectedCharacter = (GameManager.Instance?.SelectedCharacter != null) ? GameManager.Instance.SelectedCharacter : DataManager.Instance.GetCharacter("warrior");
+        selectedCharacter = GameManager.Instance.SelectedCharacter ?? DataManager.Instance.GetCharacter("warrior");
         totalCharacterPoints = selectedCharacter.initialAllocationPoints;
         if (totalPointsText != null) totalPointsText.text = $"Total Points: {totalCharacterPoints}";
     }
 
     private void ValidateInputValue()
     {
-        if (!string.IsNullOrEmpty(pointsToInvestInput.text) && int.TryParse(pointsToInvestInput.text, out int points))
+        if (!string.IsNullOrEmpty(pointsToInvestInput_Actual.text) && int.TryParse(pointsToInvestInput_Actual.text, out int points))
         {
-            if (points > totalCharacterPoints) pointsToInvestInput.text = totalCharacterPoints.ToString();
-            else if (points < 0) pointsToInvestInput.text = "0";
+            if (points > totalCharacterPoints) pointsToInvestInput_Actual.text = totalCharacterPoints.ToString();
+            else if (points < 0) pointsToInvestInput_Actual.text = "0";
         }
     }
 
@@ -99,12 +106,9 @@ public class PointAllocationManager : MonoBehaviour
     {
         var pointCounts = new Dictionary<StatType, int>();
         foreach (StatType type in System.Enum.GetValues(typeof(StatType))) pointCounts[type] = 0;
-
         List<StatType> availableStats = permStats.GetUnlockedStats();
         availableStats.Remove(StatType.CritRate);
-
         if (availableStats.Count == 0) return pointCounts;
-
         for (int i = 0; i < pointsToDistribute; i++)
         {
             StatType targetStat = availableStats[Random.Range(0, availableStats.Count)];
