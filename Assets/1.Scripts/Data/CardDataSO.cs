@@ -49,16 +49,6 @@ public class CardDataSO : ScriptableObject
     OnLowHealth = 4  // 체력이 낮을 때 발동 (예시)
     */
 
-    [Header("기본 능력치")]
-    public BaseStats baseStats;
-
-    // [추가] 캐릭터별 시작 카드
-    [Header("시작 아이템")]
-    public CardDataSO startingCard;
-
-    [Header("초기 포인트")]
-    public int initialAllocationPoints;
-
     [Header("기획 미정 필드")]
     // 보상으로 카드가 등장할 때의 가중치입니다.
     // 구체적인 로직은 RewardManager 등에서 구현될 예정입니다.

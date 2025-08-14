@@ -53,6 +53,21 @@ public class PlayerInitializer : MonoBehaviour
             Debug.LogWarning($"[PlayerInitializer] {characterToLoad.characterName}에게 설정된 시작 카드가 없습니다.");
         }
 
+        if (characterToLoad.startingArtifacts != null && characterToLoad.startingArtifacts.Count > 0)
+        {
+            foreach (var artifact in characterToLoad.startingArtifacts)
+            {
+                ArtifactManager.Instance.EquipArtifact(artifact);
+            }
+        }
+
+        PlayerController playerController = GetComponent<PlayerController>();
+        if (playerController != null)
+        {
+            Debug.Log("[PlayerInitializer] PlayerController의 공격 루프를 시작합니다.");
+            playerController.StartAutoAttackLoop();
+            playerController.StartCardTriggerLoop();
+        }
 
 
         playerStats.CalculateFinalStats();

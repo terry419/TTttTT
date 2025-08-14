@@ -1,3 +1,4 @@
+// --- 파일명: DamageText.cs ---
 using UnityEngine;
 using System.Collections;
 using TMPro;
@@ -19,18 +20,26 @@ public class DamageText : MonoBehaviour
 
     public void ShowDamage(float damageAmount)
     {
+        if (textMesh == null)
+        {
+            Debug.LogError("DamageText: TextMeshProUGUI 컴포넌트를 찾을 수 없습니다!");
+            return;
+        }
         textMesh.text = Mathf.RoundToInt(damageAmount).ToString();
         StartCoroutine(Animate());
     }
 
     private IEnumerator Animate()
     {
+        // [수정] 애니메이션 도중 다른 Transform의 영향을 받지 않도록 부모를 잠시 해제
+        transform.SetParent(null, true);
+
         transform.localScale = Vector3.zero;
         Color startColor = textMesh.color;
         startColor.a = 1f;
         textMesh.color = startColor;
 
-        float duration = 0.5f;
+        float duration = 0.8f; // 애니메이션 시간을 조금 늘려서 확인하기 쉽게
         float timer = 0f;
 
         Vector3 startPosition = transform.position;
