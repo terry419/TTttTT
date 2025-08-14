@@ -53,3 +53,15 @@ public enum StatType
     CritMultiplier,
     CritRate // ✨ [4번 오류 해결] 누락된 CritRate 추가
 }
+
+/// <summary>
+/// 공격의 조준 방식을 정의합니다.
+/// </summary>
+public enum TargetingType
+{
+    Forward,         // 플레이어 정면
+    Nearest,         // 가장 가까운 적
+    HighestHealth,   // 체력이 가장 높은 적
+    LowestHealth,    // 체력이 가장 낮은 적
+    Random           // 무작위 적
+}

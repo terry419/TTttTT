@@ -2,27 +2,10 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections;
 
-/// <summary>
-/// 게임의 전체 상태 머신을 관리하며, 씬 전환과 주요 시스템 간 조율을 담당합니다.
-/// </summary>
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
-
-    /// <summary>
-    /// 게임의 현재 상태를 나타내는 열거형입니다.
-    /// </summary>
-    public enum GameState
-    {
-        MainMenu,
-        CharacterSelect, // 기존 Allocation을 CharacterSelect로 변경
-        PointAllocation, // PointAllocation 씬을 위한 새로운 상태 추가
-        Gameplay,
-        Reward,
-        Pause,
-        Codex
-    }
-
+    public enum GameState { MainMenu, CharacterSelect, PointAllocation, Gameplay, Reward, Pause, Codex }
     public GameState CurrentState { get; private set; }
     public CharacterDataSO SelectedCharacter { get; set; }
     public int AllocatedPoints { get; set; }
@@ -43,63 +26,59 @@ public class GameManager : MonoBehaviour
     private void Start()
     {
         sceneTransitionManager = SceneTransitionManager.Instance;
-        ChangeState(GameState.MainMenu);
+        if (sceneTransitionManager == null) Debug.LogError("!!! GameManager: SceneTransitionManager를 찾을 수 없음!!!");
     }
 
-    /// <summary>
-    /// 게임 상태를 변경하는 메서드입니다.
-    /// </summary>
-    /// <param name="newState">새로운 게임 상태</param>
     public void ChangeState(GameState newState)
     {
-        if (newState == CurrentState) return;
+        if (newState == CurrentState && CurrentState != GameState.MainMenu) return;
 
+        Debug.Log($"[GameManager] 상태 변경: {CurrentState} -> {newState}");
         CurrentState = newState;
 
+        string sceneName = "";
         switch (newState)
         {
-            case GameState.MainMenu:
-                sceneTransitionManager.LoadScene("MainMenu");
-                Time.timeScale = 1;
-                break;
-            case GameState.CharacterSelect:
-                sceneTransitionManager.LoadScene("CharacterSelect");
-                Time.timeScale = 1;
-                break;
-            case GameState.PointAllocation: // 새로 추가된 PointAllocation 상태
-                sceneTransitionManager.LoadScene("PointAllocation");
-                Time.timeScale = 1;
-                break;
-            case GameState.Gameplay:
-                sceneTransitionManager.LoadScene("Gameplay");
-                StartCoroutine(StartRoundAfterSceneLoad());
-                break;
-            case GameState.Reward:
-                sceneTransitionManager.LoadScene("CardReward");
-                Time.timeScale = 0;
-                break;
+            case GameState.MainMenu: sceneName = "MainMenu"; break;
+            case GameState.CharacterSelect: sceneName = "CharacterSelect"; break;
+            case GameState.PointAllocation: sceneName = "PointAllocation"; break;
+            case GameState.Gameplay: sceneName = "Gameplay"; break; // 또는 Gameplay_New
+            case GameState.Reward: sceneName = "CardReward"; break;
+            case GameState.Codex: sceneName = "Codex"; break;
             case GameState.Pause:
                 Time.timeScale = 0;
-                break;
-            case GameState.Codex:
-                sceneTransitionManager.LoadScene("Codex");
-                Time.timeScale = 1;
-                break;
+                return;
         }
-    }
 
-    private IEnumerator StartRoundAfterSceneLoad()
-    {
-        yield return null;
-        RoundManager roundManager = RoundManager.Instance;
-        if (roundManager != null)
+        sceneTransitionManager.LoadScene(sceneName);
+
+        if (newState == GameState.Gameplay)
         {
-            roundManager.StartRound();
+            StartCoroutine(StartRoundAfterSceneLoad());
         }
         else
         {
-            Debug.LogError("Gameplay 씬에서 RoundManager를 찾을 수 없습니다!");
+            Time.timeScale = 1;
         }
+    }
+
+    /// <summary>
+    /// [수정] RoundManager가 준비될 때까지 확실하게 기다리는 로직으로 변경
+    /// </summary>
+    private IEnumerator StartRoundAfterSceneLoad()
+    {
+        // 씬 로드가 완료될 때까지 한 프레임 대기합니다.
+        yield return null;
+        Debug.Log("--- [GameManager] Gameplay 씬 로드 완료, RoundManager를 기다립니다... ---");
+
+        // RoundManager.Instance가 준비될 때까지(Awake가 실행될 때까지) 계속 기다립니다.
+        while (RoundManager.Instance == null)
+        {
+            yield return null; // 한 프레임 더 대기
+        }
+
+        Debug.Log("1. [GameManager] RoundManager.Instance를 성공적으로 찾음. StartRound() 호출.");
+        RoundManager.Instance.StartRound();
         Time.timeScale = 1f;
     }
 }

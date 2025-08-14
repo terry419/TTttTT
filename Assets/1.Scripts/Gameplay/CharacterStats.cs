@@ -1,11 +1,10 @@
-
-
 using UnityEngine;
 using UnityEngine.Events;
 
-[RequireComponent(typeof(CharacterStats))]
+[RequireComponent(typeof(PlayerHealthBar))]
 public class CharacterStats : MonoBehaviour
 {
+    // ... (기존 변수 선언은 그대로) ...
     [Header("기본 능력치")]
     public BaseStats stats;
 
@@ -55,13 +54,29 @@ public class CharacterStats : MonoBehaviour
     [Header("이벤트")]
     public UnityEvent OnFinalStatsCalculated = new UnityEvent();
 
+    private PlayerHealthBar playerHealthBar;
+
     void Awake()
     {
-        CalculateFinalStats();
-        currentHealth = finalHealth; // 최종 체력으로 현재 체력 초기화
+        playerHealthBar = GetComponent<PlayerHealthBar>();
+        // CalculateFinalStats와 체력 초기화는 PlayerInitializer가 담당하므로 여기서 호출하지 않습니다.
     }
 
-    // 최종 능력치 계산
+    public void TakeDamage(float damage)
+    {
+        currentHealth -= damage;
+        if (currentHealth < 0) currentHealth = 0;
+        playerHealthBar.UpdateHealth(currentHealth, finalHealth);
+    }
+
+    public void Heal(float amount)
+    {
+        currentHealth += amount;
+        if (currentHealth > finalHealth) currentHealth = finalHealth;
+        playerHealthBar.UpdateHealth(currentHealth, finalHealth);
+    }
+
+    // ... (나머지 함수들은 그대로) ...
     public void CalculateFinalStats()
     {
         // 유전자 증폭제 비율도 함께 합산
@@ -97,21 +112,6 @@ public class CharacterStats : MonoBehaviour
     {
         return currentHealth;
     }
-
-    public void TakeDamage(float damage)
-    {
-        currentHealth -= damage;
-        if (currentHealth < 0) currentHealth = 0;
-        // TODO: UI 업데이트 이벤트 호출
-    }
-
-    public void Heal(float amount)
-    {
-        currentHealth += amount;
-        if (currentHealth > finalHealth) currentHealth = finalHealth;
-        // TODO: UI 업데이트 이벤트 호출
-    }
-
     private void QuitGame()
     {
         Application.Quit();
@@ -135,7 +135,7 @@ public class CharacterStats : MonoBehaviour
         float otherStatsGeneBoosterRatio = allocatedPoints * 0.01f; // 공격력, 공격속도, 이동속도, 크리티컬 배율 가중치
 
         // 치명타 확률은 할당된 포인트에 영향을 받지 않으므로, 해당 비율은 0입니다.
-        
+
 
         // 최종 능력치 계산 공식 적용: Total stat = base stat * [1 + (해당 스탯의 유전자증폭체가중체)]
         // (카드 및 유물 가중치는 이 미리보기 계산에서는 고려하지 않습니다. 이는 인게임에서 동적으로 적용될 부분입니다.)

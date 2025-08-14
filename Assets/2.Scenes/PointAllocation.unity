@@ -1275,7 +1275,7 @@ MonoBehaviour:
   resultUI: {fileID: 190454977}
   pointsToInvestInput_Actual: {fileID: 1817542683}
   inputActivationButton: {fileID: 2112053469}
-  inputActivationButtonText: {fileID: 0}
+  inputActivationButtonText: {fileID: 792121966}
   confirmButton: {fileID: 16039896}
   backButton: {fileID: 2117017319}
   totalPointsText: {fileID: 1136470270}

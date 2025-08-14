@@ -1,40 +1,75 @@
-// --- 파일명: PlayerInitializer.cs (최종 수정본) ---
-
-using System.Collections.Generic;
 using UnityEngine;
+using System.Collections.Generic;
 
+[RequireComponent(typeof(SpriteRenderer))]
 [RequireComponent(typeof(CharacterStats))]
 public class PlayerInitializer : MonoBehaviour
 {
+    [Header("테스트용 기본 카드")]
+    [SerializeField] private CardDataSO defaultCard;
+
     void Start()
     {
-        GameManager gameManager = GameManager.Instance;
+        Debug.Log("--- [PlayerInitializer] 플레이어 초기화 시작 ---");
+
         CharacterStats playerStats = GetComponent<CharacterStats>();
+        SpriteRenderer playerSpriteRenderer = GetComponent<SpriteRenderer>();
+
+        GameManager gameManager = GameManager.Instance;
+        DataManager dataManager = DataManager.Instance;
         ProgressionManager progressionManager = ProgressionManager.Instance;
+
+        if (gameManager == null) Debug.LogError("!!! [PlayerInitializer] GameManager를 찾을 수 없음!");
+        if (dataManager == null) Debug.LogError("!!! [PlayerInitializer] DataManager를 찾을 수 없음!");
+        if (progressionManager == null) Debug.LogError("!!! [PlayerInitializer] ProgressionManager를 찾을 수 없음!");
+
+        CharacterDataSO characterToLoad = null;
 
         if (gameManager != null && gameManager.SelectedCharacter != null)
         {
-            playerStats.stats = gameManager.SelectedCharacter.baseStats;
+            characterToLoad = gameManager.SelectedCharacter;
+            Debug.Log($"B. [PlayerInitializer] 선택된 캐릭터 '{characterToLoad.characterName}' 로드.");
+        }
+        else
+        {
+            Debug.LogWarning("B. [PlayerInitializer] 선택된 캐릭터 없음, 기본 'warrior' 로드 시도.");
+            characterToLoad = dataManager.GetCharacter("warrior");
+        }
 
-            CharacterPermanentStats permanentStats = progressionManager.GetPermanentStatsFor(gameManager.SelectedCharacter.characterId);
+        if (characterToLoad != null)
+        {
+            playerStats.stats = characterToLoad.baseStats;
+            playerSpriteRenderer.sprite = characterToLoad.illustration;
+            Debug.Log($"C. [PlayerInitializer] '{characterToLoad.characterName}'의 능력치와 스프라이트 적용 완료.");
+
+            CharacterPermanentStats permanentStats = progressionManager.GetPermanentStatsFor(characterToLoad.characterId);
             ApplyPermanentStats(playerStats, permanentStats);
 
             int allocatedPoints = gameManager.AllocatedPoints;
             if (allocatedPoints > 0)
             {
                 ApplyAllocatedPoints(playerStats, allocatedPoints, permanentStats);
+                Debug.Log($"D. [PlayerInitializer] {allocatedPoints} 포인트 분배 적용 완료.");
             }
-
-            playerStats.CalculateFinalStats();
-            playerStats.currentHealth = playerStats.finalHealth;
         }
+        if (defaultCard != null && CardManager.Instance != null)
+        {
+            CardManager.Instance.AddCard(defaultCard); // 먼저 소유 목록에 추가
+            CardManager.Instance.Equip(defaultCard);   // 그 다음 장착
+            Debug.Log($"테스트용 기본 카드 '{defaultCard.cardName}' 자동 장착 완료.");
+        }
+
         else
         {
-            playerStats.CalculateFinalStats();
-            playerStats.currentHealth = playerStats.finalHealth;
+            Debug.LogError("!!! [PlayerInitializer] CRITICAL: 적용할 캐릭터 데이터를 찾을 수 없습니다!");
         }
+
+        playerStats.CalculateFinalStats();
+        playerStats.currentHealth = playerStats.finalHealth;
+        Debug.Log("--- [PlayerInitializer] 플레이어 초기화 완료 ---");
     }
 
+    // ... (ApplyPermanentStats 등 나머지 함수는 그대로) ...
     private void ApplyPermanentStats(CharacterStats playerStats, CharacterPermanentStats permanentStats)
     {
         if (permanentStats == null) return;

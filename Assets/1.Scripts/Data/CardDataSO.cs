@@ -38,6 +38,7 @@ public class CardDataSO : ScriptableObject
     [Header("발동 조건")]
     public CardEffectType effectType; // 이 카드가 발동하는 특수 효과의 종류
     public TriggerType triggerType;  // 카드가 발동되는 조건 (IV. 카드 시스템의 TriggerType 열거형 참조)
+    public TargetingType targetingType;
 
     /*
     TriggerType 열거형 정의:

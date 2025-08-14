@@ -7,8 +7,27 @@ using System;
 // 이 클래스는 싱글톤으로 구현되어 게임 전체에서 접근 가능합니다.
 public class DataManager : MonoBehaviour
 {
+
+    [Header("프리āb 데이터베이스")]
+    [SerializeField] private PrefabDB prefabDB;
+
+
     // DataManager의 싱글톤 인스턴스입니다.
     public static DataManager Instance { get; private set; }
+
+    // 이름으로 몬스터 프리팹을 찾아주는 함수
+    public GameObject GetMonsterPrefab(string prefabName)
+    {
+        if (prefabDB == null) return null;
+        return prefabDB.monsterPrefabs.Find(p => p.name == prefabName);
+    }
+
+    // 이름으로 이펙트 프리팹을 찾아주는 함수
+    public GameObject GetEffectPrefab(string prefabName)
+    {
+        if (prefabDB == null) return null;
+        return prefabDB.effectPrefabs.Find(p => p.name == prefabName);
+    }
 
     // CardDataSO와 ArtifactDataSO를 ID로 빠르게 찾기 위한 딕셔너리 캐시입니다.
     private readonly Dictionary<string, CardDataSO> cardDict = new Dictionary<string, CardDataSO>();
