@@ -4,8 +4,9 @@ using System.Collections;
 
 public class GameManager : MonoBehaviour
 {
+
     public static GameManager Instance { get; private set; }
-    public enum GameState { MainMenu, CharacterSelect, PointAllocation, Gameplay, Reward, Pause, Codex }
+    public enum GameState { MainMenu, CharacterSelect, PointAllocation, Gameplay, Reward, Pause, Codex, GameOver }
     public GameState CurrentState { get; private set; }
     public CharacterDataSO SelectedCharacter { get; set; }
     public int AllocatedPoints { get; set; }
@@ -48,7 +49,13 @@ public class GameManager : MonoBehaviour
             case GameState.Pause:
                 Time.timeScale = 0;
                 return;
+            case GameState.GameOver:
+                StartCoroutine(GameOverRoutine());
+                return; // 씬을 바로 로드하지 않으므로 여기서 함수 종료
         }
+
+        if (!string.IsNullOrEmpty(sceneName))
+            sceneTransitionManager.LoadScene(sceneName);
 
         sceneTransitionManager.LoadScene(sceneName);
 
@@ -60,6 +67,22 @@ public class GameManager : MonoBehaviour
         {
             Time.timeScale = 1;
         }
+    }
+
+    private IEnumerator GameOverRoutine()
+    {
+        // 팝업 컨트롤러를 사용해 게임오버 메시지 표시
+        if (PopupController.Instance != null)
+        {
+            // ShowError를 재활용해서 메시지 표시, 3초간 보여줌
+            PopupController.Instance.ShowError("GAME OVER", 3f);
+        }
+
+        // 3초 대기
+        yield return new WaitForSeconds(3f);
+
+        // 메인 메뉴 상태로 전환 (자동으로 MainMenu 씬 로드)
+        ChangeState(GameState.MainMenu);
     }
 
     /// <summary>
@@ -81,4 +104,7 @@ public class GameManager : MonoBehaviour
         RoundManager.Instance.StartRound();
         Time.timeScale = 1f;
     }
+
+
+
 }

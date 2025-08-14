@@ -97,6 +97,8 @@ public class PlayerController : MonoBehaviour
         if (equipped != null && equipped.Count > 0)
         {
             int idx = Random.Range(0, equipped.Count);
+            // [디버그 로그 추가] 어떤 카드가 발동되었는지 콘솔에 출력
+            Debug.Log($"[CardTrigger] 발동된 카드: {equipped[idx].cardName}");
             EffectExecutor.Instance.Execute(equipped[idx]);
         }
     }

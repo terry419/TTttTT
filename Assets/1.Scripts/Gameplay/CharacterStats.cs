@@ -61,12 +61,25 @@ public class CharacterStats : MonoBehaviour
         playerHealthBar = GetComponent<PlayerHealthBar>();
         // CalculateFinalStats와 체력 초기화는 PlayerInitializer가 담당하므로 여기서 호출하지 않습니다.
     }
-
     public void TakeDamage(float damage)
     {
         currentHealth -= damage;
-        if (currentHealth < 0) currentHealth = 0;
         playerHealthBar.UpdateHealth(currentHealth, finalHealth);
+
+        // [수정] 체력이 0 이하가 되면 Die() 함수 호출
+        if (currentHealth <= 0)
+        {
+            currentHealth = 0;
+            Die();
+        }
+    }
+
+    private void Die()
+    {
+        // [추가] 죽었을 때 게임오버 상태로 전환 요청
+        Debug.Log("[CharacterStats] 플레이어가 사망했습니다. 게임오버 상태로 전환합니다.");
+        gameObject.SetActive(false); // 플레이어 오브젝트를 비활성화
+        GameManager.Instance.ChangeState(GameManager.GameState.GameOver);
     }
 
     public void Heal(float amount)

@@ -3,8 +3,9 @@ using System.Collections.Generic;
 
 public class PlayerInitializer : MonoBehaviour
 {
-    [Header("테스트용 기본 카드")]
-    [SerializeField] private CardDataSO defaultCard;
+    [Header("테스트용 시작 카드 목록")]
+    [Tooltip("캐릭터 데이터(SO)에 시작 카드가 설정되어 있으면, 이 목록은 무시됩니다.")]
+    [SerializeField] private List<CardDataSO> testStartingCards;
 
     void Start()
     {
@@ -16,6 +17,19 @@ public class PlayerInitializer : MonoBehaviour
         ProgressionManager progressionManager = ProgressionManager.Instance;
 
         CharacterDataSO characterToLoad = gameManager.SelectedCharacter ?? dataManager.GetCharacter("warrior");
+
+        // [수정] 장착할 카드를 결정하는 더 안전한 로직
+        List<CardDataSO> cardsToEquip = new List<CardDataSO>();
+        if (characterToLoad != null && characterToLoad.startingCard != null)
+        {
+            // 1순위: 캐릭터 데이터에 설정된 시작 카드를 사용
+            cardsToEquip.Add(characterToLoad.startingCard);
+        }
+        else if (testStartingCards != null && testStartingCards.Count > 0)
+        {
+            // 2순위: 캐릭터 데이터에 카드가 없으면, Inspector의 테스트용 카드를 사용
+            cardsToEquip.AddRange(testStartingCards);
+        }
 
         if (characterToLoad != null)
         {
@@ -36,42 +50,41 @@ public class PlayerInitializer : MonoBehaviour
             Debug.LogError("CRITICAL: 적용할 캐릭터 데이터를 찾을 수 없습니다!");
         }
 
-        /*if (defaultCard != null && CardManager.Instance != null)
+        // 결정된 카드 목록을 장착
+        if (cardsToEquip.Count > 0 && CardManager.Instance != null)
         {
-            CardManager.Instance.AddCard(defaultCard);
-            CardManager.Instance.Equip(defaultCard);
-        }*/
-
-        if (characterToLoad.startingCard != null && CardManager.Instance != null)
-        {
-            CardManager.Instance.AddCard(characterToLoad.startingCard);
-            CardManager.Instance.Equip(characterToLoad.startingCard);
-            Debug.Log($"[PlayerInitializer] {characterToLoad.characterName}의 시작 카드 '{characterToLoad.startingCard.name}' 장착 완료.");
-        }
-        else
-        {
-            Debug.LogWarning($"[PlayerInitializer] {characterToLoad.characterName}에게 설정된 시작 카드가 없습니다.");
-        }
-
-        if (characterToLoad.startingArtifacts != null && characterToLoad.startingArtifacts.Count > 0)
-        {
-            foreach (var artifact in characterToLoad.startingArtifacts)
+            foreach (var card in cardsToEquip)
             {
-                ArtifactManager.Instance.EquipArtifact(artifact);
+                if (card != null)
+                {
+                    CardManager.Instance.AddCard(card);
+                    CardManager.Instance.Equip(card);
+                }
+            }
+            Debug.Log($"[PlayerInitializer] {cardsToEquip.Count}개의 시작 카드를 장착했습니다.");
+        }
+
+        playerStats.CalculateFinalStats();
+        playerStats.currentHealth = playerStats.finalHealth;
+
+        // 시작 유물 장착 로직
+        if (characterToLoad != null && characterToLoad.startingArtifacts != null && characterToLoad.startingArtifacts.Count > 0)
+        {
+            if (ArtifactManager.Instance != null)
+            {
+                foreach (var artifact in characterToLoad.startingArtifacts)
+                {
+                    if (artifact != null) ArtifactManager.Instance.EquipArtifact(artifact);
+                }
             }
         }
 
         PlayerController playerController = GetComponent<PlayerController>();
         if (playerController != null)
         {
-            Debug.Log("[PlayerInitializer] PlayerController의 공격 루프를 시작합니다.");
             playerController.StartAutoAttackLoop();
             playerController.StartCardTriggerLoop();
         }
-
-
-        playerStats.CalculateFinalStats();
-        playerStats.currentHealth = playerStats.finalHealth;
     }
 
     private void ApplyPermanentStats(CharacterStats playerStats, CharacterPermanentStats permanentStats)

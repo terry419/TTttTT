@@ -1,5 +1,4 @@
 // --- 파일명: MonsterController.cs ---
-
 using UnityEngine;
 using System.Collections;
 
@@ -9,6 +8,8 @@ public class MonsterController : MonoBehaviour
     [Header("능력치")]
     [SerializeField] private float maxHealth = 100f;
     [SerializeField] private float moveSpeed = 3f;
+    [SerializeField] private float contactDamage = 10f; // [추가] 몬스터의 몸통 박치기 데미지
+
 
     public float currentHealth;
     private Transform playerTransform;
@@ -114,4 +115,21 @@ public class MonsterController : MonoBehaviour
             }
         }
     }
+    void OnCollisionEnter2D(Collision2D collision)
+    {
+        // 부딪힌 상대방이 "Player" 태그를 가지고 있는지 확인
+        if (collision.gameObject.CompareTag("Player"))
+        {
+            // 상대방에게서 CharacterStats 컴포넌트를 가져옴
+            CharacterStats playerStats = collision.gameObject.GetComponent<CharacterStats>();
+            if (playerStats != null)
+            {
+                // 플레이어에게 데미지를 줌
+                playerStats.TakeDamage(contactDamage);
+                Debug.Log($"[MonsterController] 플레이어와 충돌! {contactDamage} 데미지를 입혔습니다.");
+            }
+        }
+    }
+
+
 }
