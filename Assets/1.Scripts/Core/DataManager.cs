@@ -1,3 +1,5 @@
+// --- 파일명: DataManager.cs ---
+
 using UnityEngine;
 using System.Collections.Generic;
 
@@ -76,4 +78,7 @@ public class DataManager : MonoBehaviour
     }
 
     public List<CardDataSO> GetAllCards() => new List<CardDataSO>(cardDataDict.Values);
+
+    // [추가] CodexController에서 호출할 GetAllArtifacts 메서드를 추가했어.
+    public List<ArtifactDataSO> GetAllArtifacts() => new List<ArtifactDataSO>(artifactDataDict.Values);
 }

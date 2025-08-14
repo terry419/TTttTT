@@ -36,11 +36,24 @@ public class PlayerInitializer : MonoBehaviour
             Debug.LogError("CRITICAL: 적용할 캐릭터 데이터를 찾을 수 없습니다!");
         }
 
-        if (defaultCard != null && CardManager.Instance != null)
+        /*if (defaultCard != null && CardManager.Instance != null)
         {
             CardManager.Instance.AddCard(defaultCard);
             CardManager.Instance.Equip(defaultCard);
+        }*/
+
+        if (characterToLoad.startingCard != null && CardManager.Instance != null)
+        {
+            CardManager.Instance.AddCard(characterToLoad.startingCard);
+            CardManager.Instance.Equip(characterToLoad.startingCard);
+            Debug.Log($"[PlayerInitializer] {characterToLoad.characterName}의 시작 카드 '{characterToLoad.startingCard.name}' 장착 완료.");
         }
+        else
+        {
+            Debug.LogWarning($"[PlayerInitializer] {characterToLoad.characterName}에게 설정된 시작 카드가 없습니다.");
+        }
+
+
 
         playerStats.CalculateFinalStats();
         playerStats.currentHealth = playerStats.finalHealth;

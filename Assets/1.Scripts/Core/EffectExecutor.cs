@@ -1,3 +1,5 @@
+// --- 파일명: EffectExecutor.cs ---
+
 using UnityEngine;
 using System.Collections.Generic;
 
@@ -64,7 +66,9 @@ public class EffectExecutor : MonoBehaviour
 
         if (bulletGO.TryGetComponent<BulletController>(out var bullet))
         {
-            float totalDamage = playerStats.finalDamage * cardData.damageMultiplier;
+            // [수정] 더 이상 여기서 데미지를 곱하지 않음!
+            // CharacterStats에 이미 모든 계산이 끝난 최종 데미지를 그대로 사용.
+            float totalDamage = playerStats.finalDamage;
             bullet.Initialize(direction, 10f, totalDamage);
         }
     }
@@ -75,7 +79,8 @@ public class EffectExecutor : MonoBehaviour
         if (bulletPrefab == null) return;
 
         int splitCount = 5;
-        float totalDamage = playerStats.finalDamage * cardData.damageMultiplier;
+        // [수정] 여기도 마찬가지로 최종 데미지를 그대로 사용.
+        float totalDamage = playerStats.finalDamage;
 
         for (int i = 0; i < splitCount; i++)
         {

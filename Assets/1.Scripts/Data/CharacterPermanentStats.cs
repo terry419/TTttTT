@@ -1,29 +1,28 @@
+// --- 파일명: CharacterPermanentStats.cs ---
+
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
-
-// StatType 열거형은 Enums.cs 파일로 이동/통합하는 것을 권장합니다.
-// public enum StatType { ... } 
 
 [System.Serializable]
 public class CharacterPermanentStats
 {
     public string characterId;
 
-    // ✨ [1번 문제 해결] Inspector에서 테스트를 위해 해금 상태를 쉽게 제어할 수 있도록 리스트로 변경
     [Tooltip("테스트 시 해금할 스탯을 여기에 추가하세요. 실제 게임에서는 룰렛을 통해 해금됩니다.")]
     public List<StatType> defaultUnlockedStats = new List<StatType> { StatType.Health, StatType.Attack, StatType.AttackSpeed, StatType.MoveSpeed, StatType.CritMultiplier, StatType.CritRate };
 
+    // [수정] 변수를 선언할 때 바로 new로 초기화해서 Null 참조 예외를 원천적으로 방지
     public Dictionary<StatType, bool> unlockedStatus = new Dictionary<StatType, bool>();
     public Dictionary<StatType, float> investedRatios = new Dictionary<StatType, float>();
 
-    // JSON 저장을 위한 헬퍼 프로퍼티 (기존 로직 유지)
+    // JSON 저장을 위한 헬퍼 프로퍼티
     public StatDictionaryData statData
     {
         get
         {
-            // ... 기존 get 로직 ...
             StatDictionaryData data = new StatDictionaryData();
+            // unlockedStatus가 null이 아니므로 이제 여기서 에러가 발생하지 않아.
             foreach (var kvp in unlockedStatus)
             {
                 data.statTypes.Add(kvp.Key);
@@ -37,7 +36,6 @@ public class CharacterPermanentStats
         }
         set
         {
-            // ... 기존 set 로직 ...
             unlockedStatus.Clear();
             investedRatios.Clear();
             if (value != null)
@@ -51,6 +49,12 @@ public class CharacterPermanentStats
         }
     }
 
+    // [수정] JsonUtility가 이 생성자를 사용하지 않으므로, 딕셔너리 초기화 코드는 선언부로 옮기고 여기서는 비워둠.
+    public CharacterPermanentStats()
+    {
+        // 비어 있어도 괜찮아.
+    }
+
     public CharacterPermanentStats(string charId)
     {
         characterId = charId;
@@ -62,31 +66,24 @@ public class CharacterPermanentStats
             investedRatios[type] = 0f;
         }
 
-        // ✨ defaultUnlockedStats 리스트에 있는 스탯들만 '해금' 상태로 변경
+        // defaultUnlockedStats 리스트에 있는 스탯들만 '해금' 상태로 변경
         foreach (StatType type in defaultUnlockedStats)
         {
             unlockedStatus[type] = true;
         }
     }
 
-    /// <summary>
-    /// 아직 해금되지 않은 스탯 목록을 반환합니다.
-    /// </summary>
+    // ... 이하 나머지 코드는 동일 ...
+
     public List<StatType> GetLockedStats()
     {
         return unlockedStatus.Where(kvp => !kvp.Value).Select(kvp => kvp.Key).ToList();
     }
 
-    /// <summary>
-    /// ✨ [오류 3 해결] 해금된 스탯 목록 전체를 반환하는 public 메서드입니다.
-    /// </summary>
     public List<StatType> GetUnlockedStats()
     {
         return unlockedStatus.Where(kvp => kvp.Value).Select(kvp => kvp.Key).ToList();
-
     }
-
-    // --- 나머지 메서드들은 기존 로직과 동일 ---
 
     public bool AllStatsUnlocked()
     {
@@ -103,7 +100,7 @@ public class CharacterPermanentStats
 
     public void DistributePoints(int points)
     {
-        List<StatType> unlocked = GetUnlockedStats(); // 새로 만든 메서드 활용
+        List<StatType> unlocked = GetUnlockedStats();
         if (unlocked.Count == 0) return;
 
         for (int i = 0; i < points; i++)
