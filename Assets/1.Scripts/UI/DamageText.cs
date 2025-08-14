@@ -1,45 +1,68 @@
 using UnityEngine;
-using TMPro;
 using System.Collections;
+using TMPro;
 
 public class DamageText : MonoBehaviour
 {
     private TextMeshProUGUI textMesh;
+    private PoolManager poolManager;
 
-    void Awake()
+    private void Awake()
     {
         textMesh = GetComponentInChildren<TextMeshProUGUI>();
     }
 
-    public void ShowDamage(int damage, Vector3 position)
+    void Start()
     {
-        transform.position = position;
-        textMesh.text = damage.ToString();
-        StartCoroutine(AnimateAndRelease());
+        poolManager = PoolManager.Instance;
     }
 
-    private IEnumerator AnimateAndRelease()
+    public void ShowDamage(float damageAmount)
     {
-        float duration = 0.7f;
-        float timer = 0;
-        Vector3 startPos = transform.position;
-        Color startColor = textMesh.color;
+        textMesh.text = Mathf.RoundToInt(damageAmount).ToString();
+        StartCoroutine(Animate());
+    }
 
+    private IEnumerator Animate()
+    {
+        transform.localScale = Vector3.zero;
+        Color startColor = textMesh.color;
+        startColor.a = 1f;
+        textMesh.color = startColor;
+
+        float duration = 0.5f;
+        float timer = 0f;
+
+        Vector3 startPosition = transform.position;
+        Vector3 targetPosition = startPosition + Vector3.up * 1.5f;
+
+        // Pop-up effect
+        float popupDuration = 0.1f;
+        while (timer < popupDuration)
+        {
+            transform.localScale = Vector3.one * (timer / popupDuration);
+            timer += Time.deltaTime;
+            yield return null;
+        }
+        transform.localScale = Vector3.one;
+
+        // Move up and fade out
+        timer = 0f;
         while (timer < duration)
         {
+            transform.position = Vector3.Lerp(startPosition, targetPosition, timer / duration);
+            textMesh.color = Color.Lerp(startColor, Color.clear, timer / duration);
             timer += Time.deltaTime;
-            float progress = timer / duration;
-
-            // 위로 떠오르는 효과
-            transform.position = startPos + new Vector3(0, progress * 1.5f, 0);
-
-            // 점점 투명해지는 효과
-            textMesh.color = new Color(startColor.r, startColor.g, startColor.b, 1 - progress);
-
             yield return null;
         }
 
-        // 애니메이션이 끝나면 PoolManager로 반환
-        PoolManager.Instance.Release(gameObject);
+        if (poolManager != null)
+        {
+            poolManager.Release(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 }

@@ -4,7 +4,12 @@ using System.Collections.Generic;
 [CreateAssetMenu(fileName = "PrefabDB", menuName = "GameData/PrefabDB")]
 public class PrefabDB : ScriptableObject
 {
+    [Header("ëª¬ìŠ¤í„° í”„ë¦¬íŒ¹")]
     public List<GameObject> monsterPrefabs;
+
+    [Header("ì´ì•Œ í”„ë¦¬íŒ¹")]
     public List<GameObject> bulletPrefabs;
-    public List<GameObject> effectPrefabs; // µ¥¹ÌÁö ÅØ½ºÆ® µî ÀÌÆåÆ®¿ë
+
+    [Header("ì‹œê° íš¨ê³¼ (VFX) í”„ë¦¬íŒ¹")]
+    public List<GameObject> vfxPrefabs;
 }

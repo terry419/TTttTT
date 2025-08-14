@@ -1,47 +1,33 @@
-/// <summary>
-/// 카드의 타입을 정의합니다.
-/// </summary>
 public enum CardType
 {
-    Physical, // 물리
-    Magical   // 마법
+    Physical, 
+    Magical
 }
 
-/// <summary>
-/// 카드의 희귀도를 정의합니다.
-/// </summary>
 public enum CardRarity
 {
-    Common,    // 일반
-    Rare,      // 희귀
-    Epic,      // 영웅
-    Legendary  // 전설
+    Common,
+    Rare,
+    Epic,
+    Legendary
 }
 
-/// <summary>
-/// 카드가 발동되는 조건을 정의합니다.
-/// project_plan.md에 명시된 TriggerType 열거형입니다.
-/// </summary>
 public enum TriggerType
 {
-    Interval,    // 주기적 발동 (예: 10초마다)
-    OnHit,       // 적중 시 발동
-    OnCrit,      // 치명타 시 발동
-    OnSkillUse,  // 스킬 사용 시 발동
-    OnLowHealth  // 체력이 낮을 때 발동 (project_plan.md 및 CardDataSO.cs 주석 참조)
+    Interval,
+    OnHit,
+    OnCrit,
+    OnSkillUse,
+    OnLowHealth
 }
 
-/// <summary>
-/// 카드의 특수 효과 타입을 정의합니다.
-/// </summary>
 public enum CardEffectType
 {
-    None,       // 특수 효과 없음
-    SplitShot,  // 분열샷 (다중 공격)
+    SingleShot, // 기본 단일 발사
+    SplitShot,  // 분열샷
     Wave,       // 파동
     Lightning,  // 번개
-    Spiral,     // 나선형 발사
-    // TODO: project_plan.md에 언급된 다른 특수 효과들 추가 (예: 독성, 과유불급 등)
+    Spiral      // 나선형 발사
 }
 
 public enum StatType
@@ -51,17 +37,14 @@ public enum StatType
     MoveSpeed,
     Health,
     CritMultiplier,
-    CritRate // ✨ [4번 오류 해결] 누락된 CritRate 추가
+    CritRate
 }
 
-/// <summary>
-/// 공격의 조준 방식을 정의합니다.
-/// </summary>
 public enum TargetingType
 {
-    Forward,         // 플레이어 정면
-    Nearest,         // 가장 가까운 적
-    HighestHealth,   // 체력이 가장 높은 적
-    LowestHealth,    // 체력이 가장 낮은 적
-    Random           // 무작위 적
+    Forward,
+    Nearest,
+    HighestHealth,
+    LowestHealth,
+    Random
 }
