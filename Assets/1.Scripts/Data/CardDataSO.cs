@@ -40,14 +40,11 @@ public class CardDataSO : ScriptableObject
     public TriggerType triggerType;  // 카드가 발동되는 조건 (IV. 카드 시스템의 TriggerType 열거형 참조)
     public TargetingType targetingType;
 
-    /*
-    TriggerType 열거형 정의:
-    Interval    = 0, // 주기적 발동 (예: 10초마다)
-    OnHit       = 1, // 적중 시 발동
-    OnCrit      = 2, // 치명타 시 발동
-    OnSkillUse  = 3, // 스킬 사용 시 발동
-    OnLowHealth = 4  // 체력이 낮을 때 발동 (예시)
-    */
+
+    [Header("발사체 설정")]
+    [Tooltip("이 카드가 발사할 총알 프리팹을 직접 연결하세요.")]
+    public GameObject bulletPrefab; // [수정] string에서 다시 GameObject로 변경
+
 
     [Header("기획 미정 필드")]
     // 보상으로 카드가 등장할 때의 가중치입니다.

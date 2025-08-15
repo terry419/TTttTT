@@ -10,9 +10,6 @@ public class PlayerController : MonoBehaviour
     private CharacterStats stats;
     private CardManager cardManager;
     private Vector2 moveInput;
-
-    [Header("총알 발사")]
-    public GameObject bulletPrefab;
     public Transform firePoint;
 
     private const string AutoAttackMethodName = "AutoAttack";

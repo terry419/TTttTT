@@ -1,4 +1,5 @@
-// --- 파일명: MonsterSpawner.cs ---
+// --- 파일명: MonsterSpawner.cs (오류 수정) ---
+// 경로: Assets/1.Scripts/Gameplay/MonsterSpawner.cs
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
@@ -12,20 +13,10 @@ public class MonsterSpawner : MonoBehaviour
 
     private Coroutine spawnCoroutine;
 
-    public void SpawnBurstAt(string monsterName, int count, Vector3 centerPosition)
-    {
-        Debug.Log($"[MonsterSpawner] 이벤트 발생! {centerPosition}에 {monsterName} {count}마리 즉시 소환.");
-        for (int i = 0; i < count; i++)
-        {
-            SpawnMonster(monsterName, centerPosition);
-        }
-    }
-
     public void StartSpawning(List<Wave> waves)
     {
         if (spawnCoroutine != null) StopCoroutine(spawnCoroutine);
         spawnCoroutine = StartCoroutine(SpawnRoutine(waves));
-        Debug.Log("몬스터 스폰을 시작합니다.");
     }
 
     public void StopSpawning()
@@ -37,47 +28,55 @@ public class MonsterSpawner : MonoBehaviour
         }
     }
 
-    // [수정] 이 함수 전체를 아래 내용으로 교체해 줘.
     private IEnumerator SpawnRoutine(List<Wave> waves)
     {
-        yield return new WaitForSeconds(1f); // 라운드 시작 후 최초 대기
+        yield return new WaitForSeconds(1f);
 
         foreach (var wave in waves)
         {
+            if (wave.monsterData == null)
+            {
+                Debug.LogWarning("Wave에 몬스터 데이터가 설정되지 않아 해당 웨이브를 건너뜁니다.");
+                continue;
+            }
+
             switch (wave.spawnType)
             {
                 case SpawnType.Spread:
-                    // Spread 타입은 스폰이 끝난 후 딜레이
                     float spawnInterval = (wave.count > 1 && wave.duration > 0) ? wave.duration / wave.count : 0.5f;
                     for (int i = 0; i < wave.count; i++)
                     {
-                        SpawnMonster(wave.monsterName, playerTransform.position);
+                        SpawnMonster(wave.monsterData, playerTransform.position);
                         yield return new WaitForSeconds(spawnInterval);
                     }
                     yield return new WaitForSeconds(wave.delayAfterWave);
                     break;
 
                 case SpawnType.Burst:
-                    // Burst 타입은 딜레이 후 한 번에 스폰
-                    yield return new WaitForSeconds(wave.delayAfterWave); // 먼저 딜레이만큼 기다림!
-
-                    Debug.Log($"[MonsterSpawner] 버스트 스폰! {wave.monsterName} {wave.count}마리 즉시 소환.");
+                    yield return new WaitForSeconds(wave.delayAfterWave);
                     for (int i = 0; i < wave.count; i++)
                     {
-                        SpawnMonster(wave.monsterName, playerTransform.position);
+                        SpawnMonster(wave.monsterData, playerTransform.position);
                     }
                     break;
             }
         }
-        Debug.Log("모든 웨이브가 완료되었습니다.");
     }
 
-    private void SpawnMonster(string monsterName, Vector3 center)
+    private void SpawnMonster(MonsterDataSO monsterData, Vector3 center)
     {
-        GameObject monsterPrefab = DataManager.Instance.GetMonsterPrefab(monsterName);
+        if (monsterData == null)
+        {
+            Debug.LogWarning("[MonsterSpawner] 스폰 실패! 전달된 MonsterDataSO가 null입니다.");
+            return;
+        }
+
+        // [수정] monsterData.prefabName 대신 monsterData.prefab을 직접 사용합니다.
+        GameObject monsterPrefab = monsterData.prefab;
+
         if (monsterPrefab == null)
         {
-            Debug.LogWarning($"프리팹 DB에서 '{monsterName}'을 찾을 수 없습니다.");
+            Debug.LogError($"[MonsterSpawner] 스폰 실패! '{monsterData.monsterName}' 데이터에 프리팹이 연결되지 않았습니다.");
             return;
         }
 
@@ -85,10 +84,14 @@ public class MonsterSpawner : MonoBehaviour
         float randomDistance = Random.Range(minSpawnRadius, maxSpawnRadius);
         Vector3 spawnPosition = center + (Vector3)(randomDirection * randomDistance);
 
-        GameObject monster = PoolManager.Instance.Get(monsterPrefab);
-        monster.transform.position = spawnPosition;
+        GameObject monsterInstance = PoolManager.Instance.Get(monsterPrefab);
+        monsterInstance.transform.position = spawnPosition;
 
-        MonsterController mc = monster.GetComponent<MonsterController>();
-        if (mc != null) mc.SetInvulnerable(0.3f);
+        MonsterController mc = monsterInstance.GetComponent<MonsterController>();
+        if (mc != null)
+        {
+            mc.Initialize(monsterData);
+            mc.SetInvulnerable(0.3f);
+        }
     }
 }

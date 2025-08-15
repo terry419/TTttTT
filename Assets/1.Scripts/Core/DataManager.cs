@@ -1,5 +1,5 @@
-// --- 파일명: DataManager.cs ---
-
+// --- 파일명: DataManager.cs (역할 축소) ---
+// 경로: Assets/1.Scripts/Core/DataManager.cs
 using UnityEngine;
 using System.Collections.Generic;
 
@@ -7,18 +7,16 @@ public class DataManager : MonoBehaviour
 {
     public static DataManager Instance { get; private set; }
 
-    [Header("데이터베이스")]
-    [SerializeField] private PrefabDB prefabDB;
+    // [삭제] 프리팹 관련 필드 모두 삭제
 
-    private readonly Dictionary<string, GameObject> monsterPrefabDict = new Dictionary<string, GameObject>();
-    private readonly Dictionary<string, GameObject> bulletPrefabDict = new Dictionary<string, GameObject>();
-    private readonly Dictionary<string, GameObject> vfxPrefabDict = new Dictionary<string, GameObject>();
     private readonly Dictionary<string, CardDataSO> cardDataDict = new Dictionary<string, CardDataSO>();
     private readonly Dictionary<string, ArtifactDataSO> artifactDataDict = new Dictionary<string, ArtifactDataSO>();
     private readonly Dictionary<string, CharacterDataSO> characterDict = new Dictionary<string, CharacterDataSO>();
+    private readonly Dictionary<string, MonsterDataSO> monsterDataDict = new Dictionary<string, MonsterDataSO>();
 
     void Awake()
     {
+        Debug.Log($"[ 진단 ] DataManager.Awake() 호출됨. (Frame: {Time.frameCount})");
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
@@ -26,18 +24,13 @@ public class DataManager : MonoBehaviour
         }
         Instance = this;
         DontDestroyOnLoad(gameObject);
-        InitializeData();
+
+        InitializeDataSOs();
     }
 
-    private void InitializeData()
+    private void InitializeDataSOs()
     {
-        if (prefabDB != null)
-        {
-            LoadPrefabs(prefabDB.monsterPrefabs, monsterPrefabDict);
-            LoadPrefabs(prefabDB.bulletPrefabs, bulletPrefabDict);
-            LoadPrefabs(prefabDB.vfxPrefabs, vfxPrefabDict);
-        }
-
+        // 데이터 SO 로드는 Resources 폴더를 그대로 사용합니다.
         CardDataSO[] allCards = Resources.LoadAll<CardDataSO>("CardData");
         foreach (var card in allCards) { if (!cardDataDict.ContainsKey(card.cardID)) cardDataDict.Add(card.cardID, card); }
 
@@ -46,24 +39,19 @@ public class DataManager : MonoBehaviour
 
         CharacterDataSO[] allCharacters = Resources.LoadAll<CharacterDataSO>("CharacterData");
         foreach (var character in allCharacters) { if (!characterDict.ContainsKey(character.characterId)) characterDict.Add(character.characterId, character); }
+
+        MonsterDataSO[] allMonsters = Resources.LoadAll<MonsterDataSO>("MonsterData");
+        foreach (var monster in allMonsters) { if (!monsterDataDict.ContainsKey(monster.monsterID)) monsterDataDict.Add(monster.monsterID, monster); }
+
+        Debug.Log("[DataManager] 모든 ScriptableObject 데이터 로드 완료.");
     }
 
-    private void LoadPrefabs(List<GameObject> prefabList, Dictionary<string, GameObject> targetDict)
-    {
-        if (prefabList == null) return;
-        foreach (var prefab in prefabList)
-        {
-            if (prefab != null && !targetDict.ContainsKey(prefab.name)) targetDict.Add(prefab.name, prefab);
-        }
-    }
-
-    public GameObject GetMonsterPrefab(string name) => GetPrefab(name, monsterPrefabDict);
-    public GameObject GetBulletPrefab(string name) => GetPrefab(name, bulletPrefabDict);
-    public GameObject GetVfxPrefab(string name) => GetPrefab(name, vfxPrefabDict);
+    // [삭제] Get...Prefab 메서드들 삭제
 
     public CardDataSO GetCard(string id) => GetData(id, cardDataDict);
     public ArtifactDataSO GetArtifact(string id) => GetData(id, artifactDataDict);
     public CharacterDataSO GetCharacter(string id) => GetData(id, characterDict);
+    public MonsterDataSO GetMonsterData(string id) => GetData(id, monsterDataDict);
 
     private T GetData<T>(string id, Dictionary<string, T> sourceDict) where T : class
     {
@@ -71,14 +59,6 @@ public class DataManager : MonoBehaviour
         return data;
     }
 
-    private GameObject GetPrefab(string name, Dictionary<string, GameObject> sourceDict)
-    {
-        sourceDict.TryGetValue(name, out GameObject prefab);
-        return prefab;
-    }
-
     public List<CardDataSO> GetAllCards() => new List<CardDataSO>(cardDataDict.Values);
-
-    // [추가] CodexController에서 호출할 GetAllArtifacts 메서드를 추가했어.
     public List<ArtifactDataSO> GetAllArtifacts() => new List<ArtifactDataSO>(artifactDataDict.Values);
 }

@@ -6,7 +6,7 @@ public class InputManager : MonoBehaviour
 {
     public static InputManager Instance { get; private set; }
 
-    private const string MANAGERS_PREFAB_PATH = "Managers/_Managers";
+    private const string MANAGERS_PREFAB_PATH = "_Managers";
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void InitializeManagers()

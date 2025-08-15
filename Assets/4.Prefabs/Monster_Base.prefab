@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 497793090048292029}
   m_Layer: 0
   m_Name: Monster_Base
-  m_TagString: Untagged
+  m_TagString: Monster
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -126,9 +126,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 958424369c453c9439c8936ded9ef415, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHealth: 10
   moveSpeed: 3
   contactDamage: 10
+  maxHealth: 10
   currentHealth: 0
 --- !u!58 &497793090048292029
 CircleCollider2D:

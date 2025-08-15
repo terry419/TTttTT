@@ -1,9 +1,7 @@
-// --- 파일명: PoolManager.cs ---
-
+// --- 파일명: PoolManager.cs (최종 수정본) ---
+// 경로: Assets/1.Scripts/Core/PoolManager.cs
 using System.Collections.Generic;
 using UnityEngine;
-// [수정] 불필요한 using 구문 제거
-// using static UnityEngine.RuleTile.TilingRuleOutput; 
 
 public class PoolManager : MonoBehaviour
 {
@@ -13,6 +11,8 @@ public class PoolManager : MonoBehaviour
 
     void Awake()
     {
+        Debug.Log($"[ 진단 1단계 ] PoolManager.Awake() 호출됨. (Frame: {Time.frameCount})");
+
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
@@ -22,8 +22,30 @@ public class PoolManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
+    /// <summary>
+    /// DataManager로부터 Preload 요청을 받아 처리합니다.
+    /// </summary>
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     public void Preload(GameObject prefab, int count)
     {
+        Debug.Log($"[ 진단 3단계-Preload ] 프리팹 '{prefab.name}' (ID: {prefab.GetInstanceID()}) {count}개 미리 생성 요청됨.");
+
         if (prefab == null || count <= 0) return;
 
         if (!poolDictionary.ContainsKey(prefab))
@@ -45,28 +67,23 @@ public class PoolManager : MonoBehaviour
     public GameObject Get(GameObject prefab)
     {
         if (prefab == null) return null;
+        Debug.Log($"[ 진단 3단계-Get ] 프리팹 '{prefab.name}' (ID: {prefab.GetInstanceID()}) 요청됨.");
 
-        if (!poolDictionary.ContainsKey(prefab))
-        {
-            poolDictionary[prefab] = new Queue<GameObject>();
-        }
+        if (prefab == null) return null;
 
-        Queue<GameObject> objectQueue = poolDictionary[prefab];
-
-        if (objectQueue.Count > 0)
+        if (!poolDictionary.ContainsKey(prefab) || poolDictionary[prefab].Count == 0)
         {
-            GameObject obj = objectQueue.Dequeue();
-            obj.SetActive(true);
-            return obj;
-        }
-        else
-        {
+            // 풀이 비어있으면 새로 생성 (경고 메시지는 유지)
+            Debug.LogWarning($"[PoolManager] {prefab.name} 풀이 비어있어 새로 생성합니다. Preload 수량을 늘리는 것을 고려해보세요.");
             GameObject newObj = Instantiate(prefab);
             PooledObjectInfo pooledInfo = newObj.AddComponent<PooledObjectInfo>();
             pooledInfo.Initialize(prefab);
-            Debug.LogWarning($"[PoolManager] {prefab.name} 풀이 비어있어 새로 생성합니다. Preload 수량을 늘리는 것을 고려해보세요.");
             return newObj;
         }
+
+        GameObject obj = poolDictionary[prefab].Dequeue();
+        obj.SetActive(true);
+        return obj;
     }
 
     public void Release(GameObject instance)
@@ -76,7 +93,6 @@ public class PoolManager : MonoBehaviour
         PooledObjectInfo pooledInfo = instance.GetComponent<PooledObjectInfo>();
         if (pooledInfo == null || pooledInfo.originalPrefab == null)
         {
-            Debug.LogError($"[PoolManager] {instance.name}에 PooledObjectInfo가 없거나 originalPrefab이 설정되지 않았습니다. 풀에 반환할 수 없습니다.");
             Destroy(instance);
             return;
         }

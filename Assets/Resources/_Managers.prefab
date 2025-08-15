@@ -88,16 +88,12 @@ GameObject:
   - component: {fileID: 6115583072221150736}
   - component: {fileID: 3639261096932186673}
   - component: {fileID: 4369853337183567183}
-  - component: {fileID: 1431305431343255532}
-  - component: {fileID: 4773883701265001260}
   - component: {fileID: 2300824433032312223}
   - component: {fileID: 7927112225930178678}
   - component: {fileID: 1145318189836198525}
   - component: {fileID: 3140333684302072605}
   - component: {fileID: 3003528810487569352}
   - component: {fileID: -1117867363728150168}
-  - component: {fileID: 8588194878378101747}
-  - component: {fileID: 8913509155256913166}
   m_Layer: 0
   m_Name: _Managers
   m_TagString: Untagged
@@ -145,7 +141,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 48b8baa252973f841afba933aa1fb9f8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  prefabDB: {fileID: 11400000, guid: aff99e7f96d14814981a2167e68846d1, type: 2}
+  allMonsterPrefabs:
+  - {fileID: 4357389609628293305, guid: 2db2f4d47a86b4e4f9ee307cc57a0cfb, type: 3}
+  allBulletPrefabs:
+  - {fileID: 4131301929793885116, guid: 99ab044e7ccac4c48b76072b91e119b2, type: 3}
+  allVfxPrefabs:
+  - {fileID: 3276330006535599853, guid: d449cd9647b76924ca8c8df2ba7b338e, type: 3}
 --- !u!114 &3639261096932186673
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -171,30 +172,6 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 73d85fc1ba725784ca0c2ed1fb596ffc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &1431305431343255532
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4942033990092616327}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c73f41763f7f23c4391628bb2b0dc2ea, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &4773883701265001260
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4942033990092616327}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b0c8d3d3fc2fcd041a419540f1769f15, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!114 &2300824433032312223
@@ -357,37 +334,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   globalCursorImage: {fileID: 7372302076157037963}
---- !u!114 &8588194878378101747
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4942033990092616327}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 03a3a5892437d8449a01bae6541ef64a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ownedCards: []
-  equippedCards: []
-  maxOwnedSlots: 20
-  maxEquipSlots: 5
---- !u!114 &8913509155256913166
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4942033990092616327}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 48efe9aa4c0d20943915814be0f0e6c6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  bulletPrefab: {fileID: 0}
-  waveEffectPrefab: {fileID: 0}
-  spiralEffectPrefab: {fileID: 0}
 --- !u!1 &5861229137604210786
 GameObject:
   m_ObjectHideFlags: 0

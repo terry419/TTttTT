@@ -1,24 +1,31 @@
+// --- 파일명: RoundManager.cs (기능 복구 및 최종 수정) ---
+// 경로: Assets/1.Scripts/Gameplay/RoundManager.cs
 using UnityEngine;
-using System.Collections;
 using System.Collections.Generic;
 
 public class RoundManager : MonoBehaviour
 {
     public static RoundManager Instance { get; private set; }
 
-    [Header("이번 라운드 설계도")]
-    [SerializeField] private RoundDataSO currentRoundData;
+    // [복구] Inspector에서 직접 Preload할 프리팹을 관리하기 위한 내부 클래스와 리스트
+    [System.Serializable]
+    public class PreloadItem
+    {
+        public GameObject prefab;
+        public int count;
+    }
+
+    [Header("사전 로드 설정 (수동)")]
+    [Tooltip("이 라운드 시작 시 미리 생성할 몬스터 프리팹과 수량을 직접 지정합니다.")]
+    [SerializeField] private List<PreloadItem> monsterPreloads;
+    [Tooltip("이 라운드 시작 시 미리 생성할 총알, VFX 프리팹과 수량을 직접 지정합니다.")]
+    [SerializeField] private List<PreloadItem> effectPreloads;
 
     [Header("참조")]
     [SerializeField] private MonsterSpawner monsterSpawner;
     [SerializeField] private HUDController hudController;
 
-    [Header("Preload 설정")]
-    [SerializeField] private GameObject monsterPrefabToPreload;
-    [SerializeField] private int monsterPreloadAmount = 20;
-    [SerializeField] private GameObject bulletPrefabToPreload; // <--- 추가
-    [SerializeField] private int bulletPreloadAmount = 50;
-
+    private RoundDataSO currentRoundData;
     private float remainingTime;
     private int killCount;
     private bool isRoundActive = false;
@@ -26,51 +33,65 @@ public class RoundManager : MonoBehaviour
     void Awake()
     {
         Instance = this;
-
-        if (PoolManager.Instance != null)
-        {
-            // 몬스터 준비 운동
-            if (monsterPrefabToPreload != null)
-            {
-                PoolManager.Instance.Preload(monsterPrefabToPreload, monsterPreloadAmount);
-            }
-            // [추가] 총알 준비 운동
-            if (bulletPrefabToPreload != null)
-            {
-                PoolManager.Instance.Preload(bulletPrefabToPreload, bulletPreloadAmount);
-            }
-        }
     }
 
     void Start()
     {
-        // 만약 게임이 시작됐는데 라운드가 아직 활성화되지 않았다면 (씬 직접 실행 등)
-        // RoundManager가 직접 라운드를 시작합니다.
+        // Start 단계에서 안전하게 다른 Manager들을 호출합니다.
+        DoPreload();
+
         if (!isRoundActive)
         {
             StartRound();
         }
     }
 
-    void Update()
+    /// <summary>
+    /// Inspector에 설정된 목록을 기반으로 PoolManager에 Preload를 요청합니다.
+    /// </summary>
+    private void DoPreload()
     {
-        if (!isRoundActive) return;
-
-        remainingTime -= Time.deltaTime;
-        if (hudController != null)
+        if (PoolManager.Instance == null)
         {
-            hudController.UpdateTimer(remainingTime);
+            Debug.LogError("[RoundManager] PoolManager를 찾을 수 없어 Preload를 진행할 수 없습니다. Script Execution Order를 확인하세요.");
+            return;
         }
 
-        if (remainingTime <= 0)
+        // 몬스터 Preload
+        foreach (var item in monsterPreloads)
         {
-            EndRound(false); // 시간 만료로 클리어 실패
+            if (item.prefab != null && item.count > 0)
+            {
+                PoolManager.Instance.Preload(item.prefab, item.count);
+            }
+        }
+
+        // 총알 및 이펙트 Preload
+        foreach (var item in effectPreloads)
+        {
+            if (item.prefab != null && item.count > 0)
+            {
+                PoolManager.Instance.Preload(item.prefab, item.count);
+            }
         }
     }
 
     public void StartRound()
     {
-        if (isRoundActive || currentRoundData == null) return;
+        if (CampaignManager.Instance != null)
+        {
+            currentRoundData = CampaignManager.Instance.GetNextRoundData();
+        }
+
+        if (isRoundActive || currentRoundData == null)
+        {
+            if (currentRoundData == null)
+            {
+                Debug.LogWarning("시작할 라운드 데이터가 없습니다. 캠페인이 끝났거나 설정되지 않았습니다.");
+                GameManager.Instance.ChangeState(GameManager.GameState.MainMenu);
+            }
+            return;
+        }
 
         Debug.Log("새로운 라운드를 시작합니다.");
         remainingTime = currentRoundData.roundDuration;
@@ -102,7 +123,7 @@ public class RoundManager : MonoBehaviour
 
         if (killCount >= currentRoundData.killGoal)
         {
-            EndRound(true); // 킬 수 달성으로 클리어 성공
+            EndRound(true);
         }
     }
 
@@ -125,7 +146,7 @@ public class RoundManager : MonoBehaviour
         }
         else
         {
-            GameManager.Instance.ChangeState(GameManager.GameState.MainMenu); // 임시
+            GameManager.Instance.ChangeState(GameManager.GameState.MainMenu);
         }
     }
 
@@ -143,6 +164,8 @@ public class RoundManager : MonoBehaviour
 
         for (int i = 0; i < 3; i++)
         {
+            if (selectableCards.Count == 0) break;
+
             float totalWeight = 0f;
             foreach (var card in selectableCards)
             {
@@ -174,5 +197,21 @@ public class RoundManager : MonoBehaviour
             }
         }
         RewardManager.Instance.EnqueueReward(rewardChoices);
+    }
+
+    void Update()
+    {
+        if (!isRoundActive) return;
+
+        remainingTime -= Time.deltaTime;
+        if (hudController != null)
+        {
+            hudController.UpdateTimer(remainingTime);
+        }
+
+        if (remainingTime <= 0)
+        {
+            EndRound(false);
+        }
     }
 }
