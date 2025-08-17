@@ -1,0 +1,130 @@
+// --- 파일 위치: Assets/1.Scripts/Core/EffectExecutor.cs ---
+// --- 참고: 이 파일은 기존 EffectExecutor.cs를 대체해야 합니다. ---
+
+using UnityEngine;
+using System.Collections;
+using System.Collections.Generic; // Dictionary 사용을 위해 추가
+using System;
+
+/// <summary>
+/// 카드의 시각/논리적 효과를 실행하는 중앙 클래스입니다. (리팩토링 버전)
+/// 전략 패턴을 사용하여 각 CardEffectType에 맞는 핸들러를 찾아 실행을 위임합니다.
+/// </summary>
+public class EffectExecutor : MonoBehaviour
+{
+    public static EffectExecutor Instance { get; private set; }
+
+    // 핸들러들이 참조할 수 있도록 public으로 변경하거나 프로퍼티로 노출합니다.
+    public PoolManager poolManager { get; private set; }
+    public PlayerController playerController { get; private set; }
+    public CharacterStats playerStats { get; private set; }
+
+    // 각 카드 효과 타입에 맞는 핸들러를 저장하는 딕셔너리
+    private Dictionary<CardEffectType, ICardEffectHandler> effectHandlers;
+
+    void Awake()
+    {
+        Instance = this;
+        InitializeHandlers(); // 핸들러 딕셔너리 초기화
+    }
+
+    void Start()
+    {
+        // 다른 매니저 인스턴스를 참조합니다.
+        poolManager = PoolManager.Instance;
+        playerController = PlayerController.Instance;
+        if (playerController != null)
+        {
+            playerStats = playerController.GetComponent<CharacterStats>();
+        }
+    }
+
+    /// <summary>
+    /// 카드 효과 타입과 핸들러 클래스를 매핑하여 딕셔너리를 초기화합니다.
+    /// 새로운 효과를 추가할 때 이 곳에 한 줄만 추가하면 됩니다.
+    /// </summary>
+    private void InitializeHandlers()
+    {
+        effectHandlers = new Dictionary<CardEffectType, ICardEffectHandler>
+        {
+            { CardEffectType.SingleShot, new SingleShotHandler() },
+            { CardEffectType.SplitShot, new SplitShotHandler() },
+            { CardEffectType.Wave, new WaveHandler() }
+            // 예: { CardEffectType.Lightning, new LightningHandler() }
+        };
+    }
+
+    /// <summary>
+    /// 카드의 효과를 실행합니다. (플레이어 자신에게 발동)
+    /// </summary>
+    public void Execute(CardDataSO cardData, float actualDamageDealt = 0f)
+    {
+        if (cardData == null || playerController == null || playerStats == null)
+        {
+            Debug.LogError("[EffectExecutor] 필수 컴포넌트(CardData, PlayerController, PlayerStats) 중 하나가 null입니다!");
+            return;
+        }
+
+        // OnHit 타입의 흡혈 효과 등은 플레이어 위치에서 즉시 발동되어야 하므로 여기서 처리합니다.
+        if (cardData.triggerType == TriggerType.OnHit && cardData.lifestealPercentage > 0 && actualDamageDealt > 0)
+        {
+            playerController.Heal(actualDamageDealt * cardData.lifestealPercentage);
+        }
+
+        // 플레이어의 발사 지점을 기준으로 효과를 실행합니다.
+        Execute(cardData, playerController.firePoint);
+    }
+
+    /// <summary>
+    /// 특정 위치에서 카드의 효과를 실행합니다. (몬스터 위치에서 2차 효과 발동 등)
+    /// </summary>
+    public void Execute(CardDataSO cardData, Transform spawnPoint)
+    {
+        if (cardData == null) return;
+
+        // 카드 데이터의 effectType에 맞는 핸들러를 딕셔너리에서 찾습니다.
+        if (effectHandlers.TryGetValue(cardData.effectType, out ICardEffectHandler handler))
+        {
+            // 찾은 핸들러에게 실행을 위임합니다.
+            handler.Execute(cardData, this, spawnPoint);
+        }
+        else
+        {
+            Debug.LogError($"[EffectExecutor] '{cardData.effectType}' 타입에 대한 핸들러가 등록되지 않았습니다!");
+        }
+    }
+
+    // --- 핸들러들이 공통으로 사용하는 헬퍼 메서드 ---
+
+    /// <summary>
+    /// 플레이어의 최종 능력치와 카드 배율을 종합하여 총 데미지를 계산합니다.
+    /// </summary>
+    public float CalculateTotalDamage(CardDataSO cardData)
+    {
+        float totalRatio = 1
+                        + playerStats.cardDamageRatio
+                        + playerStats.artifactDamageRatio
+                        + playerStats.boosterDamageRatio
+                        + cardData.damageMultiplier;
+
+        return playerStats.finalDamage * totalRatio;
+    }
+
+    /// <summary>
+    /// 타겟팅 타입에 따라 목표를 찾아 발사 각도를 계산합니다.
+    /// </summary>
+    public float GetTargetingAngle(TargetingType targetingType)
+    {
+        Transform target = TargetingSystem.FindTarget(targetingType, playerController.transform);
+
+        if (target != null)
+        {
+            Vector2 directionToTarget = (target.position - playerController.firePoint.position).normalized;
+            return Mathf.Atan2(directionToTarget.y, directionToTarget.x) * Mathf.Rad2Deg;
+        }
+        else
+        {
+            return playerController.firePoint.eulerAngles.z;
+        }
+    }
+}

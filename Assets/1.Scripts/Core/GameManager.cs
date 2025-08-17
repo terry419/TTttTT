@@ -37,6 +37,11 @@ public class GameManager : MonoBehaviour
         Debug.Log($"[GameManager] 상태 변경: {CurrentState} -> {newState}");
         CurrentState = newState;
 
+        if (newState == CurrentState && CurrentState != GameState.MainMenu) return;
+
+        Debug.Log($"[GameManager] 상태 변경: {CurrentState} -> {newState}");
+        CurrentState = newState;
+
         string sceneName = "";
         switch (newState)
         {

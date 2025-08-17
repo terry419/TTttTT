@@ -1,5 +1,7 @@
 using UnityEngine;
 using UnityEngine.Events;
+using System.Collections.Generic; // List 사용을 위해 추가
+
 
 [RequireComponent(typeof(PlayerHealthBar))]
 public class CharacterStats : MonoBehaviour
@@ -50,11 +52,14 @@ public class CharacterStats : MonoBehaviour
 
     [Header("현재 상태 (런타임)")]
     public float currentHealth;
+    public bool isInvulnerable = false; // 디버그용 무적 모드 플래그
 
     [Header("이벤트")]
     public UnityEvent OnFinalStatsCalculated = new UnityEvent();
 
     private PlayerHealthBar playerHealthBar;
+
+    public float cardSelectionInterval = 10f; // 카드 룰렛 주기 (초)
 
     void Awake()
     {
@@ -63,6 +68,9 @@ public class CharacterStats : MonoBehaviour
     }
     public void TakeDamage(float damage)
     {
+        // 무적 상태일 경우 데미지를 받지 않음
+        if (isInvulnerable) return;
+
         currentHealth -= damage;
         playerHealthBar.UpdateHealth(currentHealth, finalHealth);
 
@@ -71,6 +79,15 @@ public class CharacterStats : MonoBehaviour
         {
             currentHealth = 0;
             Die();
+        }
+    }
+
+    void OnDestroy()
+    {
+        // DebugManager가 살아있을 경우에만 등록 해제 호출
+        if (DebugManager.Instance != null)
+        {
+            DebugManager.Instance.UnregisterPlayer();
         }
     }
 
@@ -87,6 +104,67 @@ public class CharacterStats : MonoBehaviour
         currentHealth += amount;
         if (currentHealth > finalHealth) currentHealth = finalHealth;
         playerHealthBar.UpdateHealth(currentHealth, finalHealth);
+    }
+
+    // --- 스탯 적용 로직 (PlayerInitializer로부터 이전됨) ---
+
+    /// <summary>
+    /// 영구 스탯 데이터(유전자 증폭제로 강화된)를 현재 능력치 비율에 적용합니다.
+    /// PlayerInitializer가 데이터를 가져오면, 이 메서드를 호출하여 실제 스탯에 반영합니다.
+    /// </summary>
+    public void ApplyPermanentStats(CharacterPermanentStats permanentStats)
+    {
+
+        if (permanentStats == null) return;
+        boosterDamageRatio += permanentStats.investedRatios.GetValueOrDefault(StatType.Attack, 0f);
+        boosterAttackSpeedRatio += permanentStats.investedRatios.GetValueOrDefault(StatType.AttackSpeed, 0f);
+        boosterMoveSpeedRatio += permanentStats.investedRatios.GetValueOrDefault(StatType.MoveSpeed, 0f);
+        boosterHealthRatio += permanentStats.investedRatios.GetValueOrDefault(StatType.Health, 0f);
+        boosterCritDamageRatio += permanentStats.investedRatios.GetValueOrDefault(StatType.CritMultiplier, 0f);
+    }
+
+    /// <summary>
+    /// 포인트 분배 씬에서 할당된 포인트를 능력치 비율에 적용합니다.
+    /// PlayerInitializer가 데이터를 가져오면, 이 메서드를 호출하여 실제 스탯에 반영합니다.
+    /// </summary>
+    public void ApplyAllocatedPoints(int points, CharacterPermanentStats permStats)
+    {
+
+        if (points <= 0 || permStats == null)
+        {
+            Debug.Log("포인트가 0 이하이거나 permanentStats가 없어 분배를 시작하지 않음.");
+            return;
+        }
+
+        List<StatType> availableStats = permStats.GetUnlockedStats();
+
+        Debug.Log($"[최종 확인] 분배 가능한 능력치 개수(availableStats.Count): {availableStats.Count}");
+
+
+        if (availableStats.Count == 0) return;
+
+        for (int i = 0; i < points; i++)
+        {
+            StatType targetStat = availableStats[Random.Range(0, availableStats.Count)];
+            float weight = GetWeightForStat(targetStat);
+
+            switch (targetStat)
+            {
+                case StatType.Attack: boosterDamageRatio += weight; break;
+                case StatType.AttackSpeed: boosterAttackSpeedRatio += weight; break;
+                case StatType.MoveSpeed: boosterMoveSpeedRatio += weight; break;
+                case StatType.Health: boosterHealthRatio += weight; break;
+                case StatType.CritMultiplier: boosterCritDamageRatio += weight; break;
+            }
+        }
+    }
+
+    /// <summary>
+    /// 스탯 타입에 따른 가중치를 반환합니다. (ApplyAllocatedPoints에서 사용)
+    /// </summary>
+    private float GetWeightForStat(StatType stat)
+    {
+        return stat == StatType.Health ? 0.02f : 0.01f;
     }
 
     // ... (나머지 함수들은 그대로) ...
@@ -114,10 +192,16 @@ public class CharacterStats : MonoBehaviour
         if (finalDamage < 0 || finalAttackSpeed < 0 || finalMoveSpeed < 0 ||
             finalHealth < 0 || finalCritRate < 0 || finalCritDamage < 0)
         {
+            if (finalAttackSpeed <= 0) finalAttackSpeed = 0.1f;
+            if (finalMoveSpeed < 0) finalMoveSpeed = 0;
+            if (finalDamage < 0) finalDamage = 0;
+            if (finalCritRate < 0) finalCritRate = 0;
+            if (finalCritDamage < 0) finalCritDamage = 0;
+            if (finalHealth < 1) finalHealth = 1;
+
             Debug.LogError($"[CharacterStats] 능력치 음수 오류! " +
                 $"Damage:{finalDamage}, AtkSpd:{finalAttackSpeed}, MoveSpd:{finalMoveSpeed}, " +
                 $"Health:{finalHealth}, CritRate:{finalCritRate}, CritDmg:{finalCritDamage}");
-            Invoke(nameof(QuitGame), 5f);
         }
     }
 

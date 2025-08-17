@@ -3631,6 +3631,7 @@ GameObject:
   - component: {fileID: 1100820508}
   - component: {fileID: 1100820507}
   - component: {fileID: 1100820506}
+  - component: {fileID: 1100820513}
   m_Layer: 0
   m_Name: GameplaySystems
   m_TagString: Untagged
@@ -3693,6 +3694,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 03a3a5892437d8449a01bae6541ef64a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  activeCard: {fileID: 0}
   ownedCards: []
   equippedCards: []
   maxOwnedSlots: 20
@@ -3724,6 +3726,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6f32ccbfea84c364b81f456e6c59df70, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  monsterPreloads:
+  - prefab: {fileID: 4357389609628293305, guid: 2db2f4d47a86b4e4f9ee307cc57a0cfb, type: 3}
+    count: 100
+  effectPreloads:
+  - prefab: {fileID: 4131301929793885116, guid: 99ab044e7ccac4c48b76072b91e119b2, type: 3}
+    count: 1000
+  - prefab: {fileID: 3276330006535599853, guid: d449cd9647b76924ca8c8df2ba7b338e, type: 3}
+    count: 1000
+  - prefab: {fileID: 4131301929793885116, guid: 01e6dfde3dedee24b898219158d7a0e8, type: 3}
+    count: 1000
+  - prefab: {fileID: 4228891817467213148, guid: 2a043bfa240277e43b7834ad43063174, type: 3}
+    count: 100
   monsterSpawner: {fileID: 1623321398}
   hudController: {fileID: 1259565396}
 --- !u!4 &1100820512
@@ -3741,6 +3755,19 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1100820513
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1100820505}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f49481117666d6741ab1081ddbb446ef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  currentCampaign: {fileID: 11400000, guid: 14bf4bd693e5d8743b0fee4d42c9c28e, type: 2}
 --- !u!1 &1123794634
 GameObject:
   m_ObjectHideFlags: 0
@@ -4381,7 +4408,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   testStartingCards:
-  - {fileID: 11400000, guid: 5f380a217b523954792d473d97d7b2b6, type: 2}
+  - {fileID: 11400000, guid: cd01480f44aca2c41bbc61b9ce53ebbe, type: 2}
   - {fileID: 0}
   - {fileID: 0}
 --- !u!114 &1615835056
@@ -4437,6 +4464,7 @@ MonoBehaviour:
   OnFinalStatsCalculated:
     m_PersistentCalls:
       m_Calls: []
+  cardSelectionInterval: 10
 --- !u!114 &1615835057
 MonoBehaviour:
   m_ObjectHideFlags: 0

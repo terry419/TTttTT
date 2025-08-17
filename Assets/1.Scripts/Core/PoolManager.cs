@@ -11,8 +11,7 @@ public class PoolManager : MonoBehaviour
 
     void Awake()
     {
-        Debug.Log($"[ 진단 1단계 ] PoolManager.Awake() 호출됨. (Frame: {Time.frameCount})");
-
+        Debug.Log($"[ 진단 ] PoolManager.Awake() 호출됨. (Frame: {Time.frameCount})");
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
@@ -22,31 +21,15 @@ public class PoolManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
-    /// <summary>
-    /// DataManager로부터 Preload 요청을 받아 처리합니다.
-    /// </summary>
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     public void Preload(GameObject prefab, int count)
     {
-        Debug.Log($"[ 진단 3단계-Preload ] 프리팹 '{prefab.name}' (ID: {prefab.GetInstanceID()}) {count}개 미리 생성 요청됨.");
+        if (prefab == null || count <= 0)
+        {
+            Debug.LogWarning("[PoolManager] Preload 실패: 프리팹이 null이거나 수량이 0 이하입니다.");
+            return;
+        }
 
-        if (prefab == null || count <= 0) return;
+        Debug.Log($"[ 진단-Preload ] 프리팹 '{prefab.name}' (ID: {prefab.GetInstanceID()}) {count}개 미리 생성 요청됨.");
 
         if (!poolDictionary.ContainsKey(prefab))
         {
@@ -57,26 +40,34 @@ public class PoolManager : MonoBehaviour
         {
             GameObject obj = Instantiate(prefab, transform);
             obj.SetActive(false);
-            PooledObjectInfo pooledInfo = obj.AddComponent<PooledObjectInfo>();
+            // PooledObjectInfo가 이미 프리팹에 붙어있을 수 있으므로, 없으면 추가
+            if (!obj.TryGetComponent<PooledObjectInfo>(out var pooledInfo))
+            {
+                pooledInfo = obj.AddComponent<PooledObjectInfo>();
+            }
             pooledInfo.Initialize(prefab);
             poolDictionary[prefab].Enqueue(obj);
         }
-        Debug.Log($"[PoolManager] {prefab.name}을(를) {count}개 미리 생성했습니다.");
     }
 
     public GameObject Get(GameObject prefab)
     {
-        if (prefab == null) return null;
-        Debug.Log($"[ 진단 3단계-Get ] 프리팹 '{prefab.name}' (ID: {prefab.GetInstanceID()}) 요청됨.");
+        if (prefab == null)
+        {
+            Debug.LogError("[PoolManager] Get 실패: 요청한 프리팹이 null입니다.");
+            return null;
+        }
 
-        if (prefab == null) return null;
+        Debug.Log($"[ 진단-Get ] 프리팹 '{prefab.name}' (ID: {prefab.GetInstanceID()}) 요청됨.");
 
         if (!poolDictionary.ContainsKey(prefab) || poolDictionary[prefab].Count == 0)
         {
-            // 풀이 비어있으면 새로 생성 (경고 메시지는 유지)
-            Debug.LogWarning($"[PoolManager] {prefab.name} 풀이 비어있어 새로 생성합니다. Preload 수량을 늘리는 것을 고려해보세요.");
+            Debug.LogWarning($"[PoolManager] {prefab.name} 풀이 비어있어 새로 생성합니다. Preload가 정상적으로 작동했는지 확인해보세요.");
             GameObject newObj = Instantiate(prefab);
-            PooledObjectInfo pooledInfo = newObj.AddComponent<PooledObjectInfo>();
+            if (!newObj.TryGetComponent<PooledObjectInfo>(out var pooledInfo))
+            {
+                pooledInfo = newObj.AddComponent<PooledObjectInfo>();
+            }
             pooledInfo.Initialize(prefab);
             return newObj;
         }
@@ -93,6 +84,7 @@ public class PoolManager : MonoBehaviour
         PooledObjectInfo pooledInfo = instance.GetComponent<PooledObjectInfo>();
         if (pooledInfo == null || pooledInfo.originalPrefab == null)
         {
+            // 풀링된 오브젝트가 아닐 경우 그냥 파괴
             Destroy(instance);
             return;
         }

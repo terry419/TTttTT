@@ -37,11 +37,11 @@ public class PlayerController : MonoBehaviour
 
         if (stats != null)
         {
+
             stats.OnFinalStatsCalculated.AddListener(StartAutoAttackLoop);
         }
 
         StartAutoAttackLoop();
-        StartCardTriggerLoop();
     }
 
     void OnDestroy()
@@ -54,49 +54,47 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (stats == null) return;
-        rb.velocity = moveInput * stats.finalMoveSpeed;
+        if (stats == null)
+        {
+            return;
+        }
+        if (rb == null)
+        {
+            return;
+        }
+        Vector2 finalVelocity = moveInput * stats.finalMoveSpeed;
+        rb.velocity = finalVelocity;
     }
 
-    private void OnMove(Vector2 input) { moveInput = input; }
+    private void OnMove(Vector2 input) 
+    {
+        moveInput = input; 
+    }
+
 
     public void StartAutoAttackLoop()
     {
-        CancelInvoke(AutoAttackMethodName);
+        CancelInvoke("PerformAttack");
         if (stats == null) return;
-        float interval = stats.finalAttackSpeed > 0f ? 1f / stats.finalAttackSpeed : 1f;
-        if (cardManager != null && cardManager.GetEquippedCards().Count == 0) return;
-        InvokeRepeating(AutoAttackMethodName, 0f, interval);
+        float interval = 1f / stats.finalAttackSpeed;
+        InvokeRepeating("PerformAttack", 0f, interval);
     }
 
-    private void AutoAttack()
+    private void PerformAttack()
     {
-        if (cardManager == null || EffectExecutor.Instance == null) return;
-        List<CardDataSO> equipped = cardManager.GetEquippedCards();
-        if (equipped.Count > 0)
+        // CardManager 또는 활성 카드가 없으면 공격하지 않습니다.
+        if (cardManager == null || cardManager.activeCard == null)
         {
-            EffectExecutor.Instance.Execute(equipped[0]);
+            return;
         }
+
+        // CardManager가 정해준 '활성 카드'를 가져와서 그 효과를 실행합니다.
+        EffectExecutor.Instance.Execute(cardManager.activeCard);
     }
 
-    public void Heal(float amount) { if (stats != null) stats.Heal(amount); }
-
-    public void StartCardTriggerLoop()
-    {
-        CancelInvoke(CardTriggerMethodName);
-        InvokeRepeating(CardTriggerMethodName, 10f, 10f);
+    public void Heal(float amount) 
+    { 
+        if (stats != null) stats.Heal(amount); 
     }
-
-    private void CardTrigger()
-    {
-        if (cardManager == null || EffectExecutor.Instance == null) return;
-        List<CardDataSO> equipped = cardManager.GetEquippedCards();
-        if (equipped != null && equipped.Count > 0)
-        {
-            int idx = Random.Range(0, equipped.Count);
-            // [디버그 로그 추가] 어떤 카드가 발동되었는지 콘솔에 출력
-            Debug.Log($"[CardTrigger] 발동된 카드: {equipped[idx].cardName}");
-            EffectExecutor.Instance.Execute(equipped[idx]);
-        }
-    }
+        
 }

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 
 public class RoundManager : MonoBehaviour
 {
+
     public static RoundManager Instance { get; private set; }
 
     // [복구] Inspector에서 직접 Preload할 프리팹을 관리하기 위한 내부 클래스와 리스트
@@ -130,7 +131,6 @@ public class RoundManager : MonoBehaviour
     public void EndRound(bool wasKillGoalReached)
     {
         if (!isRoundActive) return;
-
         isRoundActive = false;
         Debug.Log($"라운드 종료. 킬 수 달성: {wasKillGoalReached}");
 
@@ -139,6 +139,9 @@ public class RoundManager : MonoBehaviour
             monsterSpawner.StopSpawning();
         }
 
+        // ✨ [해결 코드] 라운드 종료 시 항상 모든 몬스터를 정리합니다.
+        CleanupAllMonsters();
+
         if (wasKillGoalReached)
         {
             GenerateCardReward();
@@ -146,23 +149,29 @@ public class RoundManager : MonoBehaviour
         }
         else
         {
+            // 게임 오버가 아니라 메인 메뉴로 돌아가는 로직이므로, 여기서도 정리 필요
             GameManager.Instance.ChangeState(GameManager.GameState.MainMenu);
         }
     }
 
+
     private void GenerateCardReward()
     {
+        // TODO: 추후 유물 효과 등을 통해 이 값을 2~4 사이로 조절하는 로직 추가 필요
+        int numberOfChoices = 3; // 현재는 3으로 고정, 나중에 유물 시스템과 연동하여 변경
+
         List<CardDataSO> allCards = DataManager.Instance.GetAllCards();
-        if (allCards == null || allCards.Count < 3)
+        if (allCards == null || allCards.Count < numberOfChoices)
         {
-            Debug.LogError("카드 데이터가 3개 미만이어서 보상을 생성할 수 없습니다.");
+            Debug.LogError($"카드 데이터가 {numberOfChoices}개 미만이어서 보상을 생성할 수 없습니다.");
             return;
         }
 
         List<CardDataSO> rewardChoices = new List<CardDataSO>();
         List<CardDataSO> selectableCards = new List<CardDataSO>(allCards);
 
-        for (int i = 0; i < 3; i++)
+        // [수정] 3번이 아닌, numberOfChoices 만큼 반복합니다.
+        for (int i = 0; i < numberOfChoices; i++)
         {
             if (selectableCards.Count == 0) break;
 
@@ -213,5 +222,18 @@ public class RoundManager : MonoBehaviour
         {
             EndRound(false);
         }
+    }
+
+    public void CleanupAllMonsters()
+    {
+        MonsterController[] activeMonsters = FindObjectsOfType<MonsterController>();
+        foreach (var monster in activeMonsters)
+        {
+            if (monster != null && monster.gameObject.activeInHierarchy)
+            {
+                PoolManager.Instance.Release(monster.gameObject);
+            }
+        }
+        Debug.Log($"모든 몬스터 ({activeMonsters.Length}마리)를 정리했습니다.");
     }
 }

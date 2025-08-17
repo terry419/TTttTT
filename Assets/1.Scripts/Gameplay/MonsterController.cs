@@ -2,6 +2,8 @@
 // 경로: Assets/1.Scripts/Gameplay/MonsterController.cs
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic; // 변경사항 1: [추가] HashSet을 사용하기 위해 추가
+using System.Linq; // 변경사항 2: [추가] Linq 사용을 위해 추가 (선택 사항)
 
 [RequireComponent(typeof(Rigidbody2D))]
 public class MonsterController : MonoBehaviour
@@ -20,10 +22,20 @@ public class MonsterController : MonoBehaviour
     private float damageTimer = 0f;
     private bool isTouchingPlayer = false;
 
+    // 변경사항 3: [추가] 이미 피해를 입은 shotInstanceID를 저장하는 HashSet
+    public HashSet<string> hitShotIDs = new HashSet<string>();
+
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
     }
+
+    // 변경사항 4: [추가] 오브젝트가 활성화될 때마다 hitShotIDs를 초기화 (풀링된 오브젝트를 위해)
+    void OnEnable()
+    {
+        hitShotIDs.Clear();
+    }
+
 
     void Start()
     {
@@ -46,6 +58,9 @@ public class MonsterController : MonoBehaviour
         moveSpeed = monsterData.moveSpeed;
         contactDamage = monsterData.contactDamage;
         currentHealth = maxHealth;
+        // 변경사항 5: [추가] 몬스터가 초기화될 때 hitShotIDs도 초기화
+        hitShotIDs.Clear();
+
     }
 
     void Update()
@@ -84,10 +99,26 @@ public class MonsterController : MonoBehaviour
 
     void OnTriggerEnter2D(Collider2D other)
     {
+        Debug.Log($"[MonsterController] OnTriggerEnter2D 호출됨. 충돌한 오브젝트: {other.name}, 태그: {other.tag}");
+
         BulletController hitBullet = other.GetComponent<BulletController>();
         if (hitBullet != null)
         {
+            // 변경사항 6: [추가] 동일한 shotInstanceID에 대해 한 번만 데미지 적용
+            if (hitShotIDs.Contains(hitBullet.shotInstanceID))
+            {
+                PoolManager.Instance.Release(other.gameObject); // 총알은 풀로 반환
+                return; // 이미 맞은 총알이므로 데미지 적용 안 함
+            }
+
             TakeDamage(hitBullet.damage);
+
+            if (hitBullet.SourceCard != null && hitBullet.SourceCard.secondaryEffect != null)
+            {
+                // EffectExecutor의 새 기능을 호출!
+                // 2차 효과 카드(secondaryEffect)를 이 몬스터의 위치(this.transform)에서 발동
+                EffectExecutor.Instance.Execute(hitBullet.SourceCard.secondaryEffect, this.transform);
+            }
             PoolManager.Instance.Release(other.gameObject);
             return;
         }

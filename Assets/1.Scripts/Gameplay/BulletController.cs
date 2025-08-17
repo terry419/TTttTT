@@ -8,7 +8,10 @@ public class BulletController : MonoBehaviour
     private Vector2 _direction; // 총알의 이동 방향
     public float speed;       // 총알의 속도 (외부에서 접근 가능하도록 public으로 변경)
     public float damage;        // 총알의 데미지 (PlayerController가 설정해 줌)
+    public string shotInstanceID; // [추가] 발사 인스턴스 고유 ID
     public float lifetime = 3f; // 총알의 최대 생존 시간
+    public CardDataSO SourceCard { get; private set; } // [추가] 이 총알을 발사한 카드 데이터
+
 
     /// <summary>
     /// 총알을 초기화하고 발사합니다.
@@ -16,11 +19,15 @@ public class BulletController : MonoBehaviour
     /// <param name="direction">총알의 이동 방향 (정규화된 벡터)</param>
     /// <param name="initialSpeed">총알의 초기 속도</param>
     /// <param name="damage">총알이 줄 데미지</param>
-    public void Initialize(Vector2 direction, float initialSpeed, float damage)
+    /// <param name="shotID">[추가] 발사 인스턴스 고유 ID</param>
+
+    public void Initialize(Vector2 direction, float initialSpeed, float damage, string shotID, CardDataSO cardData)
     {
         _direction = direction.normalized; // 방향 벡터 정규화
         speed = initialSpeed; // 초기 속도 설정
         this.damage = damage; // 전달받은 데미지 설정
+        this.shotInstanceID = shotID; // [추가] 발사 ID 설정
+        this.SourceCard = cardData; // [추가] 카드 데이터 저장
 
         // 총알의 초기 회전 설정 (선택 사항: 방향에 따라 총알 스프라이트 회전)
         // 예를 들어, Vector2.right가 기본 방향일 때

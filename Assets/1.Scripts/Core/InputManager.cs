@@ -31,7 +31,14 @@ public class InputManager : MonoBehaviour
 
     void Awake()
     {
+        if (Instance != null && Instance != this)
+        {
+            // 이미 InputManager가 존재하면, 이 오브젝트는 파괴함
+            Destroy(gameObject);
+            return;
+        }
         Instance = this;
+        // DontDestroyOnLoad는 InitializeManagers에서 이미 처리하므로 여기서 할 필요 없음
     }
 
     void Update()
@@ -58,6 +65,7 @@ public class InputManager : MonoBehaviour
 
     private void HandleGameplayInput()
     {
+
         Vector2 move = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
         OnMove.Invoke(move.normalized);
     }

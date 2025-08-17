@@ -1,0 +1,49 @@
+// --- 파일 위치: Assets/1.Scripts/Gameplay/CardEffectHandlers/WaveHandler.cs ---
+
+using UnityEngine;
+using System;
+
+/// <summary>
+/// 'Wave' 타입의 카드 효과(파동, 장판 등)를 처리하는 클래스입니다.
+/// </summary>
+public class WaveHandler : ICardEffectHandler
+{
+    public void Execute(CardDataSO cardData, EffectExecutor executor, Transform spawnPoint)
+    {
+        GameObject wavePrefab = cardData.effectPrefab;
+        if (wavePrefab == null)
+        {
+            Debug.LogError($"[WaveHandler] 오류: 파동 카드 '{cardData.cardName}'에 effectPrefab이 할당되지 않았습니다!");
+            return;
+        }
+
+        // 풀 매니저에서 파동 오브젝트를 가져옵니다.
+        GameObject waveGO = executor.poolManager.Get(wavePrefab);
+        if (waveGO == null) return;
+
+        // 효과 생성 위치를 설정합니다.
+        waveGO.transform.position = spawnPoint.position;
+
+        if (waveGO.TryGetComponent<DamagingZone>(out var zone))
+        {
+            float totalDamage = executor.CalculateTotalDamage(cardData);
+            string shotID = Guid.NewGuid().ToString();
+
+            // DamagingZone을 카드 데이터에 맞게 초기화합니다.
+            zone.Initialize(
+                singleHitDmg: totalDamage,
+                continuousDmgPerTick: cardData.effectDamagePerTick,
+                tickInt: cardData.effectTickInterval,
+                totalDur: cardData.effectDuration,
+                expSpeed: cardData.effectExpansionSpeed,
+                expDur: cardData.effectExpansionDuration,
+                isWave: cardData.isEffectSingleHitWaveMode,
+                shotID: shotID
+            );
+        }
+        else
+        {
+            Debug.LogError($"[WaveHandler] 오류: '{wavePrefab.name}' 프리팹에 DamagingZone.cs 스크립트가 없습니다!");
+        }
+    }
+}
