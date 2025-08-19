@@ -1,10 +1,8 @@
-// --- ÆÄÀÏ À§Ä¡: Assets/1.Scripts/Gameplay/CardEffectHandlers/SplitShotHandler.cs ---
-
 using UnityEngine;
 using System;
 
 /// <summary>
-/// 'SplitShot' Å¸ÀÔÀÇ Ä«µå È¿°ú¸¦ Ã³¸®ÇÏ´Â Å¬·¡½ºÀÔ´Ï´Ù.
+/// 'SplitShot' íƒ€ì…ì˜ ì¹´ë“œ íš¨ê³¼ë¥¼ ì²˜ë¦¬í•˜ëŠ” í´ë˜ìŠ¤ì…ë‹ˆë‹¤.
 /// </summary>
 public class SplitShotHandler : ICardEffectHandler
 {
@@ -13,22 +11,30 @@ public class SplitShotHandler : ICardEffectHandler
         GameObject bulletPrefab = cardData.bulletPrefab;
         if (bulletPrefab == null)
         {
-            Debug.LogError($"[SplitShotHandler] ¿À·ù: ºĞ¿­ Ä«µå '{cardData.cardName}'¿¡ bulletPrefabÀÌ ÇÒ´çµÇÁö ¾Ê¾Ò½À´Ï´Ù!");
+            Debug.LogError($"[SplitShotHandler] ì˜¤ë¥˜: ìŠ¤í”Œë¦¿ìƒ· ì¹´ë“œ '{cardData.cardName}'ì— bulletPrefabì´ í• ë‹¹ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤!");
             return;
         }
 
-        // ±âº» ¹ß»ç °¢µµ¸¦ °è»êÇÕ´Ï´Ù.
+        // [ìˆ˜ì •ë¨] PlayerController.Instanceë¥¼ ì§ì ‘ ì°¸ì¡°í•©ë‹ˆë‹¤.
+        PlayerController playerController = PlayerController.Instance;
+        if (playerController == null)
+        {
+            Debug.LogError("[SplitShotHandler] PlayerController.Instanceë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤! ì´ì•Œì„ ë°œì‚¬í•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
+            return;
+        }
+
+        // ê¸°ë³¸ ë°œì‚¬ ê°ë„ë¥¼ ê³„ì‚°í•©ë‹ˆë‹¤.
         float baseAngle = executor.GetTargetingAngle(cardData.targetingType);
 
-        // ¹ß»çÇÒ ÃÑ¾ËÀÇ °³¼ö, °¢µµ, µ¥¹ÌÁö µîÀ» °è»êÇÕ´Ï´Ù.
+        // ë°œì‚¬í•  ì´ì•Œì˜ ê°œìˆ˜, ê°ë„ ë“±ì„ ê³„ì‚°í•©ë‹ˆë‹¤.
         int projectileCount = Mathf.Max(1, (int)cardData.triggerValue);
         float angleStep = 360f / projectileCount;
         float totalDamage = executor.CalculateTotalDamage(cardData);
-        string shotID = Guid.NewGuid().ToString(); // ¸ğµç ºĞ¿­ÅºÀÌ µ¿ÀÏÇÑ ÇÇ°İ ÆÇÁ¤À» °øÀ¯ÇÏµµ·Ï ID¸¦ »ı¼ºÇÕ´Ï´Ù.
+        string shotID = Guid.NewGuid().ToString(); // ëª¨ë“  ì´ì•Œì— ëŒ€í•´ ë™ì¼í•œ ê´€í†µ IDë¥¼ ì‚¬ìš©í•©ë‹ˆë‹¤.
 
         for (int i = 0; i < projectileCount; i++)
         {
-            // ±âº» °¢µµ¿¡¼­ ¹ß»ç °¢µµ¸¦ °è»êÇÕ´Ï´Ù.
+            // í˜„ì¬ ì´ì•Œì˜ ë°œì‚¬ ê°ë„ë¥¼ ê³„ì‚°í•©ë‹ˆë‹¤.
             float currentAngle = baseAngle + (angleStep * i);
             Quaternion rotation = Quaternion.Euler(0, 0, currentAngle);
             Vector2 direction = rotation * Vector2.right;
@@ -36,7 +42,9 @@ public class SplitShotHandler : ICardEffectHandler
             GameObject bulletGO = executor.poolManager.Get(cardData.bulletPrefab);
             if (bulletGO == null) continue;
 
-            bulletGO.transform.position = executor.playerController.firePoint.position;
+            // ì´ì•Œ ìœ„ì¹˜ì™€ íšŒì „ì„ ì„¤ì •í•©ë‹ˆë‹¤.
+            // [ìˆ˜ì •ë¨] playerController.firePointë¥¼ ì‚¬ìš©í•©ë‹ˆë‹¤.
+            bulletGO.transform.position = playerController.firePoint.position;
             bulletGO.transform.rotation = rotation;
 
             if (bulletGO.TryGetComponent<BulletController>(out var bullet))

@@ -16,6 +16,9 @@ public class PointAllocationManager : MonoBehaviour
     [SerializeField] private Button backButton;
     [SerializeField] private TextMeshProUGUI totalPointsText;
 
+    [Header("코어 로직 참조")]
+    [SerializeField] private MapGenerator mapGenerator;
+
     private CharacterDataSO selectedCharacter;
     private int totalCharacterPoints;
 
@@ -36,6 +39,11 @@ public class PointAllocationManager : MonoBehaviour
             resultUI.UpdateDisplay(selectedCharacter.baseStats, null);
         }
         pointsToInvestInput_Actual.gameObject.SetActive(false);
+
+        if (mapGenerator == null)
+        {
+            Debug.LogError("[PointAllocationManager] MapGenerator 참조가 설정되지 않았습니다! Inspector에서 연결해주세요.");
+        }
     }
 
     public void ActivateInputMode()
@@ -48,10 +56,7 @@ public class PointAllocationManager : MonoBehaviour
 
     private void DeactivateInputMode(string text)
     {
-        // 1. 먼저 입력값을 검증하고, 필요한 경우 InputField의 값을 수정합니다.
         ValidateInputValue();
-
-        // 2. 그 다음에, '수정된' InputField의 텍스트를 읽어와 가짜 버튼에 표시합니다.
         string correctedText = pointsToInvestInput_Actual.text;
         if (string.IsNullOrEmpty(correctedText))
         {
@@ -61,8 +66,6 @@ public class PointAllocationManager : MonoBehaviour
         {
             inputActivationButtonText.text = correctedText;
         }
-
-        // 3. 원래 로직을 실행합니다.
         pointsToInvestInput_Actual.gameObject.SetActive(false);
         inputActivationButton.gameObject.SetActive(true);
         EventSystem.current.SetSelectedGameObject(inputActivationButton.gameObject);
@@ -70,7 +73,6 @@ public class PointAllocationManager : MonoBehaviour
 
     private void OnConfirmAllocationClicked()
     {
-        // [수정] 분배할 포인트를 계산할 때도 '실제 입력 필드'의 값을 사용합니다.
         if (!int.TryParse(pointsToInvestInput_Actual.text, out int allocatedPoints))
         {
             allocatedPoints = 0;
@@ -85,6 +87,21 @@ public class PointAllocationManager : MonoBehaviour
         backButton.interactable = false;
         inputActivationButton.interactable = false;
 
+        Debug.Log("[PointAllocationManager] 확인 버튼 클릭됨. 맵 생성을 시작합니다.");
+        if (mapGenerator != null && MapManager.Instance != null)
+        {
+            List<MapNode> mapData = mapGenerator.Generate();
+
+            // [수정됨] 생성된 맵 데이터와 '맵 크기'를 MapManager에 전달하여 초기화합니다.
+            MapManager.Instance.InitializeMap(mapData, mapGenerator.MapWidth, mapGenerator.MapHeight);
+            Debug.Log("[PointAllocationManager] MapManager 초기화 완료.");
+        }
+        else
+        {
+            Debug.LogError("[PointAllocationManager] MapGenerator 또는 MapManager 참조가 없습니다! 맵을 생성할 수 없습니다.");
+            return; 
+        }
+
         StartCoroutine(StartSceneTransitionAfterDelay(2f));
     }
 
@@ -96,12 +113,12 @@ public class PointAllocationManager : MonoBehaviour
     }
 
     private void ValidateInputValue()
+
     {
         if (!string.IsNullOrEmpty(pointsToInvestInput_Actual.text) && int.TryParse(pointsToInvestInput_Actual.text, out int points))
         {
             if (points > totalCharacterPoints)
             {
-                // 실제 InputField의 텍스트를 수정합니다.
                 pointsToInvestInput_Actual.text = totalCharacterPoints.ToString();
             }
             else if (points < 0)

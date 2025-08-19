@@ -1191,6 +1191,7 @@ GameObject:
   - component: {fileID: 497011236}
   - component: {fileID: 497011235}
   - component: {fileID: 497011237}
+  - component: {fileID: 497011238}
   m_Layer: 5
   m_Name: Panel_PointInput
   m_TagString: Untagged
@@ -1279,6 +1280,27 @@ MonoBehaviour:
   confirmButton: {fileID: 16039896}
   backButton: {fileID: 2117017319}
   totalPointsText: {fileID: 1136470270}
+  mapGenerator: {fileID: 497011238}
+--- !u!114 &497011238
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 497011233}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 54fe3993c31102c4d9f2e1d5dc70e6ec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mapHeight: 15
+  mapWidth: 5
+  monsterChance: 60
+  restChance: 15
+  eventChance: 15
+  merchantChance: 10
+  numberOfPathsToGenerate: 4
+  forceAllMonsters: 1
 --- !u!1 &659678013
 GameObject:
   m_ObjectHideFlags: 0

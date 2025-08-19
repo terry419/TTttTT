@@ -18,8 +18,17 @@ public class PlayerController : MonoBehaviour
     // Awake에서는 오직 자기 자신의 Instance만 설정하고, 내부 컴포넌트만 찾습니다.
     void Awake()
     {
-        if (Instance == null) { Instance = this; }
-        else { Destroy(gameObject); return; }
+        if (Instance == null) 
+        {
+            Instance = this;
+            // [추가됨] 씬 전환 시 파괴되지 않도록 설정합니다.
+        }
+        else 
+        {
+            // [수정됨] 이미 인스턴스가 존재하면 새로 생성된 오브젝트를 파괴합니다.
+            Destroy(gameObject);
+            return;
+        }
 
         rb = GetComponent<Rigidbody2D>();
         stats = GetComponent<CharacterStats>();

@@ -1,99 +1,156 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
+using System.Collections;
 using System.Collections.Generic;
 
+/// <summary>
+/// ë§µ ê²½ë¡œ ì„ íƒ ì”¬ì˜ ì „ì²´ì ì¸ íë¦„ì„ ì œì–´í•˜ëŠ” 'ì¡°ìœ¨ì(Coordinator)' í´ë˜ìŠ¤ì…ë‹ˆë‹¤.
+/// ë§µ ë°ì´í„° ìƒì„±, UI í‘œì‹œ, ìë™ ìŠ¤í¬ë¡¤ ë“±ì˜ ì‹¤ì œ ì‘ì—…ì€ ê°ê°ì˜ ì „ë¬¸ ì»´í¬ë„ŒíŠ¸(MapView, AutoFocusScroller)ì— ìœ„ì„í•©ë‹ˆë‹¤.
+/// </summary>
 public class RouteSelectionController : MonoBehaviour
 {
     public static RouteSelectionController Instance { get; private set; }
 
-    [Header("UI ÇÁ¸®ÆÕ")]
-    [SerializeField] private GameObject nodePrefab;
-    [SerializeField] private GameObject pathPrefab;
+    [Header("ì œì–´í•  UI íŒ¨ë„")]
+    [SerializeField] private GameObject routeSelectPanel;
 
-    [Header("UI ºÎ¸ğ ¿ÀºêÁ§Æ®")]
-    [SerializeField] private Transform pathParent;
-    [SerializeField] private Transform nodeParent;
+    [Header("ì „ë¬¸ ì»´í¬ë„ŒíŠ¸ ì°¸ì¡°")]
+    [SerializeField] private MapView mapView;
+    [SerializeField] private AutoFocusScroller autoFocusScroller;
 
-    [Header("¸Ê ½Ã°¢È­ ¼³Á¤")]
-    [SerializeField] private float nodeSpacingX = 200f;
-    [SerializeField] private float nodeSpacingY = 120f;
-
-    private MapGenerator mapGenerator = new MapGenerator();
+    [Header("í¬ì»¤ìŠ¤ ëŒ€ìƒ ë²„íŠ¼")]
+    public Button rewardPageButton;
 
     void Awake()
     {
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
+        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
     }
 
     void Start()
     {
-        // Æò¼Ò¿¡´Â ºñÈ°¼ºÈ­ »óÅÂ·Î ½ÃÀÛ
-        gameObject.SetActive(false);
+        if (routeSelectPanel == null || mapView == null || autoFocusScroller == null)
+        {
+            Debug.LogError("[RouteSelectionController] í•„ìš”í•œ ì»´í¬ë„ŒíŠ¸ê°€ ì—°ê²°ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤!");
+            return;
+        }
+        mapView.OnNodeSelected += OnNodeClicked;
+        routeSelectPanel.SetActive(false);
     }
 
-    // ¿ÜºÎ(¿¹: RewardManager)¿¡¼­ ¸ÊÀ» Ç¥½ÃÇÏ¶ó°í È£ÃâÇÒ ÇÔ¼ö
+    /// <summary>
+    /// [ìˆ˜ì •ë¨] MapManagerì˜ ë°ì´í„°ë¥¼ ê¸°ë°˜ìœ¼ë¡œ MapViewë¥¼ ìƒì„±í•˜ê±°ë‚˜ ì—…ë°ì´íŠ¸í•©ë‹ˆë‹¤.
+    /// </summary>
+    private void GenerateMapView()
+    {
+        // [ì¶”ê°€ë¨] mapView ì°¸ì¡°ê°€ nullì¸ì§€ í™•ì¸í•˜ëŠ” ë””ë²„ê·¸ ë¡œê·¸
+        if (mapView == null)
+        {
+            Debug.LogError("[RouteSelectionController] MapView ì°¸ì¡°ê°€ ì„¤ì •ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤! Inspectorì—ì„œ ì—°ê²°í•´ì£¼ì„¸ìš”.");
+            return;
+        }
+
+        if (MapManager.Instance == null || !MapManager.Instance.IsMapInitialized)
+        {
+            Debug.LogError("[RouteSelectionController] MapManagerê°€ ì´ˆê¸°í™”ë˜ì§€ ì•Šì•„ MapViewë¥¼ ìƒì„±í•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤!");
+            return;
+        }
+
+        Debug.Log("[RouteSelectionController] MapManagerì˜ ë°ì´í„°ë¥¼ ê¸°ë°˜ìœ¼ë¡œ MapViewë¥¼ ìƒì„±í•©ë‹ˆë‹¤.");
+
+        mapView.GenerateMapView(
+            MapManager.Instance.AllNodes,
+            MapManager.Instance.MapWidth,
+            MapManager.Instance.MapHeight
+        );
+    }
+
+    private void OnNodeClicked(MapNode node)
+    {
+        Debug.Log($"[RouteSelectionController] ë…¸ë“œ í´ë¦­ ê°ì§€: {node.Position}, íƒ€ì…: {node.NodeType}");
+        if (MapManager.Instance != null)
+        {
+            MapManager.Instance.MoveToNode(node);
+            Hide();
+        }
+    }
+
+    /// <summary>
+    /// [ìˆ˜ì •ë¨] ë§µ ì„ íƒ íŒ¨ë„ì„ í™œì„±í™”í•˜ê³  ë§µ ë·°ë¥¼ ì—…ë°ì´íŠ¸í•©ë‹ˆë‹¤.
+    /// </summary>
     public void Show()
     {
-        gameObject.SetActive(true);
+        GenerateMapView();
 
-        // ±âÁ¸¿¡ ±×·ÁÁø UI°¡ ÀÖ´Ù¸é ¸ğµÎ »èÁ¦
-        foreach (Transform child in nodeParent) Destroy(child.gameObject);
-        foreach (Transform child in pathParent) Destroy(child.gameObject);
+        routeSelectPanel.SetActive(true);
+        UpdateNodeInteractability();
+        mapView.SetupAllNodeNavigations(rewardPageButton);
+        StartCoroutine(SetFocusRoutine());
+    }
 
-        // 1. ¸Ê ¼³°èµµ »ı¼º ¿äÃ»
-        var nodeCounts = new int[] { 1, 3, 2, 3, 2, 3, 1, 2, 3, 1 };
-        List<MapNode> mapData = mapGenerator.Generate(10, nodeCounts);
+    private void UpdateNodeInteractability()
+    {
+        if (MapManager.Instance == null) return;
+        List<MapNode> reachableNodes = MapManager.Instance.GetReachableNodes();
 
-        var nodeUiMap = new Dictionary<MapNode, GameObject>();
+        mapView.UpdateNodeInteractability(reachableNodes);
+    }
 
-        // 2. ¼³°èµµ¸¦ ±â¹İÀ¸·Î ³ëµå(¹öÆ°) UI »ı¼º
-        foreach (var nodeData in mapData)
+    private IEnumerator SetFocusRoutine()
+    {
+        yield return null;
+        EventSystem.current.SetSelectedGameObject(null);
+        GameObject targetObjectToFocus = null;
+
+        bool isRewardSelected = (RewardManager.Instance != null && RewardManager.Instance.IsRewardSelectionComplete);
+
+        if (rewardPageButton != null)
         {
-            GameObject nodeObj = Instantiate(nodePrefab, nodeParent);
-            float xPos = nodeData.Position.x * nodeSpacingX;
-            float yPos = nodeData.Position.y * nodeSpacingY;
-            nodeObj.GetComponent<RectTransform>().anchoredPosition = new Vector2(xPos, yPos);
-
-            MapNodeUI nodeUI = nodeObj.GetComponent<MapNodeUI>();
-            nodeUI.nodeData = nodeData;
-            nodeUI.button.onClick.AddListener(() => OnNodeSelected(nodeData));
-
-            nodeUiMap.Add(nodeData, nodeObj);
+            rewardPageButton.gameObject.SetActive(!isRewardSelected);
         }
 
-        // 3. ³ëµåµéÀ» ±â¹İÀ¸·Î °æ·Î(¼±) UI »ı¼º
-        foreach (var nodeData in mapData)
+        if (isRewardSelected)
         {
-            GameObject fromObj = nodeUiMap[nodeData];
-            foreach (var childNode in nodeData.NextNodes)
+            targetObjectToFocus = mapView.FindLeftmostAvailableNode(MapManager.Instance.GetReachableNodes());
+
+            if (rewardPageButton != null && targetObjectToFocus != null)
             {
-                GameObject toObj = nodeUiMap[childNode];
-                DrawPath(fromObj, toObj);
+                Navigation nav = rewardPageButton.navigation;
+                nav.mode = Navigation.Mode.Explicit;
+                nav.selectOnRight = targetObjectToFocus.GetComponent<Button>();
+                rewardPageButton.navigation = nav;
             }
         }
+        else
+        {
+            if (rewardPageButton != null)
+            {
+                targetObjectToFocus = rewardPageButton.gameObject;
+            }
+        }
+
+        if (targetObjectToFocus != null)
+        {
+            EventSystem.current.SetSelectedGameObject(targetObjectToFocus);
+        }
+        else
+        {
+            Debug.LogWarning("[Focus] í¬ì»¤ìŠ¤ë¥¼ ì„¤ì •í•  ëŒ€ìƒì„ ì°¾ì§€ ëª»í–ˆìŠµë‹ˆë‹¤.");
+        }
     }
 
-    private void DrawPath(GameObject from, GameObject to)
+    public void Hide()
     {
-        GameObject pathObj = Instantiate(pathPrefab, pathParent);
-        RectTransform pathRect = pathObj.GetComponent<RectTransform>();
-
-        Vector2 dir = (to.transform.position - from.transform.position).normalized;
-        float distance = Vector2.Distance(to.transform.position, from.transform.position);
-
-        pathRect.sizeDelta = new Vector2(distance, pathRect.sizeDelta.y);
-        pathRect.position = from.transform.position;
-        pathRect.pivot = new Vector2(0, 0.5f);
-        pathRect.rotation = Quaternion.FromToRotation(Vector3.right, dir);
+        routeSelectPanel.SetActive(false);
     }
 
-    private void OnNodeSelected(MapNode node)
+    public void GoBackToCardReward()
     {
-        Debug.Log($"¼±ÅÃµÈ ³ëµå Å¸ÀÔ: {node.NodeType}, À§Ä¡: {node.Position}");
+        Hide();
+        if (CardRewardUIManager.Instance != null)
+        {
+            CardRewardUIManager.Instance.Show();
+        }
     }
 }

@@ -182,8 +182,15 @@ public class MonsterController : MonoBehaviour
 
     private void Die()
     {
-        if (RoundManager.Instance != null) RoundManager.Instance.RegisterKill();
-        PoolManager.Instance.Release(gameObject);
+        if (RoundManager.Instance != null)
+        {
+            Debug.Log($"<color=cyan>[가설 검증] 몬스터(ID:{GetInstanceID()})가 RoundManager(ID:{RoundManager.Instance.GetInstanceID()})에게 RegisterKill 호출을 시도합니다.</color>");
+            RoundManager.Instance.RegisterKill();
+        }
+        else
+        {
+            Debug.LogError("[가설 검증] 몬스터가 RegisterKill을 호출하려 했으나 RoundManager.Instance가 null입니다!");
+        }
     }
 
     public void SetInvulnerable(float duration)

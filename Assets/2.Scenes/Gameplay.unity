@@ -3767,7 +3767,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f49481117666d6741ab1081ddbb446ef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  currentCampaign: {fileID: 11400000, guid: 14bf4bd693e5d8743b0fee4d42c9c28e, type: 2}
+  availableCampaigns:
+  - {fileID: 11400000, guid: 14bf4bd693e5d8743b0fee4d42c9c28e, type: 2}
 --- !u!1 &1123794634
 GameObject:
   m_ObjectHideFlags: 0
@@ -3933,7 +3934,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5be42efcea628474998e71434592107c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  healthBar: {fileID: 0}
+  healthBar: {fileID: 7217218}
   timerText: {fileID: 27015409}
   killCountText: {fileID: 1123794635}
 --- !u!224 &1259565397
@@ -4409,8 +4410,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   testStartingCards:
   - {fileID: 11400000, guid: cd01480f44aca2c41bbc61b9ce53ebbe, type: 2}
-  - {fileID: 0}
-  - {fileID: 0}
 --- !u!114 &1615835056
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4461,6 +4460,7 @@ MonoBehaviour:
   finalCritRate: 0
   finalCritDamage: 0
   currentHealth: 0
+  isInvulnerable: 0
   OnFinalStatsCalculated:
     m_PersistentCalls:
       m_Calls: []

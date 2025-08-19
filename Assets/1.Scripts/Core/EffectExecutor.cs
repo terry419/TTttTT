@@ -1,47 +1,45 @@
-// --- ÆÄÀÏ À§Ä¡: Assets/1.Scripts/Core/EffectExecutor.cs ---
-// --- Âü°í: ÀÌ ÆÄÀÏÀº ±âÁ¸ EffectExecutor.cs¸¦ ´ëÃ¼ÇØ¾ß ÇÕ´Ï´Ù. ---
-
 using UnityEngine;
 using System.Collections;
-using System.Collections.Generic; // Dictionary »ç¿ëÀ» À§ÇØ Ãß°¡
+using System.Collections.Generic; // Dictionary ì‚¬ìš©ì„ ìœ„í•´ ì¶”ê°€
 using System;
 
 /// <summary>
-/// Ä«µåÀÇ ½Ã°¢/³í¸®Àû È¿°ú¸¦ ½ÇÇàÇÏ´Â Áß¾Ó Å¬·¡½ºÀÔ´Ï´Ù. (¸®ÆÑÅä¸µ ¹öÀü)
-/// Àü·« ÆĞÅÏÀ» »ç¿ëÇÏ¿© °¢ CardEffectType¿¡ ¸Â´Â ÇÚµé·¯¸¦ Ã£¾Æ ½ÇÇàÀ» À§ÀÓÇÕ´Ï´Ù.
+/// ì¹´ë“œì˜ í–‰ë™/ëŠ¥ë ¥ íš¨ê³¼ë¥¼ ì‹¤í–‰í•˜ëŠ” ì¤‘ì•™ í´ë˜ìŠ¤ì…ë‹ˆë‹¤. (í”Œë ˆì´ì–´ ì „ìš©)
+/// ì „ë‹¬ëœ ì¹´ë“œ ë°ì´í„°ë¥¼ ê¸°ë°˜ìœ¼ë¡œ ê° CardEffectTypeì— ë§ëŠ” í•¸ë“¤ëŸ¬ë¥¼ ì°¾ì•„ ì‹¤í–‰í•©ë‹ˆë‹¤ã€‚
 /// </summary>
 public class EffectExecutor : MonoBehaviour
 {
     public static EffectExecutor Instance { get; private set; }
 
-    // ÇÚµé·¯µéÀÌ ÂüÁ¶ÇÒ ¼ö ÀÖµµ·Ï publicÀ¸·Î º¯°æÇÏ°Å³ª ÇÁ·ÎÆÛÆ¼·Î ³ëÃâÇÕ´Ï´Ù.
     public PoolManager poolManager { get; private set; }
-    public PlayerController playerController { get; private set; }
-    public CharacterStats playerStats { get; private set; }
 
-    // °¢ Ä«µå È¿°ú Å¸ÀÔ¿¡ ¸Â´Â ÇÚµé·¯¸¦ ÀúÀåÇÏ´Â µñ¼Å³Ê¸®
     private Dictionary<CardEffectType, ICardEffectHandler> effectHandlers;
 
     void Awake()
     {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
         Instance = this;
-        InitializeHandlers(); // ÇÚµé·¯ µñ¼Å³Ê¸® ÃÊ±âÈ­
+        // [ì¶”ê°€ë¨] ì”¬ ì „í™˜ ì‹œ íŒŒê´´ë˜ì§€ ì•Šë„ë¡ ì„¤ì •í•©ë‹ˆë‹¤.
+        DontDestroyOnLoad(gameObject);
+
+        InitializeHandlers(); // í•¸ë“¤ëŸ¬ ì´ˆê¸°í™”
     }
 
     void Start()
     {
-        // ´Ù¸¥ ¸Å´ÏÀú ÀÎ½ºÅÏ½º¸¦ ÂüÁ¶ÇÕ´Ï´Ù.
+        Debug.Log($"[EffectExecutor] Start() í˜¸ì¶œë¨. (ì˜¤ë¸Œì íŠ¸: {gameObject.name})");
+        Debug.Log($"[EffectExecutor] PoolManager.Instance í• ë‹¹ ì „: {(PoolManager.Instance == null ? "NULL" : PoolManager.Instance.gameObject.name)}");
         poolManager = PoolManager.Instance;
-        playerController = PlayerController.Instance;
-        if (playerController != null)
-        {
-            playerStats = playerController.GetComponent<CharacterStats>();
-        }
+        Debug.Log($"[EffectExecutor] PoolManager.Instance í• ë‹¹ í›„: {(poolManager == null ? "NULL" : poolManager.gameObject.name)}");
     }
 
     /// <summary>
-    /// Ä«µå È¿°ú Å¸ÀÔ°ú ÇÚµé·¯ Å¬·¡½º¸¦ ¸ÅÇÎÇÏ¿© µñ¼Å³Ê¸®¸¦ ÃÊ±âÈ­ÇÕ´Ï´Ù.
-    /// »õ·Î¿î È¿°ú¸¦ Ãß°¡ÇÒ ¶§ ÀÌ °÷¿¡ ÇÑ ÁÙ¸¸ Ãß°¡ÇÏ¸é µË´Ï´Ù.
+    /// ì¹´ë“œ íš¨ê³¼ íƒ€ì…ê³¼ í•¸ë“¤ëŸ¬ í´ë˜ìŠ¤ë¥¼ ë§¤í•‘í•˜ì—¬ ë”•ì…”ë„ˆë¦¬ë¥¼ ì´ˆê¸°í™”í•©ë‹ˆë‹¤.
+    /// ìƒˆë¡œìš´ íš¨ê³¼ë¥¼ ì¶”ê°€í•  ë•Œ ì´ ê³³ì— ì¶”ê°€í•˜ë©´ ë©ë‹ˆë‹¤.
     /// </summary>
     private void InitializeHandlers()
     {
@@ -50,81 +48,103 @@ public class EffectExecutor : MonoBehaviour
             { CardEffectType.SingleShot, new SingleShotHandler() },
             { CardEffectType.SplitShot, new SplitShotHandler() },
             { CardEffectType.Wave, new WaveHandler() }
-            // ¿¹: { CardEffectType.Lightning, new LightningHandler() }
+            // ì˜ˆ: { CardEffectType.Lightning, new LightningHandler() }
         };
     }
 
     /// <summary>
-    /// Ä«µåÀÇ È¿°ú¸¦ ½ÇÇàÇÕ´Ï´Ù. (ÇÃ·¹ÀÌ¾î ÀÚ½Å¿¡°Ô ¹ßµ¿)
+    /// ì¹´ë“œì˜ íš¨ê³¼ë¥¼ ì‹¤í–‰í•©ë‹ˆë‹¤. (í”Œë ˆì´ì–´ ìì‹ ìœ¼ë¡œë¶€í„° ë°œë™)
     /// </summary>
+    /// <param name="cardData">ì‹¤í–‰í•  ì¹´ë“œì˜ ë°ì´í„°</param>
+    /// <param name="actualDamageDealt">ì‹¤ì œë¡œ ê°€í•œ ë°ë¯¸ì§€ (OnHit íš¨ê³¼ ê³„ì‚°ìš©)</param>
     public void Execute(CardDataSO cardData, float actualDamageDealt = 0f)
     {
-        if (cardData == null || playerController == null || playerStats == null)
+        PlayerController currentPC = PlayerController.Instance;
+        CharacterStats currentPS = null;
+        if (currentPC != null)
         {
-            Debug.LogError("[EffectExecutor] ÇÊ¼ö ÄÄÆ÷³ÍÆ®(CardData, PlayerController, PlayerStats) Áß ÇÏ³ª°¡ nullÀÔ´Ï´Ù!");
+            currentPS = currentPC.GetComponent<CharacterStats>();
+        }
+
+        if (cardData == null || currentPC == null || currentPS == null)
+        {
+            Debug.LogError("[EffectExecutor] í•„ìˆ˜ ì»´í¬ë„ŒíŠ¸(CardData, PlayerController, PlayerStats) ì¤‘ í•˜ë‚˜ê°€ nullì…ë‹ˆë‹¤! " +
+                           $"CardData: {(cardData == null ? "NULL" : "OK")}, " +
+                           $"PlayerController: {(currentPC == null ? "NULL" : "OK")}, " +
+                           $"PlayerStats: {(currentPS == null ? "NULL" : "OK")}");
             return;
         }
 
-        // OnHit Å¸ÀÔÀÇ ÈíÇ÷ È¿°ú µîÀº ÇÃ·¹ÀÌ¾î À§Ä¡¿¡¼­ Áï½Ã ¹ßµ¿µÇ¾î¾ß ÇÏ¹Ç·Î ¿©±â¼­ Ã³¸®ÇÕ´Ï´Ù.
         if (cardData.triggerType == TriggerType.OnHit && cardData.lifestealPercentage > 0 && actualDamageDealt > 0)
         {
-            playerController.Heal(actualDamageDealt * cardData.lifestealPercentage);
+            currentPC.Heal(actualDamageDealt * cardData.lifestealPercentage);
         }
 
-        // ÇÃ·¹ÀÌ¾îÀÇ ¹ß»ç ÁöÁ¡À» ±âÁØÀ¸·Î È¿°ú¸¦ ½ÇÇàÇÕ´Ï´Ù.
-        Execute(cardData, playerController.firePoint);
+        Execute(cardData, currentPC.firePoint);
     }
 
     /// <summary>
-    /// Æ¯Á¤ À§Ä¡¿¡¼­ Ä«µåÀÇ È¿°ú¸¦ ½ÇÇàÇÕ´Ï´Ù. (¸ó½ºÅÍ À§Ä¡¿¡¼­ 2Â÷ È¿°ú ¹ßµ¿ µî)
+    /// íŠ¹ì • ìœ„ì¹˜ì—ì„œ ì¹´ë“œì˜ íš¨ê³¼ë¥¼ ì‹¤í–‰í•©ë‹ˆë‹¤. (ì˜ˆ: ëª¬ìŠ¤í„° ìœ„ì¹˜ì—ì„œ 2ì°¨ íš¨ê³¼ ë°œë™ ë“±)
     /// </summary>
+    /// <param name="cardData">ì‹¤í–‰í•  ì¹´ë“œì˜ ë°ì´í„°</param>
+    /// <param name="spawnPoint">íš¨ê³¼ê°€ ë°œë™ë  ìœ„ì¹˜ (Transform)</param>
     public void Execute(CardDataSO cardData, Transform spawnPoint)
     {
         if (cardData == null) return;
 
-        // Ä«µå µ¥ÀÌÅÍÀÇ effectType¿¡ ¸Â´Â ÇÚµé·¯¸¦ µñ¼Å³Ê¸®¿¡¼­ Ã£½À´Ï´Ù.
         if (effectHandlers.TryGetValue(cardData.effectType, out ICardEffectHandler handler))
         {
-            // Ã£Àº ÇÚµé·¯¿¡°Ô ½ÇÇàÀ» À§ÀÓÇÕ´Ï´Ù.
             handler.Execute(cardData, this, spawnPoint);
         }
         else
         {
-            Debug.LogError($"[EffectExecutor] '{cardData.effectType}' Å¸ÀÔ¿¡ ´ëÇÑ ÇÚµé·¯°¡ µî·ÏµÇÁö ¾Ê¾Ò½À´Ï´Ù!");
+            Debug.LogError($"[EffectExecutor] '{cardData.effectType}' íƒ€ì…ì— ëŒ€í•œ í•¸ë“¤ëŸ¬ê°€ ë“±ë¡ë˜ì–´ ìˆì§€ ì•ŠìŠµë‹ˆë‹¤!");
         }
     }
 
-    // --- ÇÚµé·¯µéÀÌ °øÅëÀ¸·Î »ç¿ëÇÏ´Â ÇïÆÛ ¸Ş¼­µå ---
-
     /// <summary>
-    /// ÇÃ·¹ÀÌ¾îÀÇ ÃÖÁ¾ ´É·ÂÄ¡¿Í Ä«µå ¹èÀ²À» Á¾ÇÕÇÏ¿© ÃÑ µ¥¹ÌÁö¸¦ °è»êÇÕ´Ï´Ù.
+    /// í”Œë ˆì´ì–´ì˜ í˜„ì¬ ëŠ¥ë ¥ì¹˜ì™€ ì¹´ë“œ ë°ì´í„°ë¥¼ ì‚¬ìš©í•˜ì—¬ ì´ ë°ë¯¸ì§€ë¥¼ ê³„ì‚°í•©ë‹ˆë‹¤.
     /// </summary>
     public float CalculateTotalDamage(CardDataSO cardData)
     {
+        CharacterStats currentPS = PlayerController.Instance?.GetComponent<CharacterStats>();
+        if (currentPS == null)
+        {
+            Debug.LogError("[EffectExecutor] CalculateTotalDamage: PlayerStatsë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤!");
+            return 0f;
+        }
+
         float totalRatio = 1
-                        + playerStats.cardDamageRatio
-                        + playerStats.artifactDamageRatio
-                        + playerStats.boosterDamageRatio
+                        + currentPS.cardDamageRatio
+                        + currentPS.artifactDamageRatio
+                        + currentPS.boosterDamageRatio
                         + cardData.damageMultiplier;
 
-        return playerStats.finalDamage * totalRatio;
+        return currentPS.finalDamage * totalRatio;
     }
 
     /// <summary>
-    /// Å¸°ÙÆÃ Å¸ÀÔ¿¡ µû¶ó ¸ñÇ¥¸¦ Ã£¾Æ ¹ß»ç °¢µµ¸¦ °è»êÇÕ´Ï´Ù.
+    /// íƒ€ê²ŸíŒ… íƒ€ì…ì— ë”°ë¼ ëª©í‘œë¬¼ì„ ì°¾ì•„ ë°œì‚¬ ê°ë„ë¥¼ ê³„ì‚°í•©ë‹ˆë‹¤ã€‚
     /// </summary>
     public float GetTargetingAngle(TargetingType targetingType)
     {
-        Transform target = TargetingSystem.FindTarget(targetingType, playerController.transform);
+        PlayerController currentPC = PlayerController.Instance;
+        if (currentPC == null)
+        {
+            Debug.LogError("[EffectExecutor] GetTargetingAngle: PlayerControllerë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤!");
+            return 0f;
+        }
+
+        Transform target = TargetingSystem.FindTarget(targetingType, currentPC.transform);
 
         if (target != null)
         {
-            Vector2 directionToTarget = (target.position - playerController.firePoint.position).normalized;
+            Vector2 directionToTarget = (target.position - currentPC.firePoint.position).normalized;
             return Mathf.Atan2(directionToTarget.y, directionToTarget.x) * Mathf.Rad2Deg;
         }
         else
         {
-            return playerController.firePoint.eulerAngles.z;
+            return currentPC.firePoint.eulerAngles.z;
         }
     }
 }

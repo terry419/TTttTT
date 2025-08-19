@@ -4,9 +4,9 @@ using System.Collections;
 
 public class GameManager : MonoBehaviour
 {
-
     public static GameManager Instance { get; private set; }
-    public enum GameState { MainMenu, CharacterSelect, PointAllocation, Gameplay, Reward, Pause, Codex, GameOver }
+
+    public enum GameState { MainMenu, CharacterSelect, PointAllocation, Gameplay, Reward, Pause, Codex, GameOver, Shop, Rest, Event }
     public GameState CurrentState { get; private set; }
     public CharacterDataSO SelectedCharacter { get; set; }
     public int AllocatedPoints { get; set; }
@@ -32,14 +32,8 @@ public class GameManager : MonoBehaviour
 
     public void ChangeState(GameState newState)
     {
-        if (newState == CurrentState && CurrentState != GameState.MainMenu) return;
-
-        Debug.Log($"[GameManager] 상태 변경: {CurrentState} -> {newState}");
-        CurrentState = newState;
-
-        if (newState == CurrentState && CurrentState != GameState.MainMenu) return;
-
-        Debug.Log($"[GameManager] 상태 변경: {CurrentState} -> {newState}");
+        if (newState == CurrentState) return;
+        Debug.Log($"[GameManager] 상태 변경 시작: {CurrentState} -> {newState}");
         CurrentState = newState;
 
         string sceneName = "";
@@ -48,21 +42,24 @@ public class GameManager : MonoBehaviour
             case GameState.MainMenu: sceneName = "MainMenu"; break;
             case GameState.CharacterSelect: sceneName = "CharacterSelect"; break;
             case GameState.PointAllocation: sceneName = "PointAllocation"; break;
-            case GameState.Gameplay: sceneName = "Gameplay"; break; // 또는 Gameplay_New
+            case GameState.Gameplay: sceneName = "Gameplay"; break;
             case GameState.Reward: sceneName = "CardReward"; break;
             case GameState.Codex: sceneName = "Codex"; break;
+            case GameState.Shop: sceneName = "Shop"; break;
+            case GameState.Rest: sceneName = "Rest"; break;
+            case GameState.Event: sceneName = "Event"; break;
             case GameState.Pause:
                 Time.timeScale = 0;
                 return;
             case GameState.GameOver:
                 StartCoroutine(GameOverRoutine());
-                return; // 씬을 바로 로드하지 않으므로 여기서 함수 종료
+                return;
         }
 
         if (!string.IsNullOrEmpty(sceneName))
+        {
             sceneTransitionManager.LoadScene(sceneName);
-
-        sceneTransitionManager.LoadScene(sceneName);
+        }
 
         if (newState == GameState.Gameplay)
         {
@@ -76,40 +73,89 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator GameOverRoutine()
     {
-        // 팝업 컨트롤러를 사용해 게임오버 메시지 표시
         if (PopupController.Instance != null)
         {
-            // ShowError를 재활용해서 메시지 표시, 3초간 보여줌
             PopupController.Instance.ShowError("GAME OVER", 3f);
         }
-
-        // 3초 대기
         yield return new WaitForSeconds(3f);
-
-        // 메인 메뉴 상태로 전환 (자동으로 MainMenu 씬 로드)
         ChangeState(GameState.MainMenu);
     }
 
-    /// <summary>
-    /// [수정] RoundManager가 준비될 때까지 확실하게 기다리는 로직으로 변경
-    /// </summary>
     private IEnumerator StartRoundAfterSceneLoad()
     {
-        // 씬 로드가 완료될 때까지 한 프레임 대기합니다.
+        // --- 기존 디버그 로그 보존 ---
+        Debug.Log("--- [GameManager] StartRoundAfterSceneLoad 코루틴 시작 ---");
         yield return null;
-        Debug.Log("--- [GameManager] Gameplay 씬 로드 완료, RoundManager를 기다립니다... ---");
 
-        // RoundManager.Instance가 준비될 때까지(Awake가 실행될 때까지) 계속 기다립니다.
-        while (RoundManager.Instance == null)
+        float timeout = 5f;
+        float timer = 0f;
+
+        // ★★★ 핵심 수정: RoundManager.Instance 대신 FindObjectOfType 사용 (CS0117 오류 해결) ★★★
+        RoundManager roundManager = null;
+        while (roundManager == null || MapManager.Instance == null || CampaignManager.Instance == null)
         {
-            yield return null; // 한 프레임 더 대기
+            roundManager = FindObjectOfType<RoundManager>();
+
+            // --- 기존 디버그 로그 보존 ---
+
+            timer += Time.deltaTime;
+            if (timer > timeout)
+            {
+                Debug.LogError("[GameManager] 시간 초과! 씬 내 매니저 중 하나를 찾을 수 없습니다. 라운드를 시작할 수 없습니다.");
+                yield break;
+            }
+            yield return null;
+        }
+        // --- 기존 디버그 로그 보존 ---
+        Debug.Log("1. [GameManager] 모든 매니저 인스턴스를 성공적으로 찾았습니다.");
+
+        // --- 기존 디버그 로그 보존 ---
+        Debug.Log("[GameManager] MapManager의 내부 초기화 대기 시작...");
+        timer = 0f;
+        while (!MapManager.Instance.IsMapInitialized)
+        {
+            // --- 기존 디버그 로그 보존 ---
+            Debug.LogWarning("[진단] MapManager가 아직 준비되지 않았습니다. 대기합니다...");
+            timer += Time.deltaTime;
+            if (timer > timeout)
+            {
+                Debug.LogError("[GameManager] 시간 초과! MapManager가 초기화되지 않았습니다. 라운드를 시작할 수 없습니다.");
+                yield break;
+            }
+            yield return null;
+        }
+        // --- 기존 디버그 로그 보존 ---
+        Debug.Log("2. [GameManager] MapManager 초기화 완료됨을 확인했습니다.");
+
+        CampaignManager.Instance.SelectAndStartRandomCampaign();
+
+        MapNode currentNode = MapManager.Instance.CurrentNode;
+        if (currentNode == null)
+        {
+            Debug.LogError("3. [GameManager] 에러! MapManager로부터 현재 노드 정보를 가져올 수 없습니다!");
+            yield break;
         }
 
-        Debug.Log("1. [GameManager] RoundManager.Instance를 성공적으로 찾음. StartRound() 호출.");
-        RoundManager.Instance.StartRound();
-        Time.timeScale = 1f;
+        // --- 기존 디버그 로그 보존 ---
+        Debug.Log($"3. [GameManager] 현재 노드(Y:{currentNode.Position.y})에 맞는 라운드 데이터를 찾습니다.");
+
+        // ★★★ 핵심 수정: RoundDataSO 타입 사용 및 실제 함수명 사용 (CS1061, CS0246 오류 해결) ★★★
+        RoundDataSO roundToStart = CampaignManager.Instance.GetRoundDataForNode(currentNode);
+
+        if (roundToStart != null)
+        {
+            // --- 기존 디버그 로그 보존 ---
+            Debug.Log($"4. [GameManager] RoundManager에게 '{roundToStart.name}' 라운드 시작을 요청합니다.");
+
+            // ★★★ 핵심 수정: StartRound를 코루틴으로 호출 ★★★
+            yield return StartCoroutine(roundManager.StartRound(roundToStart));
+            Time.timeScale = 1f;
+        }
+        else
+        {
+            Debug.LogError($"4. [GameManager] 에러! '{currentNode.Position}' 노드에 해당하는 라운드 데이터를 찾지 못했습니다!");
+        }
+        // --- 기존 디버그 로그 보존 ---
+        Debug.Log("--- [GameManager] StartRoundAfterSceneLoad 코루틴 정상 종료 ---");
     }
-
-
-
 }

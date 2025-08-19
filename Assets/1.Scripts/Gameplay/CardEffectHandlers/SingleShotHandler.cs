@@ -1,10 +1,8 @@
-// --- ÆÄÀÏ À§Ä¡: Assets/1.Scripts/Gameplay/CardEffectHandlers/SingleShotHandler.cs ---
-
 using UnityEngine;
 using System;
 
 /// <summary>
-/// 'SingleShot' Å¸ÀÔÀÇ Ä«µå È¿°ú¸¦ Ã³¸®ÇÏ´Â Å¬·¡½ºÀÔ´Ï´Ù.
+/// 'SingleShot' íƒ€ì…ì˜ ì¹´ë“œ íš¨ê³¼ë¥¼ ì²˜ë¦¬í•˜ëŠ” í´ë˜ìŠ¤ì…ë‹ˆë‹¤.
 /// </summary>
 public class SingleShotHandler : ICardEffectHandler
 {
@@ -13,38 +11,47 @@ public class SingleShotHandler : ICardEffectHandler
         GameObject bulletPrefab = cardData.bulletPrefab;
         if (bulletPrefab == null)
         {
-            Debug.LogError($"[SingleShotHandler] ¿À·ù: Ä«µå '{cardData.cardName}'¿¡ bulletPrefabÀÌ ÇÒ´çµÇÁö ¾Ê¾Ò½À´Ï´Ù!");
+            Debug.LogError($"[SingleShotHandler] ì˜¤ë¥˜: ì¹´ë“œ '{cardData.cardName}'ì— bulletPrefabì´ í• ë‹¹ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤!");
             return;
         }
 
-        // Å¸°ÙÆÃ Å¸ÀÔ¿¡ µû¶ó ¹ß»ç °¢µµ¸¦ °è»êÇÕ´Ï´Ù.
+        // [ìˆ˜ì •ë¨] PlayerController.Instanceë¥¼ ì§ì ‘ ì°¸ì¡°í•©ë‹ˆë‹¤.
+        PlayerController playerController = PlayerController.Instance;
+        if (playerController == null)
+        {
+            Debug.LogError("[SingleShotHandler] PlayerController.Instanceë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤! ì´ì•Œì„ ë°œì‚¬í•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
+            return;
+        }
+
+        // íƒ€ê²ŸíŒ… íƒ€ì…ì— ë”°ë¼ ë°œì‚¬ ê°ë„ë¥¼ ê³„ì‚°í•©ë‹ˆë‹¤.
         float angle = executor.GetTargetingAngle(cardData.targetingType);
         Quaternion rotation = Quaternion.Euler(0, 0, angle);
         Vector2 direction = rotation * Vector2.right;
 
-        // Ç® ¸Å´ÏÀú¸¦ ÅëÇØ ÃÑ¾Ë ÀÎ½ºÅÏ½º¸¦ °¡Á®¿É´Ï´Ù.
+        // í’€ ë§¤ë‹ˆì €ì—ì„œ ì´ì•Œ ì¸ìŠ¤í„´ìŠ¤ë¥¼ ê°€ì ¸ì˜µë‹ˆë‹¤.
         GameObject bulletGO = executor.poolManager.Get(bulletPrefab);
         if (bulletGO == null)
         {
-            Debug.LogError($"[SingleShotHandler] ¿À·ù: Ç® ¸Å´ÏÀú¿¡¼­ ÃÑ¾Ë ¿ÀºêÁ§Æ®¸¦ °¡Á®¿ÀÁö ¸øÇß½À´Ï´Ù!");
+            Debug.LogError($"[SingleShotHandler] ì˜¤ë¥˜: í’€ ë§¤ë‹ˆì €ì—ì„œ ì´ì•Œ ì˜¤ë¸Œì íŠ¸ë¥¼ ê°€ì ¸ì˜¤ì§€ ëª»í–ˆìŠµë‹ˆë‹¤!");
             return;
         }
 
-        // ¹ß»ç À§Ä¡¿Í È¸Àü°ªÀ» ¼³Á¤ÇÕ´Ï´Ù.
-        bulletGO.transform.position = executor.playerController.firePoint.position;
+        // ì´ì•Œ ìœ„ì¹˜ì™€ íšŒì „ì„ ì„¤ì •í•©ë‹ˆë‹¤.
+        // [ìˆ˜ì •ë¨] playerController.firePointë¥¼ ì‚¬ìš©í•©ë‹ˆë‹¤.
+        bulletGO.transform.position = playerController.firePoint.position;
         bulletGO.transform.rotation = rotation;
 
         if (bulletGO.TryGetComponent<BulletController>(out var bullet))
         {
-            // ÃÖÁ¾ µ¥¹ÌÁö¸¦ °è»êÇÏ°í ÃÑ¾ËÀ» ÃÊ±âÈ­ÇÕ´Ï´Ù.
+            // ì´ì•Œì„ ì´ˆê¸°í™”í•˜ê³  ë°œì‚¬í•©ë‹ˆë‹¤.
             float totalDamage = executor.CalculateTotalDamage(cardData);
-            string shotID = Guid.NewGuid().ToString(); // ºĞ¿­Åº µî°ú ±¸ºĞÇÏ±â À§ÇÑ °íÀ¯ ID
+            string shotID = Guid.NewGuid().ToString(); // ê´€í†µ íš¨ê³¼ë¥¼ ìœ„í•œ ê³ ìœ  ID
 
             bullet.Initialize(direction, cardData.bulletSpeed, totalDamage, shotID, cardData);
         }
         else
         {
-            Debug.LogError($"[SingleShotHandler] ¿À·ù: '{bulletPrefab.name}' ÇÁ¸®ÆÕ¿¡ BulletController.cs ½ºÅ©¸³Æ®°¡ ¾ø½À´Ï´Ù!");
+            Debug.LogError($"[SingleShotHandler] ì˜¤ë¥˜: '{bulletPrefab.name}' í”„ë¦¬íŒ¹ì— BulletController.cs ìŠ¤í¬ë¦½íŠ¸ê°€ ì—†ìŠµë‹ˆë‹¤!");
         }
     }
 }
