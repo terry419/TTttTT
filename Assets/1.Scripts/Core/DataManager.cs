@@ -5,7 +5,12 @@ using System.Collections.Generic;
 
 public class DataManager : MonoBehaviour
 {
-    public static DataManager Instance { get; private set; }
+    void Awake()
+    {
+        ServiceLocator.Register<DataManager>(this);
+        DontDestroyOnLoad(gameObject);
+        InitializeDataSOs();
+    }
 
     // [삭제] 프리팹 관련 필드 모두 삭제
 
@@ -13,20 +18,6 @@ public class DataManager : MonoBehaviour
     private readonly Dictionary<string, ArtifactDataSO> artifactDataDict = new Dictionary<string, ArtifactDataSO>();
     private readonly Dictionary<string, CharacterDataSO> characterDict = new Dictionary<string, CharacterDataSO>();
     private readonly Dictionary<string, MonsterDataSO> monsterDataDict = new Dictionary<string, MonsterDataSO>();
-
-    void Awake()
-    {
-        Debug.Log($"[ 진단 ] DataManager.Awake() 호출됨. (Frame: {Time.frameCount})");
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-        Instance = this;
-        DontDestroyOnLoad(gameObject);
-
-        InitializeDataSOs();
-    }
 
     private void InitializeDataSOs()
     {

@@ -29,8 +29,8 @@ public class CharacterSelectController : MonoBehaviour
             return;
         }
 
-        GameManager.Instance.SelectedCharacter = this.SelectedCharacter;
+        ServiceLocator.Get<GameManager>().SelectedCharacter = this.SelectedCharacter;
         // GameManager의 PointAllocation 상태로 전환하도록 수정
-        GameManager.Instance.ChangeState(GameManager.GameState.PointAllocation);
+        ServiceLocator.Get<GameManager>().ChangeState(GameManager.GameState.PointAllocation);
     }
 }

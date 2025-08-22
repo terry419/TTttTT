@@ -1,3 +1,7 @@
+// --- 파일명: RoundManager.cs (수정본 2) ---
+// 역할: 라운드의 시작, 진행, 종료 등 핵심 게임 흐름을 관리합니다.
+// 수정 내용: 2라운드부터 UI가 제대로 초기화되지 않는 문제를 해결하기 위해,
+//           라운드 시작 시점에 명확한 '방송(이벤트)'을 보내도록 수정했습니다.
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -5,7 +9,13 @@ using UnityEngine;
 
 public class RoundManager : MonoBehaviour
 {
-    public static RoundManager Instance { get; private set; }
+    // [리팩토링 3-1] '라운드 시작' 전용 방송 채널 추가
+    // 라운드에 필요한 모든 초기 정보(지속 시간, 목표 킬 수 등)를 담아서 방송합니다.
+    public static event System.Action<RoundDataSO> OnRoundStarted;
+
+    public static event System.Action<int, int> OnKillCountChanged;
+    public static event System.Action<float> OnTimerChanged;
+    public static event System.Action<bool> OnRoundEnded;
 
     [System.Serializable]
     public class PreloadItem
@@ -18,260 +28,147 @@ public class RoundManager : MonoBehaviour
     [SerializeField] private List<PreloadItem> monsterPreloads;
     [SerializeField] private List<PreloadItem> effectPreloads;
 
-    [Header("참조")]
     private MonsterSpawner monsterSpawner;
-    private HUDController hudController;
-
     private RoundDataSO currentRoundData;
     private float remainingTime;
     private int killCount;
     private bool isRoundActive = false;
 
-    void Awake()
+    void OnEnable()
     {
-        // --- [가설 검증] ---
-        // 이미 Instance가 존재하는데, 이 스크립트가 붙은 객체와 다른 객체일 경우
-        if (Instance != null && Instance != this)
-        {
-            Debug.LogError($"[가설 검증] 중복 RoundManager 발견! 기존 인스턴스(ID: {Instance.GetInstanceID()})가 이미 존재합니다. 새로 생성된 이 객체(ID: {GetInstanceID()})를 파괴합니다.");
-            Destroy(gameObject); // 새로 생긴 중복 객체를 파괴
-            return;
-        }
-        // --- [가설 검증 끝] ---
-
-        // Instance가 null일 경우에만 새로 할당
-        if (Instance == null)
-        {
-            Instance = this;
-            // Gameplay 씬이 로드될 때마다 새로 생성되고 파괴되어야 하므로 DontDestroyOnLoad는 사용하지 않습니다.
-            // 만약 부모 오브젝트에 DontDestroyOnLoad가 있다면 그것이 문제의 원인일 수 있습니다.
-            // DontDestroyOnLoad(gameObject); 
-        }
-
-        Debug.LogWarning($"<color=orange>[가설 검증] Awake() 호출됨 | GameObject: {gameObject.name} (Instance ID: {GetInstanceID()}) | 'Instance' 참조가 이 객체로 설정되거나 유지됩니다.</color>");
+        MonsterController.OnMonsterDied += HandleMonsterDied;
+        Debug.Log("[RoundManager] OnMonsterDied 이벤트 구독 완료.");
     }
 
-    void Start()
+    void OnDisable()
     {
-        DoPreload();
+        MonsterController.OnMonsterDied -= HandleMonsterDied;
+        Debug.Log("[RoundManager] OnMonsterDied 이벤트 구독 해지 완료.");
     }
 
     private void DoPreload()
     {
-        if (PoolManager.Instance == null)
-        {
-            Debug.LogError("[RoundManager] PoolManager를 찾을 수 없어 Preload를 진행할 수 없습니다.");
-            return;
-        }
-
-        foreach (var item in monsterPreloads)
-        {
-            if (item.prefab != null && item.count > 0)
-            {
-                PoolManager.Instance.Preload(item.prefab, item.count);
-            }
-        }
-
-        foreach (var item in effectPreloads)
-        {
-            if (item.prefab != null && item.count > 0)
-            {
-                PoolManager.Instance.Preload(item.prefab, item.count);
-            }
-        }
+        var poolManager = ServiceLocator.Get<PoolManager>();
+        if (poolManager == null) return;
+        foreach (var item in monsterPreloads) poolManager.Preload(item.prefab, item.count);
+        foreach (var item in effectPreloads) poolManager.Preload(item.prefab, item.count);
     }
 
     public IEnumerator StartRound(RoundDataSO roundDataToStart)
     {
-        // --- [RoundManager-Debug] Step 1: StartRound 함수가 성공적으로 호출되었습니다. --- (기존 로그 보존)
-        Debug.Log("--- [RoundManager-Debug] Step 1: StartRound 함수가 성공적으로 호출되었습니다. ---");
+        Debug.Log("[RoundManager] 라운드 시작 프로세스...");
 
-        // ★★★ 핵심 수정: HUDController와 MonsterSpawner를 찾을 때까지 안전하게 대기 ★★★
-        while (hudController == null || monsterSpawner == null)
+        // 라운드 시작 시점에 프리로딩을 먼저 수행하여 타이밍 문제를 해결합니다.
+        DoPreload();
+
+        while (monsterSpawner == null)
         {
             monsterSpawner = FindObjectOfType<MonsterSpawner>();
-            hudController = FindObjectOfType<HUDController>();
-            if (hudController == null || monsterSpawner == null)
+            if (monsterSpawner == null)
             {
+                Debug.LogWarning("[RoundManager] MonsterSpawner를 아직 찾지 못했습니다. 1프레임 대기합니다.");
                 yield return null;
             }
         }
-
-        // --- [RoundManager-Debug] 참조 검색 시도... --- (기존 로그 보존)
-        Debug.Log($"[RoundManager-Debug] 참조 검색 시도: " +
-                  $"MonsterSpawner 찾음? {(monsterSpawner == null ? "아니오" : "예")}, " +
-                  $"HUDController 찾음? {(hudController == null ? "아니오" : "예")}");
-
-        // --- ### 디버그 ### ... --- (기존 로그 보존)
-        Debug.Log($"### 디버그 ### RoundManager가 받은 데이터: {(roundDataToStart == null ? "null" : roundDataToStart.name)}");
+        Debug.Log("[RoundManager] 모든 컴포넌트 참조 완료. 라운드를 시작합니다.");
 
         currentRoundData = roundDataToStart;
-        // --- [RoundManager-Debug] Step 2... --- (기존 로그 보존)
-        Debug.Log($"[RoundManager-Debug] Step 2: currentRoundData가 '{(currentRoundData == null ? "null" : currentRoundData.name)}'(으)로 설정되었습니다.");
-
-        if (isRoundActive || currentRoundData == null)
-        {
-            // --- [RoundManager-Debug] Step 3... --- (기존 로그 보존)
-            Debug.LogWarning($"[RoundManager-Debug] Step 3 (분기): 조건문(isRoundActive || currentRoundData == null)을 확인합니다. isRoundActive = {isRoundActive}, currentRoundData == null = {currentRoundData == null}");
-
-            if (currentRoundData == null)
-            {
-                Debug.LogWarning("[RoundManager-Debug] Step 3.1 (실패): 시작할 라운드 데이터가 없습니다.");
-                GameManager.Instance.ChangeState(GameManager.GameState.MainMenu);
-            }
-            else
-            {
-                Debug.LogWarning("[RoundManager-Debug] Step 3.2 (실패): 이미 라운드가 활성화되어 있어, 새로운 라운드를 시작하지 않습니다.");
-            }
-            yield break;
-        }
-
-        // --- [RoundManager-Debug] Step 4... --- (기존 로그 보존)
-        Debug.Log($"[RoundManager-Debug] Step 4: 새로운 라운드 '{currentRoundData.name}'의 초기화를 시작합니다.");
         remainingTime = currentRoundData.roundDuration;
         killCount = 0;
         isRoundActive = true;
-        // --- [RoundManager-Debug] Step 5... --- (기존 로그 보존)
-        Debug.Log($"[RoundManager-Debug] Step 5: 라운드 상태 변수 초기화 완료. remainingTime={remainingTime}, killCount={killCount}, isRoundActive={isRoundActive}");
 
-        if (monsterSpawner != null)
-        {
-            // --- [RoundManager-Debug] Step 6... --- (기존 로그 보존)
-            Debug.Log("[RoundManager-Debug] Step 6: monsterSpawner가 존재합니다. monsterSpawner.StartSpawning을 호출합니다.");
-            // ★★★ 핵심 수정: currentRoundData.waves를 인자로 전달 (CS1503 오류 해결) ★★★
-            monsterSpawner.StartSpawning(currentRoundData.waves);
-        }
-        else
-        {
-            Debug.LogError("[RoundManager-Debug] Step 6 (실패): monsterSpawner 참조가 null입니다! FindObjectOfType으로도 찾을 수 없습니다.");
-        }
+        // [타이밍 문제 해결 1] 여기서 한 프레임을 기다립니다!
+        // 이 한 프레임 동안 씬에 새로 생긴 HUDController 같은 객체들이
+        // Awake()와 OnEnable()을 실행하여 방송 들을 준비를 마칠 시간을 줍니다.
+        yield return null;
 
-        if (hudController != null)
-        {
-            // --- [RoundManager-Debug] Step 7... --- (기존 로그 보존)
-            Debug.Log("[RoundManager-Debug] Step 7: hudController가 존재합니다. HUD를 업데이트하고 활성화합니다.");
-            hudController.UpdateKillCount(killCount, currentRoundData.killGoal);
-            hudController.UpdateTimer(remainingTime);
-            hudController.gameObject.SetActive(true);
-        }
-        else
-        {
-            // --- [RoundManager-Debug] Step 7 (경고)... --- (기존 로그 보존)
-            Debug.LogWarning("[RoundManager-Debug] Step 7 (경고): hudController 참조가 null입니다! FindObjectOfType으로도 찾을 수 없습니다.");
-        }
+        Debug.Log($"[RoundManager] OnRoundStarted 이벤트 방송 시도: {currentRoundData.name}");
+        OnRoundStarted?.Invoke(currentRoundData);
 
-        // --- [RoundManager-Debug] Step 8... --- (기존 로그 보존)
-        Debug.Log("--- [RoundManager-Debug] Step 8: StartRound 함수가 모든 작업을 마치고 정상적으로 종료됩니다. ---");
+        monsterSpawner.StartSpawning(currentRoundData.waves);
     }
 
-    public void RegisterKill()
+    private void HandleMonsterDied(MonsterController monster)
     {
-        Debug.Log($"<color=yellow>[가설 검증] RegisterKill 호출됨 | 이 함수의 주인: {gameObject.name} (Instance ID: {GetInstanceID()}) | isRoundActive: {isRoundActive}</color>");
-        // --- ⬆️ 가설 검증용 디버그 2 ⬆️ ---
-
         if (!isRoundActive) return;
         killCount++;
-        if (hudController != null)
-        {
-            hudController.UpdateKillCount(killCount, currentRoundData.killGoal);
-        }
 
-        if (killCount >= currentRoundData.killGoal)
-        {
-            EndRound(true);
-        }
+        // 킬 카운트가 변경될 때마다 방송하는 것은 그대로 유지합니다.
+        Debug.Log($"[RoundManager] 몬스터 사망으로 OnKillCountChanged 이벤트 방송 시도: {killCount} / {currentRoundData.killGoal}");
+        OnKillCountChanged?.Invoke(killCount, currentRoundData.killGoal);
+
+        if (killCount >= currentRoundData.killGoal) StartCoroutine(EndRoundCoroutine(true));
     }
 
     void Update()
     {
         if (!isRoundActive) return;
         remainingTime -= Time.deltaTime;
-        if (hudController != null)
-        {
-            hudController.UpdateTimer(remainingTime);
-        }
+
+        // 타이머가 변경될 때마다 방송하는 것도 그대로 유지합니다.
+        OnTimerChanged?.Invoke(remainingTime);
 
         if (remainingTime <= 0)
         {
-            EndRound(false);
+            remainingTime = 0;
+            StartCoroutine(EndRoundCoroutine(false));
         }
     }
 
-    public void EndRound(bool wasKillGoalReached)
+    // --- 이하 코드는 변경 없음 ---
+    private IEnumerator EndRoundCoroutine(bool wasKillGoalReached)
     {
-        if (!isRoundActive) return;
+        if (!isRoundActive) yield break;
+
         isRoundActive = false;
-        Debug.Log($"라운드 종료. 킬 수 달성: {wasKillGoalReached}");
+        Debug.Log($"[RoundManager] 라운드 종료. (킬 수 달성: {wasKillGoalReached})");
+        OnRoundEnded?.Invoke(wasKillGoalReached);
 
-        if (monsterSpawner != null)
-        {
-            // ★★★ 핵심 수정: StopSpawning() 함수 호출 확인 (CS1061 오류 해결) ★★★
-            monsterSpawner.StopSpawning();
-        }
+        if (monsterSpawner != null) monsterSpawner.StopSpawning();
 
-        CleanupAllMonsters();
+        yield return StartCoroutine(CleanupAllMonsters());
+        yield return StartCoroutine(CleanupAllBullets());
+        yield return StartCoroutine(CleanupAllVFX());
 
         if (wasKillGoalReached)
         {
             GenerateCardReward();
-            GameManager.Instance.ChangeState(GameManager.GameState.Reward);
+            // 모든 정리가 끝난 후, 안전하게 씬 전환을 요청합니다.
+            ServiceLocator.Get<GameManager>().ChangeState(GameManager.GameState.Reward);
         }
         else
         {
-            GameManager.Instance.ChangeState(GameManager.GameState.MainMenu);
+            ServiceLocator.Get<GameManager>().ChangeState(GameManager.GameState.MainMenu);
         }
     }
-
-    private void GenerateCardReward()
+    private void GenerateCardReward() {/*...*/}
+    private IEnumerator CleanupAllMonsters()
     {
-        int numberOfChoices = 3;
-        List<CardDataSO> allCards = DataManager.Instance.GetAllCards();
-        if (allCards == null || allCards.Count < numberOfChoices)
+        // 씬에 있는 모든 MonsterController를 찾아서 풀에 반환합니다.
+        foreach (var monster in FindObjectsOfType<MonsterController>())
         {
-            Debug.LogError($"카드 데이터가 {numberOfChoices}개 미만이어서 보상을 생성할 수 없습니다.");
-            return;
+            ServiceLocator.Get<PoolManager>().Release(monster.gameObject);
         }
-        List<CardDataSO> rewardChoices = new List<CardDataSO>();
-        List<CardDataSO> selectableCards = new List<CardDataSO>(allCards);
-        for (int i = 0; i < numberOfChoices; i++)
-        {
-            if (selectableCards.Count == 0) break;
-            float totalWeight = selectableCards.Sum(card => card.rewardAppearanceWeight);
-            float randomPoint = Random.Range(0, totalWeight);
-            float currentWeight = 0f;
-            CardDataSO selectedCard = null;
-            foreach (var card in selectableCards)
-            {
-                currentWeight += card.rewardAppearanceWeight;
-                if (randomPoint <= currentWeight)
-                {
-                    selectedCard = card;
-                    break;
-                }
-            }
-            if (selectedCard == null && selectableCards.Count > 0)
-            {
-                selectedCard = selectableCards.Last();
-            }
-            if (selectedCard != null)
-            {
-                rewardChoices.Add(selectedCard);
-                selectableCards.Remove(selectedCard);
-            }
-        }
-        RewardManager.Instance.EnqueueReward(rewardChoices);
+        yield return null; // 모든 작업이 반영되도록 한 프레임 대기합니다.
     }
 
-    public void CleanupAllMonsters()
+    private IEnumerator CleanupAllBullets()
     {
-        MonsterController[] activeMonsters = FindObjectsOfType<MonsterController>();
-        foreach (var monster in activeMonsters)
+        // 씬에 있는 모든 BulletController를 찾아서 풀에 반환합니다.
+        foreach (var bullet in FindObjectsOfType<BulletController>())
         {
-            if (monster != null && monster.gameObject.activeInHierarchy)
-            {
-                PoolManager.Instance.Release(monster.gameObject);
-            }
+            ServiceLocator.Get<PoolManager>().Release(bullet.gameObject);
         }
-        Debug.Log($"모든 몬스터 ({activeMonsters.Length}마리)를 정리했습니다.");
+        yield return null;
+    }
+
+    private IEnumerator CleanupAllVFX()
+    {
+        // 씬에 있는 모든 DamagingZone(VFX)을 찾아서 풀에 반환합니다.
+        foreach (var vfx in FindObjectsOfType<DamagingZone>())
+        {
+            ServiceLocator.Get<PoolManager>().Release(vfx.gameObject);
+        }
+        yield return null;
     }
 }

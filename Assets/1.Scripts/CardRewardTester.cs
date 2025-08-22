@@ -5,30 +5,30 @@ using System.Linq;
 
 public class CardRewardTester : MonoBehaviour
 {
-    [Tooltip("Å×½ºÆ® ½Ã ·£´ýÀ¸·Î »ÌÀ» Ä«µåÀÇ °³¼ö¸¦ ÁöÁ¤ÇÕ´Ï´Ù.")]
+    [Tooltip("ï¿½×½ï¿½Æ® ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Ä«ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Õ´Ï´ï¿½.")]
     [SerializeField] private int numberOfCardsToTest = 3;
 
     IEnumerator Start()
     {
-        Debug.Log($"[ Áø´Ü ] CardRewardTester.Start() ÄÚ·çÆ¾ ½ÃÀÛµÊ. (Frame: {Time.frameCount})");
+        Debug.Log($"[ ï¿½ï¿½ï¿½ï¿½ ] CardRewardTester.Start() ï¿½Ú·ï¿½Æ¾ ï¿½ï¿½ï¿½Ûµï¿½. (Frame: {Time.frameCount})");
 
-        yield return null; // ´Ù¸¥ ManagerµéÀÌ ÃÊ±âÈ­µÉ ¶§±îÁö ÇÑ ÇÁ·¹ÀÓ ´ë±â
+        yield return null; // ï¿½Ù¸ï¿½ Managerï¿½ï¿½ï¿½ï¿½ ï¿½Ê±ï¿½È­ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
 
-        if (DataManager.Instance == null || RewardManager.Instance == null)
+        if (ServiceLocator.Get<DataManager>() == null || RewardManager.Instance == null)
         {
-            Debug.LogError("[TESTER] DataManager ¶Ç´Â RewardManager¸¦ Ã£À» ¼ö ¾ø½À´Ï´Ù!");
+            Debug.LogError("[TESTER] DataManager ï¿½Ç´ï¿½ RewardManagerï¿½ï¿½ Ã£ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½!");
             yield break;
         }
 
-        // 1. ½ÇÁ¦ °ÔÀÓÃ³·³ ¸ðµç Ä«µå ¸ñ·ÏÀ» °¡Á®¿É´Ï´Ù.
-        List<CardDataSO> allCards = DataManager.Instance.GetAllCards();
+        // 1. ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ã³ï¿½ï¿½ ï¿½ï¿½ï¿½ Ä«ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½É´Ï´ï¿½.
+        List<CardDataSO> allCards = ServiceLocator.Get<DataManager>().GetAllCards();
         if (allCards.Count < numberOfCardsToTest)
         {
-            Debug.LogError("[TESTER] Ä«µå µ¥ÀÌÅÍ°¡ ºÎÁ·ÇÏ¿© Å×½ºÆ®¸¦ ÁøÇàÇÒ ¼ö ¾ø½À´Ï´Ù.");
+            Debug.LogError("[TESTER] Ä«ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Í°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¿ï¿½ ï¿½×½ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½.");
             yield break;
         }
 
-        // 2. RoundManagerÀÇ ·ÎÁ÷À» »ç¿ëÇÏ¿© °¡ÁßÄ¡ ±â¹ÝÀ¸·Î ·£´ý Ä«µå¸¦ »Ì½À´Ï´Ù.
+        // 2. RoundManagerï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ï¿ï¿½ ï¿½ï¿½ï¿½ï¿½Ä¡ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Ä«ï¿½å¸¦ ï¿½Ì½ï¿½ï¿½Ï´ï¿½.
         List<CardDataSO> randomChoices = new List<CardDataSO>();
         List<CardDataSO> selectableCards = new List<CardDataSO>(allCards);
 
@@ -51,7 +51,7 @@ public class CardRewardTester : MonoBehaviour
                 }
             }
 
-            // ¸¸¾à °¡ÁßÄ¡ ÇÕÀÌ 0ÀÌ°Å³ª ºÎµ¿¼Ò¼öÁ¡ ¿À·ù·Î ¼±ÅÃÀÌ ¾ÈµÈ °æ¿ì, ¸¶Áö¸· Ä«µå¸¦ ¾ÈÀüÇÏ°Ô ¼±ÅÃ
+            // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ä¡ ï¿½ï¿½ï¿½ï¿½ 0ï¿½Ì°Å³ï¿½ ï¿½Îµï¿½ï¿½Ò¼ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Èµï¿½ ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ä«ï¿½å¸¦ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½ï¿½
             if (selectedCard == null && selectableCards.Count > 0)
             {
                 selectedCard = selectableCards[selectableCards.Count - 1];
@@ -64,8 +64,8 @@ public class CardRewardTester : MonoBehaviour
             }
         }
 
-        // 3. ·£´ýÇÏ°Ô ¼±ÅÃµÈ Ä«µå ¸ñ·ÏÀ» º¸»ó Å¥¿¡ ÁÖÀÔÇÏ°í, ÀýÂ÷¸¦ ½ÃÀÛÇÕ´Ï´Ù.
-        Debug.Log($"[TESTER] {randomChoices.Count}°³ÀÇ ·£´ý Ä«µå¸¦ º¸»ó Å¥¿¡ Ãß°¡ÇÕ´Ï´Ù.");
+        // 3. ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½Ãµï¿½ Ä«ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Å¥ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Õ´Ï´ï¿½.
+        Debug.Log($"[TESTER] {randomChoices.Count}ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Ä«ï¿½å¸¦ ï¿½ï¿½ï¿½ï¿½ Å¥ï¿½ï¿½ ï¿½ß°ï¿½ï¿½Õ´Ï´ï¿½.");
         RewardManager.Instance.EnqueueReward(randomChoices);
         RewardManager.Instance.ProcessNextReward();
     }

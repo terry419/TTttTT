@@ -1,5 +1,4 @@
 // --- 파일 위치: Assets/1.Scripts/Gameplay/PlayerInitializer.cs ---
-// --- 참고: 이 파일은 기존 PlayerInitializer.cs를 대체해야 합니다. ---
 
 using System.Collections.Generic;
 using UnityEngine;
@@ -18,49 +17,75 @@ public class PlayerInitializer : MonoBehaviour
 
     void Start()
     {
-
         EventSystem.current.SetSelectedGameObject(null);
 
-        // 1. 핵심 컴포넌트 및 매니저 참조 가져오기
+        // --- 1. 공통 초기화 (매 라운드 실행) ---
         var playerStats = GetComponent<CharacterStats>();
-        var playerSpriteRenderer = GetComponent<SpriteRenderer>();
         var playerController = GetComponent<PlayerController>();
-        var gameManager = GameManager.Instance;
-        var progressionManager = ProgressionManager.Instance;
+        var gameManager = ServiceLocator.Get<GameManager>();
+        var playerSpriteRenderer = GetComponent<SpriteRenderer>();
 
-        // 2. DebugManager에 플레이어 등록
         if (DebugManager.Instance != null)
         {
             DebugManager.Instance.RegisterPlayer(playerStats);
         }
 
-        // 3. 캐릭터 데이터 로드
-        CharacterDataSO characterToLoad = gameManager.SelectedCharacter ?? DataManager.Instance.GetCharacter("warrior");
+        // GameManager에 저장된 캐릭터 정보를 불러옵니다.
+        CharacterDataSO characterToLoad = gameManager.SelectedCharacter ?? ServiceLocator.Get<DataManager>().GetCharacter("warrior");
         if (characterToLoad == null)
         {
             Debug.LogError("CRITICAL: 적용할 캐릭터 데이터를 찾을 수 없습니다!");
             return;
         }
 
-        // 4. 기본 정보 적용 (스탯, 외형)
+        // 캐릭터의 기본 능력치와 외형을 먼저 적용합니다.
         playerStats.stats = characterToLoad.baseStats;
         playerSpriteRenderer.sprite = characterToLoad.illustration;
 
-        // 5. 스탯 계산 위임 (영구 스탯, 분배 포인트)
-        // PlayerInitializer가 직접 계산하지 않고, CharacterStats에 계산을 위임합니다.
-        CharacterPermanentStats permanentStats = progressionManager.GetPermanentStatsFor(characterToLoad.characterId);
-        playerStats.ApplyPermanentStats(permanentStats);
-        playerStats.ApplyAllocatedPoints(gameManager.AllocatedPoints, permanentStats);
+        // --- 2. 분기: 첫 라운드 vs 이후 라운드 ---
+        if (gameManager.isFirstRound)
+        {
+            var progressionManager = ProgressionManager.Instance;
+            
+            // 영구 스탯 및 분배 포인트 적용 (게임 시작 시 한 번만)
+            CharacterPermanentStats permanentStats = progressionManager.GetPermanentStatsFor(characterToLoad.characterId);
+            playerStats.ApplyPermanentStats(permanentStats);
+            playerStats.ApplyAllocatedPoints(gameManager.AllocatedPoints, permanentStats);
 
-        // 6. 시작 아이템 장착
-        EquipStartingItems(characterToLoad);
+            // 시작 아이템 장착 (게임 시작 시 한 번만)
+            EquipStartingItems(characterToLoad);
+            
+            // 첫 라운드가 끝났음을 표시
+            gameManager.isFirstRound = false;
 
-        // 7. 최종 스탯 계산 및 체력 초기화
+            // [신규] CardManager에 플레이어 정보 연결 (첫 라운드 초기화 완료 후)
+            if (ServiceLocator.Get<CardManager>() != null)
+            {
+                ServiceLocator.Get<CardManager>().LinkToNewPlayer(playerStats);
+            }
+        }
+        else
+        {
+            // CardManager와 ArtifactManager에 새로운 플레이어 정보를 연결하고, 스탯 재계산을 요청합니다.
+            if (ServiceLocator.Get<CardManager>() != null)
+            {
+                ServiceLocator.Get<CardManager>().LinkToNewPlayer(playerStats);
+            }
+            if (ServiceLocator.Get<ArtifactManager>() != null)
+            {
+                ServiceLocator.Get<ArtifactManager>().LinkToNewPlayer(playerStats);
+            }
+        }
+
+        // --- 3. 공통 마무리 (매 라운드 실행) ---
+        // 최종 스탯 계산 (카드, 유물 등 모든 보너스 합산)
         playerStats.CalculateFinalStats();
+        
+        // 체력을 최대로 회복
         playerStats.currentHealth = playerStats.finalHealth;
 
-        // 8. 게임플레이 루프 시작
-        if (CardManager.Instance != null) CardManager.Instance.StartCardSelectionLoop();
+        // 게임플레이 루프 시작
+        if (ServiceLocator.Get<CardManager>() != null) ServiceLocator.Get<CardManager>().StartCardSelectionLoop();
         if (playerController != null) playerController.StartAutoAttackLoop();
     }
 
@@ -80,31 +105,26 @@ public class PlayerInitializer : MonoBehaviour
             cardsToEquip.Add(characterData.startingCard); // 2순위: 캐릭터 데이터의 시작 카드
         }
 
-        if (cardsToEquip.Count > 0 && CardManager.Instance != null)
+        if (cardsToEquip.Count > 0 && ServiceLocator.Get<CardManager>() != null)
         {
             foreach (var card in cardsToEquip)
             {
                 if (card != null)
                 {
-                    CardManager.Instance.AddCard(card);
-                    CardManager.Instance.Equip(card);
+                    ServiceLocator.Get<CardManager>().AddCard(card);
+                    ServiceLocator.Get<CardManager>().Equip(card);
                 }
             }
-            Debug.Log($"[PlayerInitializer] {cardsToEquip.Count}개의 시작 카드를 장착했습니다.");
-        }
-        else
-        {
-            Debug.LogWarning("[PlayerInitializer] 설정된 시작 카드가 없어, 장착된 카드 없이 시작합니다.");
         }
 
         // 시작 유물 장착
         if (characterData.startingArtifacts != null && characterData.startingArtifacts.Count > 0)
         {
-            if (ArtifactManager.Instance != null)
+            if (ServiceLocator.Get<ArtifactManager>() != null)
             {
                 foreach (var artifact in characterData.startingArtifacts)
                 {
-                    if (artifact != null) ArtifactManager.Instance.EquipArtifact(artifact);
+                    if (artifact != null) ServiceLocator.Get<ArtifactManager>().EquipArtifact(artifact);
                 }
             }
         }

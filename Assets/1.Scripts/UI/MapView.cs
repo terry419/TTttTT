@@ -89,7 +89,6 @@ public class MapView : MonoBehaviour
 
     private void OnNodeClicked(MapNode node)
     {
-        Debug.Log($"[MapView] 노드 UI 클릭 감지: {node.Position}, 타입: {node.NodeType}");
         OnNodeSelected?.Invoke(node);
         Debug.Log($"[MapView] OnNodeSelected 이벤트 발생 시도.");
     }
@@ -183,7 +182,6 @@ public class MapView : MonoBehaviour
             {
                 bool isInteractable = reachableNodes.Contains(entry.Key);
                 button.interactable = isInteractable;
-                Debug.Log($"[MapView] 노드 {entry.Key.Position} interactable 설정: {isInteractable}"); // [추가됨] 디버그 로그
             }
             else
             {

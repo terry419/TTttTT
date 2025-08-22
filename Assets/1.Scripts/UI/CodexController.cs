@@ -35,10 +35,10 @@ public class CodexController : MonoBehaviour
 
     private void LoadData()
     {
-        allCards = DataManager.Instance.GetAllCards();
+        allCards = ServiceLocator.Get<DataManager>().GetAllCards();
 
-        // [수정] 이제 DataManager.Instance.GetAllArtifacts()가 존재하므로 정상적으로 호출돼.
-        allArtifacts = DataManager.Instance.GetAllArtifacts();
+        // [수정] 이제 ServiceLocator.Get<DataManager>().GetAllArtifacts()가 존재하므로 정상적으로 호출돼.
+        allArtifacts = ServiceLocator.Get<DataManager>().GetAllArtifacts();
     }
 
     private void PopulateCodex()

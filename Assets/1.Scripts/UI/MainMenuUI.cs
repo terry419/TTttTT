@@ -25,7 +25,7 @@ public class MainMenuUI : MonoBehaviour
     }
 
     public void OnOptionsButtonClicked() { Debug.Log("옵션 버튼 클릭!"); }
-    public void OnStartButtonClicked() { GameManager.Instance.ChangeState(GameManager.GameState.CharacterSelect); }
-    public void OnCodexButtonClicked() { GameManager.Instance.ChangeState(GameManager.GameState.Codex); }
+    public void OnStartButtonClicked() { ServiceLocator.Get<GameManager>().ChangeState(GameManager.GameState.CharacterSelect); }
+    public void OnCodexButtonClicked() { ServiceLocator.Get<GameManager>().ChangeState(GameManager.GameState.Codex); }
     public void OnExitButtonClicked() { Application.Quit(); }
 }

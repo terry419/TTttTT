@@ -77,7 +77,7 @@ public class PointAllocationManager : MonoBehaviour
         {
             allocatedPoints = 0;
         }
-        GameManager.Instance.AllocatedPoints = allocatedPoints;
+        ServiceLocator.Get<GameManager>().AllocatedPoints = allocatedPoints;
 
         CharacterPermanentStats permanentStats = ProgressionManager.Instance.GetPermanentStatsFor(selectedCharacter.characterId);
         Dictionary<StatType, int> distributedPoints = CalculateDistributedPoints(allocatedPoints, permanentStats);
@@ -107,7 +107,7 @@ public class PointAllocationManager : MonoBehaviour
 
     private void InitializeAllocation()
     {
-        selectedCharacter = GameManager.Instance.SelectedCharacter ?? DataManager.Instance.GetCharacter("warrior");
+        selectedCharacter = ServiceLocator.Get<GameManager>().SelectedCharacter ?? ServiceLocator.Get<DataManager>().GetCharacter("warrior");
         totalCharacterPoints = selectedCharacter.initialAllocationPoints;
         if (totalPointsText != null) totalPointsText.text = $"Total Points: {totalCharacterPoints}";
     }
@@ -130,7 +130,7 @@ public class PointAllocationManager : MonoBehaviour
 
     public void OnBackClicked()
     {
-        GameManager.Instance.ChangeState(GameManager.GameState.CharacterSelect);
+        ServiceLocator.Get<GameManager>().ChangeState(GameManager.GameState.CharacterSelect);
     }
 
     private Dictionary<StatType, int> CalculateDistributedPoints(int pointsToDistribute, CharacterPermanentStats permStats)
@@ -151,6 +151,6 @@ public class PointAllocationManager : MonoBehaviour
     private IEnumerator StartSceneTransitionAfterDelay(float waitTime)
     {
         yield return new WaitForSeconds(waitTime);
-        GameManager.Instance.ChangeState(GameManager.GameState.Gameplay);
+        ServiceLocator.Get<GameManager>().ChangeState(GameManager.GameState.Gameplay);
     }
 }

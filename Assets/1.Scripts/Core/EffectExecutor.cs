@@ -9,32 +9,14 @@ using System;
 /// </summary>
 public class EffectExecutor : MonoBehaviour
 {
-    public static EffectExecutor Instance { get; private set; }
-
-    public PoolManager poolManager { get; private set; }
-
     private Dictionary<CardEffectType, ICardEffectHandler> effectHandlers;
 
     void Awake()
     {
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-        Instance = this;
-        // [추가됨] 씬 전환 시 파괴되지 않도록 설정합니다.
+        Debug.Log($"[생명주기] {GetType().Name} (ID: {gameObject.GetInstanceID()}) - Awake() 시작. (프레임: {Time.frameCount})");
+        ServiceLocator.Register<EffectExecutor>(this);
         DontDestroyOnLoad(gameObject);
-
         InitializeHandlers(); // 핸들러 초기화
-    }
-
-    void Start()
-    {
-        Debug.Log($"[EffectExecutor] Start() 호출됨. (오브젝트: {gameObject.name})");
-        Debug.Log($"[EffectExecutor] PoolManager.Instance 할당 전: {(PoolManager.Instance == null ? "NULL" : PoolManager.Instance.gameObject.name)}");
-        poolManager = PoolManager.Instance;
-        Debug.Log($"[EffectExecutor] PoolManager.Instance 할당 후: {(poolManager == null ? "NULL" : poolManager.gameObject.name)}");
     }
 
     /// <summary>
@@ -114,13 +96,32 @@ public class EffectExecutor : MonoBehaviour
             return 0f;
         }
 
-        float totalRatio = 1
-                        + currentPS.cardDamageRatio
-                        + currentPS.artifactDamageRatio
-                        + currentPS.boosterDamageRatio
-                        + cardData.damageMultiplier;
+        // 카드의 기본 대미지가 0 이하라면 공격용 카드가 아니므로 0을 반환합니다.
+        if (cardData.baseDamage <= 0)
+        {
+            return 0f;
+        }
 
-        return currentPS.finalDamage * totalRatio;
+        // 제안하신 공식의 (1 + 가중치 합) 부분을 계산합니다.
+        // 1. 카드로 인한 스탯 증가 가중치 합 (모든 장착 카드)
+        float cardBonus = currentPS.cardDamageRatio;
+
+        // 2. 유물로 인한 스탯 증가 가중치 합
+        float artifactBonus = currentPS.artifactDamageRatio;
+
+        // 3. 유전자 증폭제(영구 스탯)로 인한 스탯 증가 가중치 합
+        float boosterBonus = currentPS.boosterDamageRatio;
+
+        // 4. 버프/디버프로 인한 스탯 증가 가중치 합
+        float buffBonus = currentPS.buffDamageRatio;
+
+        // 모든 가중치를 합산합니다.
+        float totalBonusRatio = cardBonus + artifactBonus + boosterBonus + buffBonus;
+
+        // 최종 대미지 = 카드의 기본 대미지 * (1 + 모든 보너스 가중치의 합)
+        float finalDamage = cardData.baseDamage * (1 + totalBonusRatio);
+
+        return finalDamage;
     }
 
     /// <summary>
@@ -146,5 +147,10 @@ public class EffectExecutor : MonoBehaviour
         {
             return currentPC.firePoint.eulerAngles.z;
         }
+    }
+
+    private void OnDestroy()
+    {
+        Debug.Log($"[생명주기] {GetType().Name} (ID: {gameObject.GetInstanceID()}) - OnDestroy() 시작. (프레임: {Time.frameCount})");
     }
 }

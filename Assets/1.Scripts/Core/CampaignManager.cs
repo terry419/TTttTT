@@ -1,4 +1,4 @@
-// [¼öÁ¤] CampaignManager.cs ÀüÃ¼ ÄÚµåÀÔ´Ï´Ù.
+// [ï¿½ï¿½ï¿½ï¿½] CampaignManager.cs ï¿½ï¿½Ã¼ ï¿½Úµï¿½ï¿½Ô´Ï´ï¿½.
 
 using UnityEngine;
 using System.Collections.Generic;
@@ -8,14 +8,15 @@ public class CampaignManager : MonoBehaviour
 {
     public static CampaignManager Instance { get; private set; }
 
-    [Header("Ä·ÆäÀÎ ¸ñ·Ï")]
-    [Tooltip("¿©±â¿¡ °ÔÀÓ¿¡¼­ »ç¿ëµÉ ¸ğµç Ä·ÆäÀÎ SO ÆÄÀÏÀ» ¿¬°áÇÏ¼¼¿ä.")]
-    public List<CampaignDataSO> availableCampaigns; // [¼öÁ¤] ¿©·¯ Ä·ÆäÀÎÀ» ´ãÀ» ¸®½ºÆ®
+    [Header("Ä·ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½")]
+    [Tooltip("ï¿½ï¿½ï¿½â¿¡ ï¿½ï¿½ï¿½Ó¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ Ä·ï¿½ï¿½ï¿½ï¿½ SO ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¼ï¿½ï¿½ï¿½.")]
+    public List<CampaignDataSO> availableCampaigns; // [ï¿½ï¿½ï¿½ï¿½] ï¿½ï¿½ï¿½ï¿½ Ä·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Æ®
 
-    private CampaignDataSO currentCampaign; // [¼öÁ¤] ÀÌ¹ø °ÔÀÓ¿¡¼­ ÇÃ·¹ÀÌÇÒ Ä·ÆäÀÎ
+    private CampaignDataSO currentCampaign; // [ï¿½ï¿½ï¿½ï¿½] ï¿½Ì¹ï¿½ ï¿½ï¿½ï¿½Ó¿ï¿½ï¿½ï¿½ ï¿½Ã·ï¿½ï¿½ï¿½ï¿½ï¿½ Ä·ï¿½ï¿½ï¿½ï¿½
 
     void Awake()
     {
+        Debug.Log($"[ìƒëª…ì£¼ê¸°] {GetType().Name} (ID: {gameObject.GetInstanceID()}) - Awake() ì‹œì‘. (í”„ë ˆì„: {Time.frameCount})");
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
@@ -26,37 +27,37 @@ public class CampaignManager : MonoBehaviour
     }
 
     /// <summary>
-    /// [»õ ÇÔ¼ö] °ÔÀÓ ½ÃÀÛ ½Ã µî·ÏµÈ Ä·ÆäÀÎ Áß ÇÏ³ª¸¦ ·£´ıÀ¸·Î ¼±ÅÃÇÕ´Ï´Ù.
+    /// [ï¿½ï¿½ ï¿½Ô¼ï¿½] ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½Ïµï¿½ Ä·ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ï³ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Õ´Ï´ï¿½.
     /// </summary>
     public void SelectAndStartRandomCampaign()
     {
         if (availableCampaigns == null || availableCampaigns.Count == 0)
         {
-            Debug.LogError("[CampaignManager] »ç¿ë °¡´ÉÇÑ Ä·ÆäÀÎÀÌ ¾ø½À´Ï´Ù! ÀÎ½ºÆåÅÍ¿¡¼­ Ä·ÆäÀÎÀ» µî·ÏÇØÁÖ¼¼¿ä.");
+            Debug.LogError("[CampaignManager] ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ä·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½! ï¿½Î½ï¿½ï¿½ï¿½ï¿½Í¿ï¿½ï¿½ï¿½ Ä·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¼ï¿½ï¿½ï¿½.");
             currentCampaign = null;
             return;
         }
 
-        // ¸®½ºÆ®¿¡¼­ ·£´ıÀ¸·Î Ä·ÆäÀÎ ÇÏ³ª¸¦ ¼±ÅÃÇÏ¿© ÇöÀç Ä·ÆäÀÎÀ¸·Î ¼³Á¤
+        // ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ä·ï¿½ï¿½ï¿½ï¿½ ï¿½Ï³ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¿ï¿½ ï¿½ï¿½ï¿½ï¿½ Ä·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         currentCampaign = availableCampaigns[Random.Range(0, availableCampaigns.Count)];
-        ResetCampaign(); // ¶ó¿îµå ÀÎµ¦½º ÃÊ±âÈ­
-        Debug.Log($"[CampaignManager] »õ·Î¿î Ä·ÆäÀÎ '{currentCampaign.name}'ÀÌ(°¡) ·£´ıÀ¸·Î ¼±ÅÃµÇ¾ú½À´Ï´Ù.");
+        ResetCampaign(); // ï¿½ï¿½ï¿½ï¿½ ï¿½Îµï¿½ï¿½ï¿½ ï¿½Ê±ï¿½È­
+        Debug.Log($"[CampaignManager] ï¿½ï¿½ï¿½Î¿ï¿½ Ä·ï¿½ï¿½ï¿½ï¿½ '{currentCampaign.name}'ï¿½ï¿½(ï¿½ï¿½) ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ÃµÇ¾ï¿½ï¿½ï¿½ï¿½Ï´ï¿½.");
     }
 
     /// <summary>
-    /// ³ëµåÀÇ YÁÂÇ¥(ÀÎµ¦½º)¿¡ ÇØ´çÇÏ´Â ¶ó¿îµå µ¥ÀÌÅÍ¸¦ ¹İÈ¯ÇÕ´Ï´Ù.
+    /// ï¿½ï¿½ï¿½ï¿½ï¿½ Yï¿½ï¿½Ç¥(ï¿½Îµï¿½ï¿½ï¿½)ï¿½ï¿½ ï¿½Ø´ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Í¸ï¿½ ï¿½ï¿½È¯ï¿½Õ´Ï´ï¿½.
     /// </summary>
     public RoundDataSO GetRoundDataForNode(MapNode node)
     {
         if (currentCampaign == null)
         {
-            Debug.LogError("### µğ¹ö±× ### GetRoundDataForNode ½ÇÆĞ: currentCampaignÀÌ nullÀÔ´Ï´Ù! ÀÎ½ºÆåÅÍ¿¡ Ä·ÆäÀÎÀÌ µî·ÏµÇ¾ú´ÂÁö È®ÀÎÇÏ¼¼¿ä.");
+            Debug.LogError("### ï¿½ï¿½ï¿½ï¿½ï¿½ ### GetRoundDataForNode ï¿½ï¿½ï¿½ï¿½: currentCampaignï¿½ï¿½ nullï¿½Ô´Ï´ï¿½! ï¿½Î½ï¿½ï¿½ï¿½ï¿½Í¿ï¿½ Ä·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ÏµÇ¾ï¿½ï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½ï¿½Ï¼ï¿½ï¿½ï¿½.");
             return null;
         }
-        // [¼öÁ¤] currentCampaignÀÌ ¼±ÅÃµÇ¾ú´ÂÁö È®ÀÎÇÏ´Â ¹æ¾î ÄÚµå Ãß°¡
+        // [ï¿½ï¿½ï¿½ï¿½] currentCampaignï¿½ï¿½ ï¿½ï¿½ï¿½ÃµÇ¾ï¿½ï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ ï¿½Úµï¿½ ï¿½ß°ï¿½
         if (currentCampaign == null)
         {
-            Debug.LogError("[CampaignManager] ÇöÀç ÁøÇàÇÒ Ä·ÆäÀÎÀÌ ¼±ÅÃµÇÁö ¾Ê¾Ò½À´Ï´Ù!");
+            Debug.LogError("[CampaignManager] ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ä·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ãµï¿½ï¿½ï¿½ ï¿½Ê¾Ò½ï¿½ï¿½Ï´ï¿½!");
             return null;
         }
         if (node == null) return null;
@@ -65,17 +66,22 @@ public class CampaignManager : MonoBehaviour
 
         if (roundIndex >= 0 && roundIndex < currentCampaign.rounds.Count)
         {
-            Debug.Log($"¿äÃ»µÈ ³ëµå(Y:{roundIndex})¿¡ ¸Â´Â ¶ó¿îµå µ¥ÀÌÅÍ '{currentCampaign.rounds[roundIndex].name}'À» ¹İÈ¯ÇÕ´Ï´Ù.");
+            Debug.Log($"ï¿½ï¿½Ã»ï¿½ï¿½ ï¿½ï¿½ï¿½(Y:{roundIndex})ï¿½ï¿½ ï¿½Â´ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ '{currentCampaign.rounds[roundIndex].name}'ï¿½ï¿½ ï¿½ï¿½È¯ï¿½Õ´Ï´ï¿½.");
             return currentCampaign.rounds[roundIndex];
         }
         else
         {
-            Debug.LogError($"Àß¸øµÈ ¶ó¿îµå ÀÎµ¦½º({roundIndex})°¡ ¿äÃ»µÇ¾ú½À´Ï´Ù!");
+            Debug.LogError($"ï¿½ß¸ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Îµï¿½ï¿½ï¿½({roundIndex})ï¿½ï¿½ ï¿½ï¿½Ã»ï¿½Ç¾ï¿½ï¿½ï¿½ï¿½Ï´ï¿½!");
             return null;
         }
     }
 
     public void ResetCampaign()
     {
+    }
+
+    private void OnDestroy()
+    {
+        Debug.Log($"[ìƒëª…ì£¼ê¸°] {GetType().Name} (ID: {gameObject.GetInstanceID()}) - OnDestroy() ì‹œì‘. (í”„ë ˆì„: {Time.frameCount})");
     }
 }

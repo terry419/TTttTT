@@ -11,13 +11,13 @@ public class PoolManager : MonoBehaviour
 
     void Awake()
     {
+        // [디버그] PoolManager가 깨어났음을 알립니다.
         Debug.Log($"[ 진단 ] PoolManager.Awake() 호출됨. (Frame: {Time.frameCount})");
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-        Instance = this;
+
+        // ▼▼▼ 기존의 싱글톤 코드를 이 한 줄로 대체합니다. ▼▼▼
+        ServiceLocator.Register<PoolManager>(this);
+
+        // 씬이 바뀌어도 파괴되지 않도록 설정합니다.
         DontDestroyOnLoad(gameObject);
     }
 
@@ -57,8 +57,6 @@ public class PoolManager : MonoBehaviour
             Debug.LogError("[PoolManager] Get 실패: 요청한 프리팹이 null입니다.");
             return null;
         }
-
-        Debug.Log($"[ 진단-Get ] 프리팹 '{prefab.name}' (ID: {prefab.GetInstanceID()}) 요청됨.");
 
         if (!poolDictionary.ContainsKey(prefab) || poolDictionary[prefab].Count == 0)
         {

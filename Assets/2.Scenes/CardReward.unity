@@ -848,7 +848,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3518b07dd6e08964588d2161e2b461f9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  numberOfCardsToTest: 2
+  numberOfCardsToTest: 4
 --- !u!4 &591829255
 Transform:
   m_ObjectHideFlags: 0

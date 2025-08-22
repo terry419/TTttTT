@@ -48,7 +48,7 @@ public class BulletController : MonoBehaviour
     private void Deactivate()
     {
         // PoolManager를 통해 오브젝트를 풀로 반환합니다.
-        PoolManager.Instance.Release(gameObject);
+        ServiceLocator.Get<PoolManager>().Release(gameObject);
     }
 
     // 몬스터와 충돌했을 때 MonsterController가 이 메서드를 호출하지 않으므로,

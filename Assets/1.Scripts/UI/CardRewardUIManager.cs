@@ -1,6 +1,3 @@
-// °æ·Î: Assets/1.Scripts/UI/CardRewardUIManager.cs
-// [¼öÁ¤µÊ] ´Ù¸¥ ½ºÅ©¸³Æ®°¡ È£ÃâÇÒ ¼ö ÀÖ´Â Show/Hide ÇÔ¼ö¸¦ Ãß°¡ÇÏ°í Æ÷Ä¿½º °ü¸®¸¦ °­È­Çß½À´Ï´Ù.
-
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
@@ -11,22 +8,22 @@ public class CardRewardUIManager : MonoBehaviour
 {
     public static CardRewardUIManager Instance { get; private set; }
 
-    [Header("UI ¿ä¼Ò ¹× ºÎ¸ğ")]
+    [Header("UI ìš”ì†Œ ë° ë¶€ëª¨")]
     [SerializeField] private GameObject cardDisplayPrefab;
     [SerializeField] private Transform cardSlotsParent;
 
-    [Header("±â´É ¹öÆ°")]
+    [Header("ë²„íŠ¼ ì°¸ì¡°")]
     [SerializeField] private Button acquireButton;
     [SerializeField] private Button synthesizeButton;
     [SerializeField] private Button skipButton;
     [SerializeField] private Button mapButton;
 
-    [Header("ÆË¾÷")]
+    [Header("íŒì—… ì°¸ì¡°")]
     [SerializeField] private SynthesisPopup synthesisPopup;
 
     private CardDataSO selectedCard;
     private List<CardDisplay> spawnedCardDisplays = new List<CardDisplay>();
-    private GameObject lastSelectedCardObject; // ¸¶Áö¸·À¸·Î ¼±ÅÃÇß´ø Ä«µå UI ¿ÀºêÁ§Æ® ÀúÀå
+    private GameObject lastSelectedCardObject;
 
     void Awake()
     {
@@ -50,6 +47,7 @@ public class CardRewardUIManager : MonoBehaviour
         foreach (var cardData in cardChoices)
         {
             GameObject cardUI = Instantiate(cardDisplayPrefab, cardSlotsParent);
+
             CardDisplay cardDisplay = cardUI.GetComponent<CardDisplay>();
             if (cardDisplay != null)
             {
@@ -89,13 +87,24 @@ public class CardRewardUIManager : MonoBehaviour
     {
         acquireButton.interactable = (selectedCard != null);
         bool canSynthesize = false;
-        if (selectedCard != null && CardManager.Instance != null) { canSynthesize = CardManager.Instance.HasSynthesizablePair(selectedCard); }
+        if (selectedCard != null && ServiceLocator.Get<CardManager>() != null) { canSynthesize = ServiceLocator.Get<CardManager>().HasSynthesizablePair(selectedCard); }
         synthesizeButton.interactable = canSynthesize;
     }
 
     private void OnAcquireClicked()
     {
         if (selectedCard == null) return;
+
+        // [ìˆ˜ì •] CardManagerì˜ ìƒˆë¡œìš´ í†µí•© ì¹´ë“œ íšë“ í•¨ìˆ˜ë¥¼ í˜¸ì¶œí•©ë‹ˆë‹¤.
+        if (ServiceLocator.Get<CardManager>() != null)
+        {
+            ServiceLocator.Get<CardManager>().AcquireNewCard(selectedCard);
+        }
+        else
+        {
+            Debug.LogError("[CardRewardUIManager] ServiceLocator.Get<CardManager>()ê°€ nullì…ë‹ˆë‹¤!");
+        }
+
         RewardManager.Instance.CompleteRewardSelection();
         TransitionToMap();
     }
@@ -103,12 +112,12 @@ public class CardRewardUIManager : MonoBehaviour
     private void OnSynthesizeClicked()
     {
         if (selectedCard == null || !synthesizeButton.interactable) return;
-        List<CardDataSO> materialChoices = CardManager.Instance.GetSynthesizablePairs(selectedCard);
+        List<CardDataSO> materialChoices = ServiceLocator.Get<CardManager>().GetSynthesizablePairs(selectedCard);
         if (materialChoices.Count > 0 && synthesisPopup != null)
         {
             synthesisPopup.gameObject.SetActive(true);
             synthesisPopup.Initialize(selectedCard.cardName, materialChoices, (chosenMaterial) => {
-                CardManager.Instance.SynthesizeCards(selectedCard, chosenMaterial);
+                ServiceLocator.Get<CardManager>().SynthesizeCards(selectedCard, chosenMaterial);
                 RewardManager.Instance.CompleteRewardSelection();
                 TransitionToMap();
             });
@@ -126,18 +135,15 @@ public class CardRewardUIManager : MonoBehaviour
         TransitionToMap();
     }
 
-    // [¼öÁ¤] ¸ÊÀ¸·Î ÀüÈ¯ÇÏ´Â ·ÎÁ÷À» °øÅë ÇÔ¼ö·Î ºĞ¸®
     private void TransitionToMap()
     {
         if (RouteSelectionController.Instance != null) { RouteSelectionController.Instance.Show(); }
         Hide();
     }
 
-    // [Ãß°¡] ¿ÜºÎ¿¡¼­ ÀÌ ÆĞ³ÎÀ» ´Ù½Ã È°¼ºÈ­ÇÒ ¼ö ÀÖµµ·Ï Show ÇÔ¼ö Ãß°¡
     public void Show()
     {
         gameObject.SetActive(true);
-        // µ¹¾Æ¿ÔÀ» ¶§ ¸¶Áö¸·À¸·Î ¼±ÅÃÇß´ø Ä«µå ¶Ç´Â ¹öÆ°¿¡ ´Ù½Ã Æ÷Ä¿½º
         if (lastSelectedCardObject != null)
         {
             EventSystem.current.SetSelectedGameObject(lastSelectedCardObject);
@@ -148,7 +154,6 @@ public class CardRewardUIManager : MonoBehaviour
         }
     }
 
-    // [Ãß°¡] ¿ÜºÎ¿¡¼­ ÀÌ ÆĞ³ÎÀ» ºñÈ°¼ºÈ­ÇÒ ¼ö ÀÖµµ·Ï Hide ÇÔ¼ö Ãß°¡
     public void Hide()
     {
         gameObject.SetActive(false);

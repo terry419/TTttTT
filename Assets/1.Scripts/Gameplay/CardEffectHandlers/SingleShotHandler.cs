@@ -15,13 +15,6 @@ public class SingleShotHandler : ICardEffectHandler
             return;
         }
 
-        // [수정됨] PlayerController.Instance를 직접 참조합니다.
-        PlayerController playerController = PlayerController.Instance;
-        if (playerController == null)
-        {
-            Debug.LogError("[SingleShotHandler] PlayerController.Instance를 찾을 수 없습니다! 총알을 발사할 수 없습니다.");
-            return;
-        }
 
         // 타겟팅 타입에 따라 발사 각도를 계산합니다.
         float angle = executor.GetTargetingAngle(cardData.targetingType);
@@ -29,7 +22,7 @@ public class SingleShotHandler : ICardEffectHandler
         Vector2 direction = rotation * Vector2.right;
 
         // 풀 매니저에서 총알 인스턴스를 가져옵니다.
-        GameObject bulletGO = executor.poolManager.Get(bulletPrefab);
+        GameObject bulletGO = ServiceLocator.Get<PoolManager>().Get(bulletPrefab);
         if (bulletGO == null)
         {
             Debug.LogError($"[SingleShotHandler] 오류: 풀 매니저에서 총알 오브젝트를 가져오지 못했습니다!");
@@ -38,7 +31,7 @@ public class SingleShotHandler : ICardEffectHandler
 
         // 총알 위치와 회전을 설정합니다.
         // [수정됨] playerController.firePoint를 사용합니다.
-        bulletGO.transform.position = playerController.firePoint.position;
+        bulletGO.transform.position = spawnPoint.position;
         bulletGO.transform.rotation = rotation;
 
         if (bulletGO.TryGetComponent<BulletController>(out var bullet))

@@ -15,13 +15,6 @@ public class SplitShotHandler : ICardEffectHandler
             return;
         }
 
-        // [수정됨] PlayerController.Instance를 직접 참조합니다.
-        PlayerController playerController = PlayerController.Instance;
-        if (playerController == null)
-        {
-            Debug.LogError("[SplitShotHandler] PlayerController.Instance를 찾을 수 없습니다! 총알을 발사할 수 없습니다.");
-            return;
-        }
 
         // 기본 발사 각도를 계산합니다.
         float baseAngle = executor.GetTargetingAngle(cardData.targetingType);
@@ -39,12 +32,13 @@ public class SplitShotHandler : ICardEffectHandler
             Quaternion rotation = Quaternion.Euler(0, 0, currentAngle);
             Vector2 direction = rotation * Vector2.right;
 
-            GameObject bulletGO = executor.poolManager.Get(cardData.bulletPrefab);
+            GameObject bulletGO = ServiceLocator.Get<PoolManager>().Get(bulletPrefab);
+
             if (bulletGO == null) continue;
 
             // 총알 위치와 회전을 설정합니다.
             // [수정됨] playerController.firePoint를 사용합니다.
-            bulletGO.transform.position = playerController.firePoint.position;
+            bulletGO.transform.position = spawnPoint.position;
             bulletGO.transform.rotation = rotation;
 
             if (bulletGO.TryGetComponent<BulletController>(out var bullet))

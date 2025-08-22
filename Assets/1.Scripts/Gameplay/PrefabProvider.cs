@@ -1,18 +1,18 @@
-// --- ÆÄÀÏ¸í: PrefabProvider.cs (½Å±Ô »ı¼º) ---
-// °æ·Î: Assets/1.Scripts/Gameplay/PrefabProvider.cs
+// --- íŒŒì¼ëª…: PrefabProvider.cs (ìˆ˜ì •ë¨) ---
+// ê²½ë¡œ: Assets/1.Scripts/Gameplay/PrefabProvider.cs
 using UnityEngine;
 using System.Collections.Generic;
 
 /// <summary>
-/// Gameplay ¾À¿¡¼­ »ç¿ëµÇ´Â ¸ğµç ÇÁ¸®ÆÕÀÇ ¸¶½ºÅÍ µ¥ÀÌÅÍº£ÀÌ½º ¿ªÇÒÀ» ÇÕ´Ï´Ù.
-/// ÀÌ ÄÄÆ÷³ÍÆ®´Â GameplaySystems ¿ÀºêÁ§Æ®¿¡ Á¸ÀçÇÏ¸ç, ¾À ³»ÀÇ ´Ù¸¥ ½Ã½ºÅÛµé¿¡°Ô
-/// ÀÌ¸§(string)À» ±â¹İÀ¸·Î ÇÁ¸®ÆÕÀ» Á¦°øÇÕ´Ï´Ù.
+/// Gameplayì— í•„ìš”í•œ ëª¨ë“  í”„ë¦¬íŒ¹ì˜ ë°ì´í„°ë² ì´ìŠ¤ ì—­í• ì„ í•©ë‹ˆë‹¤.
+/// ì´ ì»´í¬ë„ŒíŠ¸ë¥¼ GameplaySystems ì˜¤ë¸Œì íŠ¸ì— ì¶”ê°€í•˜ë©´, ì”¬ ë‚´ ë‹¤ë¥¸ ì‹œìŠ¤í…œë“¤ì´
+/// ì´ë¦„(string)ìœ¼ë¡œ ì›í•˜ëŠ” í”„ë¦¬íŒ¹ì„ ì–»ì„ ìˆ˜ ìˆìŠµë‹ˆë‹¤.
 /// </summary>
 public class PrefabProvider : MonoBehaviour
 {
-    public static PrefabProvider Instance { get; private set; }
+    // public static PrefabProvider Instance { get; private set; } // ServiceLocator ì‚¬ìš©ìœ¼ë¡œ ëŒ€ì²´
 
-    [Header("°ÔÀÓÇÃ·¹ÀÌ ÇÁ¸®ÆÕ ¸ñ·Ï")]
+    [Header("í”„ë¦¬íŒ¹ ëª©ë¡")]
     [SerializeField] private List<GameObject> monsterPrefabs;
     [SerializeField] private List<GameObject> bulletPrefabs;
     [SerializeField] private List<GameObject> vfxPrefabs;
@@ -21,18 +21,21 @@ public class PrefabProvider : MonoBehaviour
 
     void Awake()
     {
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-        Instance = this;
+        Debug.Log($"[ìƒëª…ì£¼ê¸°] {GetType().Name} (ID: {gameObject.GetInstanceID()}) - Awake() ì‹œì‘. (í”„ë ˆì„: {Time.frameCount})");
+        // --- [ServiceLocator] PrefabProvider ë“±ë¡ ---
+        // ì´ ë§¤ë‹ˆì €ì˜ ì¸ìŠ¤í„´ìŠ¤ë¥¼ ServiceLocatorì— ë“±ë¡í•˜ì—¬, ë‹¤ë¥¸ ê³³ì—ì„œ ì‰½ê²Œ ì°¾ì•„ ì“¸ ìˆ˜ ìˆë„ë¡ í•©ë‹ˆë‹¤.
+        Debug.Log($"[{GetType().Name}] ServiceLocatorì— ë“±ë¡ì„ ì‹œë„í•©ë‹ˆë‹¤.");
+        ServiceLocator.Register<PrefabProvider>(this);
+        DontDestroyOnLoad(gameObject); // ì”¬ì´ ë°”ë€Œì–´ë„ íŒŒê´´ë˜ì§€ ì•Šë„ë¡ ì„¤ì •
+        Debug.Log($"[{GetType().Name}] ServiceLocator ë“±ë¡ ë° DontDestroyOnLoad ì„¤ì • ì™„ë£Œ.");
 
-        // °ÔÀÓ ½ÃÀÛ ½Ã ¸ğµç ÇÁ¸®ÆÕ ¸®½ºÆ®¸¦ ÇÏ³ªÀÇ µñ¼Å³Ê¸®·Î ÅëÇÕÇÏ¿©
-        // ºü¸£°í ½±°Ô °Ë»öÇÒ ¼ö ÀÖµµ·Ï ÁØºñÇÕ´Ï´Ù.
+        // ëª¨ë“  í”„ë¦¬íŒ¹ ë¦¬ìŠ¤íŠ¸ë¥¼ í•˜ë‚˜ì˜ ë”•ì…”ë„ˆë¦¬ì— í†µí•©í•˜ì—¬
+        // ì´ë¦„ìœ¼ë¡œ ë¹ ë¥´ê²Œ ê²€ìƒ‰í•  ìˆ˜ ìˆë„ë¡ ì¤€ë¹„í•©ë‹ˆë‹¤.
+        Debug.Log($"[{GetType().Name}] í”„ë¦¬íŒ¹ ë”•ì…”ë„ˆë¦¬ ì´ˆê¸°í™”ë¥¼ ì‹œì‘í•©ë‹ˆë‹¤.");
         PopulatePrefabDict(monsterPrefabs);
         PopulatePrefabDict(bulletPrefabs);
         PopulatePrefabDict(vfxPrefabs);
+        Debug.Log($"[{GetType().Name}] í”„ë¦¬íŒ¹ ë”•ì…”ë„ˆë¦¬ ì´ˆê¸°í™” ì™„ë£Œ. ì´ {prefabDictionary.Count}ê°œì˜ í”„ë¦¬íŒ¹ì´ ë“±ë¡ë˜ì—ˆìŠµë‹ˆë‹¤.");
     }
 
     private void PopulatePrefabDict(List<GameObject> prefabList)
@@ -48,10 +51,10 @@ public class PrefabProvider : MonoBehaviour
     }
 
     /// <summary>
-    /// ÀÌ¸§À¸·Î ÇÁ¸®ÆÕÀ» Ã£¾Æ ¹İÈ¯ÇÕ´Ï´Ù.
+    /// ì´ë¦„ìœ¼ë¡œ í”„ë¦¬íŒ¹ì„ ì°¾ì•„ ë°˜í™˜í•©ë‹ˆë‹¤.
     /// </summary>
-    /// <param name="name">Ã£À» ÇÁ¸®ÆÕÀÇ ÀÌ¸§</param>
-    /// <returns>Ã£Àº ÇÁ¸®ÆÕ. ¾øÀ¸¸é nullÀ» ¹İÈ¯ÇÕ´Ï´Ù.</returns>
+    /// <param name="name">ì°¾ì„ í”„ë¦¬íŒ¹ì˜ ì´ë¦„</param>
+    /// <returns>ì°¾ì€ í”„ë¦¬íŒ¹. ì—†ìœ¼ë©´ nullì„ ë°˜í™˜í•©ë‹ˆë‹¤.</returns>
     public GameObject GetPrefab(string name)
     {
         if (string.IsNullOrEmpty(name)) return null;
@@ -59,8 +62,14 @@ public class PrefabProvider : MonoBehaviour
         prefabDictionary.TryGetValue(name, out GameObject prefab);
         if (prefab == null)
         {
-            Debug.LogError($"[PrefabProvider] ÇÁ¸®ÆÕ µñ¼Å³Ê¸®¿¡¼­ '{name}'À»(¸¦) Ã£À» ¼ö ¾ø½À´Ï´Ù. InspectorÀÇ ÇÁ¸®ÆÕ ¸ñ·Ï¿¡ µî·ÏµÇ¾ú´ÂÁö È®ÀÎÇÏ¼¼¿ä.");
+            // ë¡œê·¸ ë©”ì‹œì§€ì˜ ê¹¨ì§„ ë¬¸ì ìˆ˜ì •
+            Debug.LogError($"[PrefabProvider] í”„ë¦¬íŒ¹ ë”•ì…”ë„ˆë¦¬ì—ì„œ '{name}'ì„(ë¥¼) ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤. Inspectorì˜ í”„ë¦¬íŒ¹ ëª©ë¡ì— ë“±ë¡ë˜ì—ˆëŠ”ì§€ í™•ì¸í•˜ì„¸ìš”.");
         }
         return prefab;
+    }
+
+    private void OnDestroy()
+    {
+        Debug.Log($"[ìƒëª…ì£¼ê¸°] {GetType().Name} (ID: {gameObject.GetInstanceID()}) - OnDestroy() ì‹œì‘. (í”„ë ˆì„: {Time.frameCount})");
     }
 }

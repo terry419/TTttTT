@@ -107,7 +107,8 @@ public class MonsterSpawner : MonoBehaviour
         float randomDistance = Random.Range(minSpawnRadius, maxSpawnRadius);
         Vector3 spawnPosition = center + (Vector3)(randomDirection * randomDistance);
 
-        GameObject monsterInstance = PoolManager.Instance.Get(monsterPrefab);
+        GameObject monsterInstance = ServiceLocator.Get<PoolManager>().Get(monsterPrefab);
+
         monsterInstance.transform.position = spawnPosition;
 
         MonsterController mc = monsterInstance.GetComponent<MonsterController>();

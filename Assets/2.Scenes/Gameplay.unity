@@ -3625,13 +3625,13 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1100820512}
-  - component: {fileID: 1100820511}
-  - component: {fileID: 1100820510}
   - component: {fileID: 1100820509}
   - component: {fileID: 1100820508}
   - component: {fileID: 1100820507}
   - component: {fileID: 1100820506}
   - component: {fileID: 1100820513}
+  - component: {fileID: 1100820514}
+  - component: {fileID: 1100820515}
   m_Layer: 0
   m_Name: GameplaySystems
   m_TagString: Untagged
@@ -3655,6 +3655,9 @@ MonoBehaviour:
   - {fileID: 4357389609628293305, guid: 2db2f4d47a86b4e4f9ee307cc57a0cfb, type: 3}
   bulletPrefabs:
   - {fileID: 4131301929793885116, guid: 99ab044e7ccac4c48b76072b91e119b2, type: 3}
+  - {fileID: 4131301929793885116, guid: 01e6dfde3dedee24b898219158d7a0e8, type: 3}
+  - {fileID: 4228891817467213148, guid: 2a043bfa240277e43b7834ad43063174, type: 3}
+  - {fileID: 4228891817467213148, guid: 2dc6c5128886c0442b1a3df654a62321, type: 3}
   vfxPrefabs:
   - {fileID: 3276330006535599853, guid: d449cd9647b76924ca8c8df2ba7b338e, type: 3}
 --- !u!114 &1100820507
@@ -3694,52 +3697,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 03a3a5892437d8449a01bae6541ef64a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  activeCard: {fileID: 0}
   ownedCards: []
   equippedCards: []
   maxOwnedSlots: 20
   maxEquipSlots: 5
---- !u!114 &1100820510
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1100820505}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 153f2b375ddbba34a9fb654f9c1c0ef0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  playerTransform: {fileID: 1615835054}
-  minSpawnRadius: 10
-  maxSpawnRadius: 15
---- !u!114 &1100820511
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1100820505}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6f32ccbfea84c364b81f456e6c59df70, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  monsterPreloads:
-  - prefab: {fileID: 4357389609628293305, guid: 2db2f4d47a86b4e4f9ee307cc57a0cfb, type: 3}
-    count: 100
-  effectPreloads:
-  - prefab: {fileID: 4131301929793885116, guid: 99ab044e7ccac4c48b76072b91e119b2, type: 3}
-    count: 1000
-  - prefab: {fileID: 3276330006535599853, guid: d449cd9647b76924ca8c8df2ba7b338e, type: 3}
-    count: 1000
-  - prefab: {fileID: 4131301929793885116, guid: 01e6dfde3dedee24b898219158d7a0e8, type: 3}
-    count: 1000
-  - prefab: {fileID: 4228891817467213148, guid: 2a043bfa240277e43b7834ad43063174, type: 3}
-    count: 100
-  monsterSpawner: {fileID: 1623321398}
-  hudController: {fileID: 1259565396}
+  activeCard: {fileID: 0}
 --- !u!4 &1100820512
 Transform:
   m_ObjectHideFlags: 0
@@ -3769,6 +3731,30 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   availableCampaigns:
   - {fileID: 11400000, guid: 14bf4bd693e5d8743b0fee4d42c9c28e, type: 2}
+--- !u!114 &1100820514
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1100820505}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 518bed37cf20cf0469a1c0bc8bc5f5e8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &1100820515
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1100820505}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b0c8d3d3fc2fcd041a419540f1769f15, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1123794634
 GameObject:
   m_ObjectHideFlags: 0
@@ -3903,6 +3889,100 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 350}
   m_SizeDelta: {x: 200, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &1237349105
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1237349108}
+  - component: {fileID: 1237349107}
+  - component: {fileID: 1237349106}
+  - component: {fileID: 1237349109}
+  m_Layer: 0
+  m_Name: _RoundSystems
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1237349106
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1237349105}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 153f2b375ddbba34a9fb654f9c1c0ef0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  minSpawnRadius: 10
+  maxSpawnRadius: 15
+--- !u!114 &1237349107
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1237349105}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f32ccbfea84c364b81f456e6c59df70, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  monsterPreloads:
+  - prefab: {fileID: 4357389609628293305, guid: 2db2f4d47a86b4e4f9ee307cc57a0cfb, type: 3}
+    count: 1000
+  effectPreloads:
+  - prefab: {fileID: 4131301929793885116, guid: 99ab044e7ccac4c48b76072b91e119b2, type: 3}
+    count: 1000
+  - prefab: {fileID: 4131301929793885116, guid: 01e6dfde3dedee24b898219158d7a0e8, type: 3}
+    count: 1000
+  - prefab: {fileID: 4228891817467213148, guid: 2a043bfa240277e43b7834ad43063174, type: 3}
+    count: 1000
+  - prefab: {fileID: 4228891817467213148, guid: 2dc6c5128886c0442b1a3df654a62321, type: 3}
+    count: 1000
+  - prefab: {fileID: 3276330006535599853, guid: d449cd9647b76924ca8c8df2ba7b338e, type: 3}
+    count: 10000
+--- !u!4 &1237349108
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1237349105}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 304.4421, y: 1170.5261, z: 7.067377}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1237349109
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1237349105}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 54fe3993c31102c4d9f2e1d5dc70e6ec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mapHeight: 15
+  mapWidth: 5
+  monsterChance: 60
+  restChance: 15
+  eventChance: 15
+  merchantChance: 10
+  numberOfPathsToGenerate: 4
+  forceAllMonsters: 1
 --- !u!1 &1259565395
 GameObject:
   m_ObjectHideFlags: 0
@@ -4409,7 +4489,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   testStartingCards:
-  - {fileID: 11400000, guid: cd01480f44aca2c41bbc61b9ce53ebbe, type: 2}
+  - {fileID: 11400000, guid: 2ecce3066bb8ae04198b7ef59103467c, type: 2}
+  - {fileID: 11400000, guid: fde96b367ae9b224a9d2b7a075796cf2, type: 2}
 --- !u!114 &1615835056
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4634,7 +4715,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 153f2b375ddbba34a9fb654f9c1c0ef0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerTransform: {fileID: 1615835054}
   minSpawnRadius: 10
   maxSpawnRadius: 15
 --- !u!4 &1623321399
@@ -4810,3 +4890,4 @@ SceneRoots:
   - {fileID: 1623321399}
   - {fileID: 2080119979}
   - {fileID: 1100820512}
+  - {fileID: 1237349108}

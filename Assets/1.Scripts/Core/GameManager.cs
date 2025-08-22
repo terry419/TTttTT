@@ -1,27 +1,44 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using System.Collections;
 
 public class GameManager : MonoBehaviour
 {
-    public static GameManager Instance { get; private set; }
-
     public enum GameState { MainMenu, CharacterSelect, PointAllocation, Gameplay, Reward, Pause, Codex, GameOver, Shop, Rest, Event }
     public GameState CurrentState { get; private set; }
     public CharacterDataSO SelectedCharacter { get; set; }
     public int AllocatedPoints { get; set; }
+    public bool isFirstRound = true;
+
+    public event System.Action<GameState> OnGameStateChanged;
 
     private SceneTransitionManager sceneTransitionManager;
 
     private void Awake()
     {
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-        Instance = this;
+        ServiceLocator.Register<GameManager>(this);
         DontDestroyOnLoad(gameObject);
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDestroy()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    // --- [추가] ---
+    // 씬 로드가 '완전히' 끝났을 때 Unity가 이 함수를 자동으로 호출해줍니다.
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        Debug.Log($"[GameManager] '{scene.name}' 씬 로드 완료.");
+        // 현재 게임 상태가 Gameplay일 경우에만 라운드 시작 로직을 실행합니다.
+        if (CurrentState == GameState.Gameplay)
+        {
+            // 이제 씬에 있는 모든 오브젝트(HUD 포함)가 준비된 상태이므로,
+            // 여기서 라운드를 시작하면 안전합니다.
+            StartCoroutine(StartRoundAfterSceneLoad());
+        }
     }
 
     private void Start()
@@ -35,6 +52,9 @@ public class GameManager : MonoBehaviour
         if (newState == CurrentState) return;
         Debug.Log($"[GameManager] 상태 변경 시작: {CurrentState} -> {newState}");
         CurrentState = newState;
+
+        // 상태 변경 이벤트를 방송합니다.
+        OnGameStateChanged?.Invoke(newState);
 
         string sceneName = "";
         switch (newState)
@@ -85,6 +105,39 @@ public class GameManager : MonoBehaviour
     {
         // --- 기존 디버그 로그 보존 ---
         Debug.Log("--- [GameManager] StartRoundAfterSceneLoad 코루틴 시작 ---");
+
+#if UNITY_EDITOR
+        // --- [테스트 모드 자동 설정] ---
+        // 만약 MapManager가 준비되지 않은 상태로 이 코루틴이 시작되었다면,
+        // Gameplay 씬에서 바로 테스트를 시작한 것으로 간주합니다.
+        if (MapManager.Instance == null || !MapManager.Instance.IsMapInitialized)
+        {
+            Debug.LogWarning("[GameManager] 테스트 모드 감지: 필수 데이터 자동 설정 시작...");
+
+            // 1. 씬에서 MapGenerator를 찾아 맵을 생성하고 MapManager를 초기화합니다.
+            MapGenerator mapGenerator = FindObjectOfType<MapGenerator>();
+            if (mapGenerator != null)
+            {
+                List<MapNode> mapData = mapGenerator.Generate();
+                MapManager.Instance.InitializeMap(mapData, mapGenerator.MapWidth, mapGenerator.MapHeight);
+                Debug.Log("[GameManager] 테스트용 맵 데이터 생성 및 초기화 완료.");
+            }
+            else
+            {
+                Debug.LogError("[GameManager] 테스트 모드 설정 실패: 씬에서 MapGenerator를 찾을 수 없습니다!");
+                yield break; // 맵 생성 없이는 진행 불가
+            }
+
+            // 2. 테스트에 필요한 기본값들을 GameManager에 설정합니다.
+            if (SelectedCharacter == null)
+            {
+                SelectedCharacter = ServiceLocator.Get<DataManager>().GetCharacter("warrior");
+                Debug.Log("[GameManager] 테스트용 기본 캐릭터 'warrior' 설정 완료.");
+            }
+            AllocatedPoints = 0; // 테스트 시에는 추가 포인트 없음
+            isFirstRound = true; // 첫 라운드처럼 동작하도록 설정
+        }
+#endif
         yield return null;
 
         float timeout = 5f;

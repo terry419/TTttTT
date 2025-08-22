@@ -1,13 +1,16 @@
-// --- 파일명: MonsterController.cs (최종 수정본) ---
+// --- 파일명: MonsterController.cs (수정 제안) ---
 // 경로: Assets/1.Scripts/Gameplay/MonsterController.cs
 using UnityEngine;
 using System.Collections;
-using System.Collections.Generic; // 변경사항 1: [추가] HashSet을 사용하기 위해 추가
-using System.Linq; // 변경사항 2: [추가] Linq 사용을 위해 추가 (선택 사항)
+using System.Collections.Generic;
+using System.Linq;
 
 [RequireComponent(typeof(Rigidbody2D))]
 public class MonsterController : MonoBehaviour
 {
+    public static event System.Action<float, Vector3> OnMonsterDamaged;
+    public static event System.Action<MonsterController> OnMonsterDied;
+
     [HideInInspector] public float moveSpeed;
     [HideInInspector] public float contactDamage;
     [HideInInspector] public float maxHealth;
@@ -22,24 +25,60 @@ public class MonsterController : MonoBehaviour
     private float damageTimer = 0f;
     private bool isTouchingPlayer = false;
 
-    // 변경사항 3: [추가] 이미 피해를 입은 shotInstanceID를 저장하는 HashSet
     public HashSet<string> hitShotIDs = new HashSet<string>();
+
+    // [추가] 몬스터의 사망 상태를 추적하는 플래그
+    private bool isDead = false;
 
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
     }
 
-    // 변경사항 4: [추가] 오브젝트가 활성화될 때마다 hitShotIDs를 초기화 (풀링된 오브젝트를 위해)
     void OnEnable()
     {
         hitShotIDs.Clear();
+        isDead = false;
+        if (monsterData != null)
+        {
+            currentHealth = monsterData.maxHealth;
+        }
+        isInvulnerable = false;
+
+        // 게임 상태 변경 이벤트를 구독합니다.
+        if (ServiceLocator.Get<GameManager>() != null)
+        {
+            ServiceLocator.Get<GameManager>().OnGameStateChanged += HandleGameStateChanged;
+        }
+    }
+
+    void OnDisable()
+    {
+        // 오브젝트가 비활성화될 때 이벤트 구독을 해제합니다.
+        if (ServiceLocator.Get<GameManager>() != null)
+        {
+            ServiceLocator.Get<GameManager>().OnGameStateChanged -= HandleGameStateChanged;
+        }
+    }
+
+    /// <summary>
+    /// 게임 상태 변경을 감지하여 처리합니다.
+    /// </summary>
+    private void HandleGameStateChanged(GameManager.GameState newState)
+    {
+        // 리워드 상태가 되면 몬스터를 비활성화하여 다음 씬으로 넘어가지 않도록 합니다.
+        if (newState == GameManager.GameState.Reward)
+        {
+            if(gameObject.activeInHierarchy)
+            {
+                ServiceLocator.Get<PoolManager>().Release(gameObject);
+            }
+        }
     }
 
 
     void Start()
     {
-        // PlayerController는 Gameplay 씬에만 존재하므로, Start에서 찾아야 안전합니다.
         if (PlayerController.Instance != null)
         {
             playerTransform = PlayerController.Instance.transform;
@@ -58,9 +97,8 @@ public class MonsterController : MonoBehaviour
         moveSpeed = monsterData.moveSpeed;
         contactDamage = monsterData.contactDamage;
         currentHealth = maxHealth;
-        // 변경사항 5: [추가] 몬스터가 초기화될 때 hitShotIDs도 초기화
         hitShotIDs.Clear();
-
+        isDead = false;
     }
 
     void Update()
@@ -78,9 +116,10 @@ public class MonsterController : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (isInvulnerable || playerTransform == null)
+        if (isInvulnerable || playerTransform == null || isDead)
         {
             rb.velocity = Vector2.zero;
+
             return;
         }
         Vector2 direction = (playerTransform.position - transform.position).normalized;
@@ -99,30 +138,50 @@ public class MonsterController : MonoBehaviour
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        Debug.Log($"[MonsterController] OnTriggerEnter2D 호출됨. 충돌한 오브젝트: {other.name}, 태그: {other.tag}");
+        // [디버그 1-1] 메서드가 시작되었고, 누구와 부딪혔는지 기록합니다.
+        Debug.Log($"[디버그 1-1] OnTriggerEnter2D 시작. 충돌 대상: {other.name}");
 
-        BulletController hitBullet = other.GetComponent<BulletController>();
-        if (hitBullet != null)
+        if (isDead)
         {
-            // 변경사항 6: [추가] 동일한 shotInstanceID에 대해 한 번만 데미지 적용
+            Debug.LogWarning("[디버그] 몬스터가 이미 죽은 상태라 아무것도 처리하지 않음.");
+            return;
+        }
+
+        if (other.TryGetComponent<BulletController>(out var hitBullet))
+        {
+            // [디버그 1-2] 부딪힌 것이 총알임을 확인했습니다.
+            Debug.Log("[디버그 1-2] 총알 확인 완료.");
+
             if (hitShotIDs.Contains(hitBullet.shotInstanceID))
             {
-                PoolManager.Instance.Release(other.gameObject); // 총알은 풀로 반환
-                return; // 이미 맞은 총알이므로 데미지 적용 안 함
+                ServiceLocator.Get<PoolManager>().Release(other.gameObject);
+                return;
             }
 
+            hitShotIDs.Add(hitBullet.shotInstanceID);
             TakeDamage(hitBullet.damage);
+
+            if (hitBullet.SourceCard != null && hitBullet.SourceCard.statusEffectToApply != null)
+            {
+                // [디버그 1-3] 총알이 적용할 상태 효과를 가지고 있음을 확인했습니다.
+                Debug.Log($"[디버그 1-3] 총알이 적용할 상태 효과({hitBullet.SourceCard.statusEffectToApply.name})를 가지고 있음.");
+
+                // [디버그 1-4] StatusEffectManager에게 효과 적용을 요청하기 직전입니다.
+                Debug.Log("[디버그 1-4] StatusEffectManager에 효과 적용 요청 시작...");
+                ServiceLocator.Get<StatusEffectManager>().ApplyStatusEffect(this.gameObject, hitBullet.SourceCard.statusEffectToApply);
+            }
 
             if (hitBullet.SourceCard != null && hitBullet.SourceCard.secondaryEffect != null)
             {
-                // EffectExecutor의 새 기능을 호출!
-                // 2차 효과 카드(secondaryEffect)를 이 몬스터의 위치(this.transform)에서 발동
-                EffectExecutor.Instance.Execute(hitBullet.SourceCard.secondaryEffect, this.transform);
+                ServiceLocator.Get<EffectExecutor>().Execute(hitBullet.SourceCard.secondaryEffect, this.transform);
             }
-            PoolManager.Instance.Release(other.gameObject);
-            return;
+
+            ServiceLocator.Get<PoolManager>().Release(other.gameObject);
         }
-        CheckForPlayer(other.gameObject);
+        else
+        {
+            CheckForPlayer(other.gameObject);
+        }
     }
 
     void OnTriggerExit2D(Collider2D other)
@@ -165,43 +224,62 @@ public class MonsterController : MonoBehaviour
         if (isInvulnerable) return;
         currentHealth -= damage;
 
-        // [수정] DataManager가 아닌 PrefabProvider를 통해 데미지 텍스트 프리팹을 가져옵니다.
-        if (PrefabProvider.Instance != null)
-        {
-            GameObject damageTextPrefab = PrefabProvider.Instance.GetPrefab("DamageTextCanvas");
-            if (damageTextPrefab != null)
-            {
-                GameObject textGO = PoolManager.Instance.Get(damageTextPrefab);
-                textGO.transform.position = transform.position + Vector3.up * 0.5f;
-                textGO.GetComponent<DamageText>().ShowDamage(damage);
-            }
-        }
+        Debug.Log($"[데미지] {name}: {damage} 피해. 현재 체력: {currentHealth}/{maxHealth}");
+
+        // 기존의 데미지 텍스트 생성 코드를 삭제하고, 아래의 이벤트 발생 코드로 대체합니다.
+        OnMonsterDamaged?.Invoke(damage, transform.position);
 
         if (currentHealth <= 0) Die();
     }
 
     private void Die()
     {
-        if (RoundManager.Instance != null)
+        // [수정] 몬스터가 여러 번 죽는 것을 방지하기 위해 isDead 플래그로 확인합니다.
+        if (!isDead)
         {
-            Debug.Log($"<color=cyan>[가설 검증] 몬스터(ID:{GetInstanceID()})가 RoundManager(ID:{RoundManager.Instance.GetInstanceID()})에게 RegisterKill 호출을 시도합니다.</color>");
-            RoundManager.Instance.RegisterKill();
+            isDead = true;
+            Debug.Log($"[{name}] 사망. OnMonsterDied 이벤트를 발생시킵니다.");
+            OnMonsterDied?.Invoke(this);
         }
         else
         {
-            Debug.LogError("[가설 검증] 몬스터가 RegisterKill을 호출하려 했으나 RoundManager.Instance가 null입니다!");
+            // 이미 죽은 상태라면, 중복 처리하지 않고 함수를 종료합니다.
+            return;
         }
+
+        // [주석] 가이드에 폭발 로직이 있었으나, 현재 HandleExplosion() 함수가 없어 컴파일 오류가 발생하므로 주석 처리합니다.
+        // [주석] 가이드에 폭발 로직이 있었으나, 현재 HandleExplosion() 함수가 없어 컴파일 오류가 발생하므로 주석 처리합니다.
+        // if (monsterData != null && monsterData.behaviorType == MonsterBehaviorType.ExplodeOnDeath)
+        // {
+        //     // HandleExplosion();
+        //     Debug.LogWarning($"[{name}] 폭발 로직(HandleExplosion)이 필요하지만, 함수가 정의되지 않아 호출을 생략합니다.");
+        // }
+        
+        // [수정] PoolManager.Instance 대신 ServiceLocator를 통해 오브젝트 풀에 반환합니다.
+        Debug.Log($"[{name}] 오브젝트 풀에 반환을 요청합니다.");
+        ServiceLocator.Get<PoolManager>().Release(gameObject);
     }
 
     public void SetInvulnerable(float duration)
     {
+        // [로그 추가] 이 함수가 언제, 누구에 의해 호출되는지 정확히 기록합니다.
+        // StackTraceUtility.ExtractStackTrace()는 호출 스택을 문자열로 보여주어
+        // 이 함수를 부른 코드가 무엇인지 역추적할 수 있게 해줍니다.
+
+        StopCoroutine("InvulnerableRoutine");
         StartCoroutine(InvulnerableRoutine(duration));
     }
 
+
+
     private IEnumerator InvulnerableRoutine(float duration)
     {
+        // [로그 추가 1] 코루틴이 시작되고, 무적 상태가 되는 시점을 기록합니다.
         isInvulnerable = true;
+
         yield return new WaitForSeconds(duration);
+
+        // [로그 추가 2] 대기가 끝난 후, 무적 상태가 해제되는 시점을 기록합니다.
         isInvulnerable = false;
     }
 }

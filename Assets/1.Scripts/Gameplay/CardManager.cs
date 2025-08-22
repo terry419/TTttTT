@@ -1,157 +1,131 @@
 // --- 파일명: CardManager.cs ---
 
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class CardManager : MonoBehaviour
 {
-    public static CardManager Instance { get; private set; }
-
-    [Header("실시간 카드 상태")]
-    [Tooltip("주기적으로 랜덤하게 선택되어 현재 사용 중인 카드")]
-    public CardDataSO activeCard;
-
-
     [Header("카드 목록")]
     public List<CardDataSO> ownedCards = new List<CardDataSO>();
     public List<CardDataSO> equippedCards = new List<CardDataSO>();
 
     [Header("슬롯 설정")]
-    public int maxOwnedSlots = 20;
+    public int maxOwnedSlots = 7; 
     public int maxEquipSlots = 5;
 
-    /// <summary>
-    /// 주기적으로 활성 카드를 선택하는 루프를 시작합니다.
-    /// (수정됨: 고정된 10초 대신 플레이어의 능력치를 사용)
-    /// </summary>
-    public void StartCardSelectionLoop()
-    {
-        // 이전에 실행되던 루프가 있다면 중복 실행을 막기 위해 취소합니다.
-        CancelInvoke(nameof(SelectActiveCard));
-
-        // 플레이어의 스탯을 가져옵니다.
-        FindPlayerStats(); // CharacterStats 참조를 확인하는 도우미 함수
-
-        // 플레이어 스탯에 저장된 시간 간격을 사용하고, 만약 스탯을 찾지 못하면 기본값 10초를 사용합니다.
-        float interval = (playerStats != null) ? playerStats.cardSelectionInterval : 10f;
-
-        // 스탯에 저장된 시간 간격으로 루프를 실행합니다.
-        InvokeRepeating(nameof(SelectActiveCard), interval, interval);
-
-        // 게임 시작 시 첫 카드를 바로 선택하기 위해 즉시 1회 호출합니다.
-        SelectActiveCard();
-    }
-
-    /// <summary>
-    /// 장착된 카드 중에서 가중치를 기반으로 다음 주기에 사용할 카드를 랜덤으로 선택합니다.
-    /// </summary>
-    private void SelectActiveCard()
-    {
-        if (equippedCards.Count == 0)
-        {
-            activeCard = null;
-            Debug.Log("[CardManager] 장착된 카드가 없어 활성 카드를 비웠습니다.");
-            return;
-        }
-
-        // 1. 모든 장착 카드의 가중치 총합을 계산합니다.
-        float totalWeight = 0f;
-        foreach (var card in equippedCards)
-        {
-            // 가중치는 최소 0 이상이어야 합니다.
-            totalWeight += Mathf.Max(0, card.selectionWeight);
-        }
-
-        // 만약 모든 카드의 가중치 총합이 0이면, 랜덤 선택이 불가능하므로 첫번째 카드를 선택하고 종료합니다.
-        if (totalWeight <= 0)
-        {
-            activeCard = equippedCards[0];
-            Debug.LogWarning("[CardManager] 모든 카드의 가중치 총합이 0 이하여서, 첫 번째 카드를 활성 카드로 선택합니다.");
-            return;
-        }
-
-        // 2. 0부터 총합 사이의 랜덤한 숫자를 뽑습니다.
-        float randomPoint = Random.Range(0, totalWeight);
-        float currentWeightSum = 0f;
-
-        // 3. 가중치를 순서대로 더해가며 랜덤 숫자가 어디에 속하는지 찾습니다.
-        foreach (var card in equippedCards)
-        {
-            float weight = Mathf.Max(0, card.selectionWeight);
-            if (randomPoint <= currentWeightSum + weight)
-            {
-                activeCard = card;
-                float currentInterval = (playerStats != null) ? playerStats.cardSelectionInterval : 10f;
-                Debug.Log($"[CardManager] 새로운 활성 카드가 선택되었습니다: {activeCard.cardName} (가중치: {weight}, 다음 {currentInterval}초 동안 사용)");
-                return; // 카드를 선택했으니 함수를 종료합니다.
-            }
-            currentWeightSum += weight;
-        }
-
-        // 만약 루프가 끝날 때까지 선택되지 않았다면(부동소수점 오류 등 예외상황),
-        // 안전하게 마지막 카드를 선택합니다.
-        activeCard = equippedCards[equippedCards.Count - 1];
-    }
-
-
-
-    // [추가] 플레이어 스탯을 직접 제어하기 위한 참조
+    [Header("실시간 카드 상태")]
+    public CardDataSO activeCard;
+    
     private CharacterStats playerStats;
 
     private void Awake()
     {
-        if (Instance == null) { Instance = this; DontDestroyOnLoad(gameObject); }
-        else { Destroy(gameObject); }
+        Debug.Log($"[생명주기] {GetType().Name} (ID: {gameObject.GetInstanceID()}) - Awake() 시작. (프레임: {Time.frameCount})");
+        ServiceLocator.Register<CardManager>(this);
+        DontDestroyOnLoad(gameObject);
     }
 
     private void Start()
     {
     }
 
-
-    // [추가] 게임 시작 시 플레이어 스탯을 찾아 저장하는 함수
-    private void FindPlayerStats()
+    void OnEnable()
     {
-        if (playerStats == null)
-        {
-            // PlayerController를 통해 안전하게 CharacterStats를 찾습니다.
-            if (PlayerController.Instance != null)
-            {
-                playerStats = PlayerController.Instance.GetComponent<CharacterStats>();
-            }
-        }
+        RoundManager.OnRoundEnded += HandleRoundEnd;
     }
 
-    public void AddCard(CardDataSO cardToAdd)
+    void OnDisable()
     {
+        RoundManager.OnRoundEnded -= HandleRoundEnd;
+    }
+
+    private void OnDestroy()
+    {
+        Debug.Log($"[생명주기] {GetType().Name} (ID: {gameObject.GetInstanceID()}) - OnDestroy() 시작. (프레임: {Time.frameCount})");
+    }
+
+    private void HandleRoundEnd(bool success)
+    {
+        // "SelectActiveCard"이라는 이름으로 반복 실행되던 모든 동작을 취소합니다.
+        CancelInvoke(nameof(SelectActiveCard));
+        Debug.Log("[CardManager] 라운드 종료. 활성 카드 선택을 중지합니다.");
+    }
+
+    // FindPlayerStats() 함수는 이제 필요 없으므로 삭제합니다.
+
+    public void LinkToNewPlayer(CharacterStats newPlayerStats)
+    {
+        Debug.Log($"[CardManager] 새로운 플레이어({newPlayerStats.name})와 연결하고 스탯 재계산을 시작합니다.");
+        playerStats = newPlayerStats;
+        RecalculateCardStats();
+    }
+
+    /// <summary>
+    /// [신규] 카드 보상 획득 시 호출되는 새로운 통합 메서드입니다.
+    /// 소유/장착 슬롯 상태에 따라 파괴/장착해제/장착을 모두 처리합니다.
+    /// </summary>
+    public void AcquireNewCard(CardDataSO newCard)
+    {
+        // 1단계: 전체 소유 슬롯이 가득 찼는지 확인하고, 가득 찼다면 하나를 파괴합니다.
         if (ownedCards.Count >= maxOwnedSlots)
         {
+            Debug.Log($"소유 슬롯({maxOwnedSlots})이 가득 차, 소유 카드 중 1장을 랜덤으로 파괴합니다.");
             int randomIndex = Random.Range(0, ownedCards.Count);
-            CardDataSO removedCard = ownedCards[randomIndex];
-            ownedCards.RemoveAt(randomIndex);
-            if (equippedCards.Contains(removedCard))
+            CardDataSO cardToRemove = ownedCards[randomIndex];
+            
+            // equippedCards 리스트에서도 제거해야 합니다.
+            if (equippedCards.Contains(cardToRemove))
             {
-                Unequip(removedCard);
+                equippedCards.Remove(cardToRemove);
             }
+            ownedCards.Remove(cardToRemove);
+            Debug.Log($"[CardManager] 파괴된 카드: {cardToRemove.name}");
+        }
+
+        // 2단계: 새로운 카드를 소유 목록에 추가합니다.
+        ownedCards.Add(newCard);
+        Debug.Log($"[CardManager] 획득한 카드: {newCard.name}");
+
+        // 3단계: 장착 슬롯이 가득 찼는지 확인하고, 가득 찼다면 하나를 장착 해제합니다.
+        if (equippedCards.Count >= maxEquipSlots)
+        {
+            Debug.Log($"장착 슬롯({maxEquipSlots})이 가득 차, 장착 카드 중 1장을 랜덤으로 장착 해제합니다.");
+            int randomIndex = Random.Range(0, equippedCards.Count);
+            CardDataSO cardToUnequip = equippedCards[randomIndex];
+            equippedCards.Remove(cardToUnequip); // 장착 목록에서만 제거
+            Debug.Log($"[CardManager] 장착 해제된 카드: {cardToUnequip.name}");
+        }
+
+        // 4단계: 새로운 카드를 장착 목록에 추가합니다.
+        equippedCards.Add(newCard);
+        Debug.Log($"[CardManager] 장착한 카드: {newCard.name}");
+
+        // 5단계: 모든 카드 목록 변경이 끝난 후, 스탯을 단 한 번만 재계산합니다.
+        // RecalculateCardStats() 호출 제거
+    }
+
+    // [복원] PlayerInitializer에서 시작 카드를 추가할 때 사용됩니다.
+    public void AddCard(CardDataSO cardToAdd)
+    {
+        // 이 함수는 주로 시작 카드나 특정 이벤트로 카드를 '소유'만 할 때 사용됩니다.
+        // 슬롯이 가득 찼을 때의 처리는 AcquireNewCard에서 통합 관리되므로 여기서는 간단히 처리합니다.
+        if (ownedCards.Count >= maxOwnedSlots)
+        {
+            Debug.LogWarning($"[CardManager] AddCard: 소유 슬롯({maxOwnedSlots})이 가득 차, {cardToAdd.name} 카드를 추가할 수 없습니다.");
+            return;
         }
         ownedCards.Add(cardToAdd);
+        Debug.Log($"[CardManager] AddCard: {cardToAdd.name} 카드를 소유 목록에 추가했습니다.");
     }
 
     public bool Equip(CardDataSO card)
     {
-        FindPlayerStats(); // 플레이어 스탯 참조가 없을 경우를 대비
-        if (playerStats == null)
-        {
-            Debug.LogError("[CardManager] PlayerStats를 찾을 수 없어 카드를 장착할 수 없습니다.");
-            return false;
-        }
-
         if (equippedCards.Count >= maxEquipSlots) return false;
         if (!ownedCards.Contains(card)) return false;
-        if (equippedCards.Contains(card)) return false;
 
         equippedCards.Add(card);
-        ApplyCardStats(card); // [추가] 카드 장착 시 스탯 적용
+        // RecalculateCardStats() 호출 제거
         return true;
     }
 
@@ -159,43 +133,49 @@ public class CardManager : MonoBehaviour
     {
         if (!equippedCards.Contains(card)) return false;
 
-        FindPlayerStats();
+        bool removed = equippedCards.Remove(card);
+        if (removed)
+        {
+            // RecalculateCardStats() 호출 제거
+        }
+        return removed;
+    }
+
+    private void RecalculateCardStats()
+    {
         if (playerStats == null)
         {
-            Debug.LogError("[CardManager] PlayerStats를 찾을 수 없어 카드 스탯을 제거할 수 없습니다.");
-            // 스탯 제거는 실패했지만, 목록에서는 제거
-            return equippedCards.Remove(card);
+            Debug.LogError("[CardManager] PlayerStats를 찾을 수 없어 스탯을 재계산할 수 없습니다. LinkToNewPlayer가 호출되었는지 확인하세요.");
+            return;
         }
 
-        RemoveCardStats(card); // [추가] 카드 해제 시 스탯 제거
-        return equippedCards.Remove(card);
-    }
+        playerStats.cardDamageRatio = 0f;
+        playerStats.cardAttackSpeedRatio = 0f;
+        playerStats.cardMoveSpeedRatio = 0f;
+        playerStats.cardHealthRatio = 0f;
+        playerStats.cardCritRateRatio = 0f;
+        playerStats.cardCritDamageRatio = 0f;
 
-    // [추가] 카드의 스탯 보너스를 플레이어에게 적용하는 함수
-    private void ApplyCardStats(CardDataSO card)
-    {
-        playerStats.cardDamageRatio += card.damageMultiplier;
-        playerStats.cardAttackSpeedRatio += card.attackSpeedMultiplier;
-        playerStats.cardMoveSpeedRatio += card.moveSpeedMultiplier;
-        playerStats.cardHealthRatio += card.healthMultiplier;
-        playerStats.cardCritRateRatio += card.critRateMultiplier;
-        playerStats.cardCritDamageRatio += card.critDamageMultiplier;
+        foreach (var card in equippedCards)
+        {
+            playerStats.cardDamageRatio += card.damageMultiplier;
+            playerStats.cardAttackSpeedRatio += card.attackSpeedMultiplier;
+            playerStats.cardMoveSpeedRatio += card.moveSpeedMultiplier;
+            playerStats.cardHealthRatio += card.healthMultiplier;
+            playerStats.cardCritRateRatio += card.critRateMultiplier;
+            playerStats.cardCritDamageRatio += card.critDamageMultiplier;
+        }
+        
+        if (equippedCards.Count > 0)
+        {
+            string cardNames = string.Join(", ", equippedCards.Select(c => c.cardName));
+            Debug.Log($"[CardManager] 카드 스탯 재계산 완료. 장착된 카드 ({equippedCards.Count}개): {cardNames}");
+        }
+        else
+        {
+            Debug.Log("[CardManager] 카드 스탯 재계산 완료. 장착된 카드가 없습니다.");
+        }
 
-        // 스탯 변경 후 반드시 최종 스탯 재계산 호출
-        playerStats.CalculateFinalStats();
-    }
-
-    // [추가] 적용됐던 카드의 스탯 보너스를 플레이어에게서 제거하는 함수
-    private void RemoveCardStats(CardDataSO card)
-    {
-        playerStats.cardDamageRatio -= card.damageMultiplier;
-        playerStats.cardAttackSpeedRatio -= card.attackSpeedMultiplier;
-        playerStats.cardMoveSpeedRatio -= card.moveSpeedMultiplier;
-        playerStats.cardHealthRatio -= card.healthMultiplier;
-        playerStats.cardCritRateRatio -= card.critRateMultiplier;
-        playerStats.cardCritDamageRatio -= card.critDamageMultiplier;
-
-        // 스탯 변경 후 반드시 최종 스탯 재계산 호출
         playerStats.CalculateFinalStats();
     }
 
@@ -204,17 +184,52 @@ public class CardManager : MonoBehaviour
         return new List<CardDataSO>(equippedCards);
     }
 
-    // ... 이하 나머지 코드는 동일 ...
-    public void HandleTrigger(TriggerType type)
+    public void StartCardSelectionLoop()
     {
+        CancelInvoke(nameof(SelectActiveCard));
+        float interval = (playerStats != null) ? playerStats.cardSelectionInterval : 10f;
+        InvokeRepeating(nameof(SelectActiveCard), 0f, interval);
+        SelectActiveCard();
+    }
+
+    private void SelectActiveCard()
+    {
+        if (equippedCards.Count == 0)
+        {
+            activeCard = null;
+            return;
+        }
+
+        float totalWeight = 0f;
         foreach (var card in equippedCards)
         {
-            if (card.triggerType == type)
-            {
-                EffectExecutor.Instance.Execute(card);
-            }
+            totalWeight += Mathf.Max(0, card.selectionWeight);
         }
+
+        if (totalWeight <= 0)
+        {
+            activeCard = equippedCards[0];
+            return;
+        }
+
+        float randomPoint = Random.Range(0, totalWeight);
+        float currentWeightSum = 0f;
+
+        foreach (var card in equippedCards)
+        {
+            float weight = Mathf.Max(0, card.selectionWeight);
+            if (randomPoint <= currentWeightSum + weight)
+            {
+                activeCard = card;
+                Debug.Log($"[CardManager] 활성 카드 선택: {activeCard.cardName}");
+                return;
+            }
+            currentWeightSum += weight;
+        }
+
+        activeCard = equippedCards[equippedCards.Count - 1];
     }
+
     public bool HasSynthesizablePair(CardDataSO card)
     {
         if (card == null) return false;
@@ -228,6 +243,7 @@ public class CardManager : MonoBehaviour
         }
         return false;
     }
+
     public List<CardDataSO> GetSynthesizablePairs(CardDataSO card)
     {
         List<CardDataSO> pairList = new List<CardDataSO>();
@@ -242,6 +258,7 @@ public class CardManager : MonoBehaviour
         }
         return pairList;
     }
+
     public void SynthesizeCards(CardDataSO card1, CardDataSO card2)
     {
         // 합성 시에는 장착된 카드 스탯을 먼저 제거해야 함
@@ -256,6 +273,5 @@ public class CardManager : MonoBehaviour
 
         enhancedCard.cardID = baseCard.cardID + "_enhanced";
         enhancedCard.cardName = baseCard.cardName + "+";
-        // ... (이하 생략)
     }
 }

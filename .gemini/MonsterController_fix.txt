@@ -1,0 +1,219 @@
+// --- 파일명: MonsterController.cs (수정 제안) ---
+// 경로: Assets/1.Scripts/Gameplay/MonsterController.cs
+using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+
+[RequireComponent(typeof(Rigidbody2D))]
+public class MonsterController : MonoBehaviour
+{
+    [HideInInspector] public float moveSpeed;
+    [HideInInspector] public float contactDamage;
+    [HideInInspector] public float maxHealth;
+    public float currentHealth;
+
+    private MonsterDataSO monsterData;
+    private Transform playerTransform;
+    private bool isInvulnerable = false;
+    private Rigidbody2D rb;
+
+    private const float DAMAGE_INTERVAL = 0.1f;
+    private float damageTimer = 0f;
+    private bool isTouchingPlayer = false;
+
+    public HashSet<string> hitShotIDs = new HashSet<string>();
+    
+    // [추가] 몬스터의 사망 상태를 추적하는 플래그
+    private bool isDead = false;
+
+    void Awake()
+    {
+        rb = GetComponent<Rigidbody2D>();
+    }
+
+    void OnEnable()
+    {
+        hitShotIDs.Clear();
+        // [추가] 오브젝트 풀에서 재사용될 때를 위해 사망 상태와 체력을 초기화합니다.
+        isDead = false;
+        if (monsterData != null)
+        {
+            currentHealth = monsterData.maxHealth;
+        }
+    }
+
+
+    void Start()
+    {
+        if (PlayerController.Instance != null)
+        {
+            playerTransform = PlayerController.Instance.transform;
+        }
+        else
+        {
+            Debug.LogError($"[{gameObject.name}] PlayerController 인스턴스를 찾을 수 없습니다! 스크립트를 비활성화합니다.");
+            this.enabled = false;
+        }
+    }
+
+    public void Initialize(MonsterDataSO data)
+    {
+        monsterData = data;
+        maxHealth = monsterData.maxHealth;
+        moveSpeed = monsterData.moveSpeed;
+        contactDamage = monsterData.contactDamage;
+        currentHealth = maxHealth;
+        hitShotIDs.Clear();
+        // [추가] 몬스터가 처음 초기화될 때 사망 상태를 초기화합니다.
+        isDead = false;
+    }
+
+    void Update()
+    {
+        if (isTouchingPlayer)
+        {
+            damageTimer += Time.deltaTime;
+            if (damageTimer >= DAMAGE_INTERVAL)
+            {
+                ApplyContactDamage();
+                damageTimer = 0f;
+            }
+        }
+    }
+
+    void FixedUpdate()
+    {
+        if (isInvulnerable || playerTransform == null || isDead) // [수정] 죽었을 때 움직이지 않도록
+        {
+            rb.velocity = Vector2.zero;
+            return;
+        }
+        Vector2 direction = (playerTransform.position - transform.position).normalized;
+        rb.velocity = direction * moveSpeed;
+    }
+
+    void OnCollisionEnter2D(Collision2D collision)
+    {
+        CheckForPlayer(collision.gameObject);
+    }
+
+    void OnCollisionExit2D(Collision2D collision)
+    {
+        LeavePlayer(collision.gameObject);
+    }
+
+    void OnTriggerEnter2D(Collider2D other)
+    {
+        // [수정] 죽은 몬스터는 충돌 처리를 하지 않습니다.
+        if (isDead) return;
+
+        Debug.Log($"[MonsterController] OnTriggerEnter2D 호출됨. 충돌한 오브젝트: {other.name}, 태그: {other.tag}");
+
+        BulletController hitBullet = other.GetComponent<BulletController>();
+        if (hitBullet != null)
+        {
+            if (hitShotIDs.Contains(hitBullet.shotInstanceID))
+            {
+                PoolManager.Instance.Release(other.gameObject);
+                return;
+            }
+
+            hitShotIDs.Add(hitBullet.shotInstanceID);
+            TakeDamage(hitBullet.damage);
+
+            if (hitBullet.SourceCard != null && hitBullet.SourceCard.secondaryEffect != null)
+            {
+                EffectExecutor.Instance.Execute(hitBullet.SourceCard.secondaryEffect, this.transform);
+            }
+            PoolManager.Instance.Release(other.gameObject);
+            return;
+        }
+        CheckForPlayer(other.gameObject);
+    }
+
+    void OnTriggerExit2D(Collider2D other)
+    {
+        LeavePlayer(other.gameObject);
+    }
+
+    private void CheckForPlayer(GameObject target)
+    {
+        if (target.GetComponent<CharacterStats>() != null)
+        {
+            isTouchingPlayer = true;
+            damageTimer = DAMAGE_INTERVAL;
+        }
+    }
+
+    private void LeavePlayer(GameObject target)
+    {
+        if (target.GetComponent<CharacterStats>() != null)
+        {
+            isTouchingPlayer = false;
+            damageTimer = 0f;
+        }
+    }
+
+    private void ApplyContactDamage()
+    {
+        if (playerTransform != null)
+        {
+            CharacterStats playerStats = playerTransform.GetComponent<CharacterStats>();
+            if (playerStats != null)
+            {
+                playerStats.TakeDamage(contactDamage);
+            }
+        }
+    }
+
+    public void TakeDamage(float damage)
+    {
+        if (isInvulnerable || isDead) return;
+        
+        currentHealth -= damage;
+
+        if (PrefabProvider.Instance != null)
+        {
+            GameObject damageTextPrefab = PrefabProvider.Instance.GetPrefab("DamageTextCanvas");
+            if (damageTextPrefab != null)
+            {
+                GameObject textGO = PoolManager.Instance.Get(damageTextPrefab);
+                textGO.transform.position = transform.position + Vector3.up * 0.5f;
+                textGO.GetComponent<DamageText>().ShowDamage(damage);
+            }
+        }
+
+        if (currentHealth <= 0)
+        {
+            isDead = true;
+            Die();
+        }
+    }
+
+    private void Die()
+    {
+        if (RoundManager.Instance != null)
+        {
+            RoundManager.Instance.RegisterKill();
+        }
+        else
+        {
+            Debug.LogError("[가설 검증] 몬스터가 RegisterKill을 호출하려 했으나 RoundManager.Instance가 null입니다!");
+        }
+
+        PoolManager.Instance.Release(gameObject);
+    }
+
+    public void SetInvulnerable(float duration)
+    {
+        StartCoroutine(InvulnerableRoutine(duration));
+    }
+
+    private IEnumerator InvulnerableRoutine(float duration)
+    {
+        isInvulnerable = true;
+        yield return new WaitForSeconds(duration);
+        isInvulnerable = false;
+    }
+}

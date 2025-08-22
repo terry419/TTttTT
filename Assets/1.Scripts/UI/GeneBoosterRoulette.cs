@@ -27,11 +27,11 @@ public class GeneBoosterRoulette : MonoBehaviour
     void Start()
     {
         // 현재 선택된 캐릭터의 ID를 가져와 영구 스탯 데이터를 불러옵니다.
-        // GameManager.Instance.SelectedCharacter가 null일 경우를 대비한 안전장치 필요
-        string characterId = "warrior"; // 임시: 실제로는 GameManager.Instance.SelectedCharacter.characterId 사용
-        if (GameManager.Instance != null && GameManager.Instance.SelectedCharacter != null)
+        // ServiceLocator.Get<GameManager>().SelectedCharacter가 null일 경우를 대비한 안전장치 필요
+        string characterId = "warrior"; // 임시: 실제로는 ServiceLocator.Get<GameManager>().SelectedCharacter.characterId 사용
+        if (ServiceLocator.Get<GameManager>() != null && ServiceLocator.Get<GameManager>().SelectedCharacter != null)
         {
-            characterId = GameManager.Instance.SelectedCharacter.characterId;
+            characterId = ServiceLocator.Get<GameManager>().SelectedCharacter.characterId;
         }
         permanentStats = ProgressionManager.Instance.GetPermanentStatsFor(characterId);
         

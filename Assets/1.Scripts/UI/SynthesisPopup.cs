@@ -49,6 +49,7 @@ public class SynthesisPopup : MonoBehaviour
         foreach (var card in materialChoices)
         {
             GameObject cardUI = Instantiate(cardDisplayPrefab, contentPanel.transform);
+
             CardDisplay cardDisplay = cardUI.GetComponent<CardDisplay>();
             if (cardDisplay != null)
             {

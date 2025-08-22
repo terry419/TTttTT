@@ -45,7 +45,6 @@ public class MapManager : MonoBehaviour
     /// </summary>
     public void MoveToNode(MapNode newNode)
     {
-        Debug.Log($"[MapManager] MoveToNode 호출됨. 이동할 노드: {newNode.Position}, 타입: {newNode.NodeType}"); // [추가됨] 디버그 로그
         if (CurrentNode != null && !CurrentNode.NextNodes.Contains(newNode))
         {
             Debug.LogError($"{newNode.Position}은(는) 현재 위치({CurrentNode.Position})에서 이동할 수 없는 노드입니다!");
@@ -53,9 +52,8 @@ public class MapManager : MonoBehaviour
         }
 
         CurrentNode = newNode;
-        Debug.Log($"[MapManager] 플레이어 위치 업데이트: {CurrentNode.Position}, 노드 타입: {CurrentNode.NodeType}");
 
-        GameManager.Instance.ChangeState(GameManager.GameState.Gameplay);
+        ServiceLocator.Get<GameManager>().ChangeState(GameManager.GameState.Gameplay);
     }
 
     /// <summary>

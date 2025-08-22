@@ -54,7 +54,7 @@ public class CharacterSelectUI : MonoBehaviour
 
     private void SelectCharacter(string characterId)
     {
-        CharacterDataSO characterData = DataManager.Instance.GetCharacter(characterId);
+        CharacterDataSO characterData = ServiceLocator.Get<DataManager>().GetCharacter(characterId);
         if (characterData == null) return;
 
         controller.OnCharacterSelected(characterData);

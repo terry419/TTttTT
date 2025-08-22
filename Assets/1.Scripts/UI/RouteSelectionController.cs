@@ -68,7 +68,6 @@ public class RouteSelectionController : MonoBehaviour
 
     private void OnNodeClicked(MapNode node)
     {
-        Debug.Log($"[RouteSelectionController] 노드 클릭 감지: {node.Position}, 타입: {node.NodeType}");
         if (MapManager.Instance != null)
         {
             MapManager.Instance.MoveToNode(node);

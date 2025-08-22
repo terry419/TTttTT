@@ -15,6 +15,8 @@ public class CardDataSO : ScriptableObject
 
 
     [Header("능력치 배율")]
+    [Tooltip("이 카드의 고유 기본 대미지입니다.")] // <-- 추가 설명
+    public float baseDamage; // 고유 기본 대미지
     public float damageMultiplier;            // 공격력에 적용될 배율
     public float attackSpeedMultiplier;       // 공격 속도에 적용될 배율
     public float moveSpeedMultiplier;         // 이동 속도에 적용될 배율

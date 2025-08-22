@@ -18,7 +18,8 @@ public class WaveHandler : ICardEffectHandler
         }
 
         // 풀 매니저에서 파동 오브젝트를 가져옵니다.
-        GameObject waveGO = executor.poolManager.Get(wavePrefab);
+        GameObject waveGO = ServiceLocator.Get<PoolManager>().Get(wavePrefab);
+
         if (waveGO == null) return;
 
         // 효과 생성 위치를 설정합니다.
