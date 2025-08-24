@@ -43,13 +43,11 @@ public class AutoFocusScroller : MonoBehaviour
         if (shouldScrollUp)
         {
             // --- [디버그 DELTA: 조건 발동] ---
-            Debug.LogWarning("<b>[디버그 DELTA] 조건 발동:</b> 상단 경계 도달. Scroll() 함수 호출.");
             Scroll(1);
         }
         else if (shouldScrollDown)
         {
             // --- [디버그 DELTA: 조건 발동] ---
-            Debug.LogWarning("<b>[디버그 DELTA] 조건 발동:</b> 하단 경계 도달. Scroll() 함수 호출.");
             Scroll(-1);
         }
     }

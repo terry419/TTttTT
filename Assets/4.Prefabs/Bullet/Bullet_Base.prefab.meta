@@ -1,5 +1,7 @@
 fileFormatVersion: 2
 guid: 99ab044e7ccac4c48b76072b91e119b2
+labels:
+- Card
 PrefabImporter:
   externalObjects: {}
   userData: 

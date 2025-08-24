@@ -2,6 +2,9 @@
 // 경로: Assets/1.Scripts/Core/DataManager.cs
 using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine.AddressableAssets;
+using UnityEngine.ResourceManagement.AsyncOperations;
+using System.Collections;
 
 public class DataManager : MonoBehaviour
 {
@@ -9,7 +12,8 @@ public class DataManager : MonoBehaviour
     {
         ServiceLocator.Register<DataManager>(this);
         DontDestroyOnLoad(gameObject);
-        InitializeDataSOs();
+        // ▼▼▼ [2] Awake에서는 로딩 함수를 호출만 합니다. ▼▼▼
+        StartCoroutine(LoadAllDataAsync());
     }
 
     // [삭제] 프리팹 관련 필드 모두 삭제
@@ -19,22 +23,39 @@ public class DataManager : MonoBehaviour
     private readonly Dictionary<string, CharacterDataSO> characterDict = new Dictionary<string, CharacterDataSO>();
     private readonly Dictionary<string, MonsterDataSO> monsterDataDict = new Dictionary<string, MonsterDataSO>();
 
-    private void InitializeDataSOs()
+    // ▼▼▼ [3] 기존 InitializeDataSOs 함수를 아래 내용으로 완전히 교체합니다. ▼▼▼
+    public IEnumerator LoadAllDataAsync()
     {
-        // 데이터 SO 로드는 Resources 폴더를 그대로 사용합니다.
-        CardDataSO[] allCards = Resources.LoadAll<CardDataSO>("CardData");
-        foreach (var card in allCards) { if (!cardDataDict.ContainsKey(card.cardID)) cardDataDict.Add(card.cardID, card); }
+        Debug.Log("[DataManager] 모든 ScriptableObject 데이터 비동기 로드 시작...");
 
-        ArtifactDataSO[] allArtifacts = Resources.LoadAll<ArtifactDataSO>("ArtifactData");
-        foreach (var artifact in allArtifacts) { if (!artifactDataDict.ContainsKey(artifact.artifactID)) artifactDataDict.Add(artifact.artifactID, artifact); }
+        var cardHandle = Addressables.LoadAssetsAsync<CardDataSO>("data_card", null);
+        var artifactHandle = Addressables.LoadAssetsAsync<ArtifactDataSO>("data_artifact", null);
+        var characterHandle = Addressables.LoadAssetsAsync<CharacterDataSO>("data_character", null);
+        var monsterHandle = Addressables.LoadAssetsAsync<MonsterDataSO>("data_monster", null);
 
-        CharacterDataSO[] allCharacters = Resources.LoadAll<CharacterDataSO>("CharacterData");
-        foreach (var character in allCharacters) { if (!characterDict.ContainsKey(character.characterId)) characterDict.Add(character.characterId, character); }
+        var groupHandle = Addressables.ResourceManager.CreateGenericGroupOperation(
+            new List<AsyncOperationHandle> { cardHandle, artifactHandle, characterHandle, monsterHandle }, true);
 
-        MonsterDataSO[] allMonsters = Resources.LoadAll<MonsterDataSO>("MonsterData");
-        foreach (var monster in allMonsters) { if (!monsterDataDict.ContainsKey(monster.monsterID)) monsterDataDict.Add(monster.monsterID, monster); }
+        yield return groupHandle;
 
-        Debug.Log("[DataManager] 모든 ScriptableObject 데이터 로드 완료.");
+        if (groupHandle.Status == AsyncOperationStatus.Succeeded)
+        {
+            foreach (var card in cardHandle.Result) { if (!cardDataDict.ContainsKey(card.cardID)) cardDataDict.Add(card.cardID, card); }
+            foreach (var artifact in artifactHandle.Result) { if (!artifactDataDict.ContainsKey(artifact.artifactID)) artifactDataDict.Add(artifact.artifactID, artifact); }
+            foreach (var character in characterHandle.Result) { if (!characterDict.ContainsKey(character.characterId)) characterDict.Add(character.characterId, character); }
+            foreach (var monster in monsterHandle.Result) { if (!monsterDataDict.ContainsKey(monster.monsterID)) monsterDataDict.Add(monster.monsterID, monster); }
+            
+            Debug.Log("[DataManager] 모든 ScriptableObject 데이터 로드 완료.");
+        }
+        else
+        {
+            Debug.LogError("[DataManager] ScriptableObject 데이터 로딩 실패!");
+        }
+        
+        Addressables.Release(cardHandle);
+        Addressables.Release(artifactHandle);
+        Addressables.Release(characterHandle);
+        Addressables.Release(monsterHandle);
     }
 
     // [삭제] Get...Prefab 메서드들 삭제
@@ -52,4 +73,5 @@ public class DataManager : MonoBehaviour
 
     public List<CardDataSO> GetAllCards() => new List<CardDataSO>(cardDataDict.Values);
     public List<ArtifactDataSO> GetAllArtifacts() => new List<ArtifactDataSO>(artifactDataDict.Values);
-}
+
+    }

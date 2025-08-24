@@ -1,0 +1,15 @@
+PoolManager -101
+DataManager -100
+PrefabProvider -99
+CampaignManager -98
+MapManager -97
+GameManager -90
+InputManager -89
+EffectExecutor -88
+StatusEffectManager -87
+CardManager -86
+ArtifactManager -85
+RewardManager -80
+PlayerController 10
+MonsterContorlloer 11
+MainMenuUI 200

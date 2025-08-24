@@ -1,5 +1,7 @@
 fileFormatVersion: 2
 guid: 891b6d95a47ee454d9160e5be151d3a3
+labels:
+- VFX
 PrefabImporter:
   externalObjects: {}
   userData: 

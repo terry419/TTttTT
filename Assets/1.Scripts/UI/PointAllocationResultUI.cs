@@ -37,6 +37,10 @@ public class PointAllocationResultUI : MonoBehaviour
             float baseCritDmgPercent = baseStats.baseCritDamage / 100f;
             int critDmgPoints = distributedPoints[StatType.CritMultiplier];
 
+            int critRatePoints = distributedPoints[StatType.CritRate];
+            float finalCritRate = baseStats.baseCritRate * (1 + critRatePoints * 0.01f);
+
+
             // 최종 능력치 계산
             float finalDamage = baseStats.baseDamage * (1 + attackPoints * 0.01f);
             float finalAttackSpeed = baseStats.baseAttackSpeed * (1 + attackSpeedPoints * 0.01f);
@@ -49,7 +53,7 @@ public class PointAllocationResultUI : MonoBehaviour
             attackSpeedText.text = $"Base Attack Speed ({baseStats.baseAttackSpeed:F1}) + Gene Boost ({attackSpeedPoints}) = {finalAttackSpeed:F2}";
             moveSpeedText.text = $"Base Move Speed ({baseStats.baseMoveSpeed:F1}) + Gene Boost ({moveSpeedPoints}) = {finalMoveSpeed:F2}";
             healthText.text = $"Base Health ({baseStats.baseHealth:F0}) + Gene Boost ({healthPoints}) = {finalHealth:F2}";
-            critRateText.text = $"Base Crit Rate ({baseStats.baseCritRate:F0}%) + Gene Boost (0) = {baseCritRatePercent * 100:F0}%";
+            critRateText.text = $"Base Crit Rate ({baseStats.baseCritRate:F0}%) + Gene Boost ({critRatePoints}) = {finalCritRate:F2}%"; // 포맷을 F2로 변경
             critDamageText.text = $"Base Crit Damage ({baseStats.baseCritDamage:F0}%) + Gene Boost ({critDmgPoints}) = {finalCritDamage * 100:F0}%";
         }
     }

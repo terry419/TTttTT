@@ -1,4 +1,4 @@
-// --- 파일명: SceneAudioLoader.cs ---
+// 파일 경로: Assets/1.Scripts/Core/SceneAudioLoader.cs
 
 using UnityEngine;
 
@@ -8,26 +8,27 @@ public class SceneAudioLoader : MonoBehaviour
     [SerializeField]
     private AudioCollection sceneAudioCollection;
 
-    [Header("시작 BGM 이름 (선택)")]
+    [Header("시작 BGM 이름 (선택 사항)")]
     [SerializeField]
     private string startingBgmName;
 
     void Start()
     {
-        // [수정] AudioManager가 null일 경우를 대비한 방어 코드 추가
-        if (AudioManager.Instance == null)
+        // [수정] ServiceLocator를 통해 AudioManager를 가져옵니다.
+        var audioManager = ServiceLocator.Get<AudioManager>();
+        if (audioManager == null)
         {
-            Debug.LogError("SceneAudioLoader: AudioManager.Instance를 찾을 수 없습니다!");
+            Debug.LogError("SceneAudioLoader: AudioManager를 찾을 수 없습니다!");
             return;
         }
 
         if (sceneAudioCollection != null)
         {
-            // [수정] 주석을 해제해서 오디오 컬렉션 로드 및 BGM 재생 기능이 정상 작동하도록 수정
-            AudioManager.Instance.LoadCollection(sceneAudioCollection);
+            // [수정] 가져온 audioManager 변수를 사용합니다.
+            audioManager.LoadCollection(sceneAudioCollection);
             if (!string.IsNullOrEmpty(startingBgmName))
             {
-                AudioManager.Instance.PlayBgm(startingBgmName);
+                audioManager.PlayBgm(startingBgmName);
             }
         }
         else

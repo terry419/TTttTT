@@ -1,16 +1,14 @@
+// 파일명: DebugManager.cs (리팩토링 완료)
 using UnityEngine;
 using TMPro;
 using System.Text;
 
 /// <summary>
-/// 개발 및 테스트 편의를 위한 디버그 기능을 관리하는 싱글톤 클래스입니다. (리팩토링 버전)
+/// 개발 및 테스트 편의를 위한 디버그 기능을 관리하는 클래스입니다.
 /// F1키로 디버그 UI를 토글하고, 게임 내 주요 변수를 실시간으로 확인하고 조작하는 기능을 제공합니다.
-/// 의존성 주입(등록) 방식을 사용하여 다른 컴포넌트와의 결합도를 낮췄습니다.
 /// </summary>
 public class DebugManager : MonoBehaviour
 {
-    public static DebugManager Instance { get; private set; }
-
     [Header("디버그 UI 참조")]
     [SerializeField] private GameObject debugPanel;
     [SerializeField] private TextMeshProUGUI infoText;
@@ -24,12 +22,7 @@ public class DebugManager : MonoBehaviour
 
     void Awake()
     {
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-        Instance = this;
+        ServiceLocator.Register<DebugManager>(this);
         DontDestroyOnLoad(gameObject);
     }
 
@@ -77,7 +70,6 @@ public class DebugManager : MonoBehaviour
         Debug.Log("[DebugManager] PlayerStats 등록 해제됨.");
     }
 
-
     private void UpdateDebugInfo()
     {
         if (infoText == null) return;
@@ -86,13 +78,13 @@ public class DebugManager : MonoBehaviour
         if (playerStats != null)
         {
             infoBuilder.AppendLine("--- Player Stats ---");
-            infoBuilder.AppendLine($"Health: {playerStats.currentHealth:F1} / {playerStats.finalHealth:F1}");
+            infoBuilder.AppendLine($"Health: {playerStats.currentHealth:F1} / {playerStats.FinalHealth:F1}");
             infoBuilder.AppendLine($"Is Invulnerable: {playerStats.isInvulnerable}");
-            infoBuilder.AppendLine($"Damage: {playerStats.finalDamage:F2}");
-            infoBuilder.AppendLine($"Attack Speed: {playerStats.finalAttackSpeed:F2}");
-            infoBuilder.AppendLine($"Move Speed: {playerStats.finalMoveSpeed:F2}");
-            infoBuilder.AppendLine($"Crit Rate: {playerStats.finalCritRate:P2}");
-            infoBuilder.AppendLine($"Crit Damage: {playerStats.finalCritDamage:P2}");
+            infoBuilder.AppendLine($"Damage: {playerStats.FinalDamage:F2}");
+            infoBuilder.AppendLine($"Attack Speed: {playerStats.FinalAttackSpeed:F2}");
+            infoBuilder.AppendLine($"Move Speed: {playerStats.FinalMoveSpeed:F2}");
+            infoBuilder.AppendLine($"Crit Rate: {playerStats.FinalCritRate:P2}");
+            infoBuilder.AppendLine($"Crit Damage: {playerStats.FinalCritDamage:P2}");
         }
         else
         {

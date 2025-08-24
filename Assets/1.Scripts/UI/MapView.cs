@@ -55,7 +55,6 @@ public class MapView : MonoBehaviour
                     mapNodeUI.nodeData = nodeData;
                     MapNode currentNodeData = nodeData;
                     mapNodeUI.button.onClick.AddListener(() => OnNodeClicked(currentNodeData));
-                    Debug.Log($"[MapView] 노드 {nodeData.Position}에 클릭 리스너 추가 완료."); // [추가됨] 디버그 로그
                 }
             }
             else

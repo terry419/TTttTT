@@ -39,17 +39,17 @@ public class CardDataSO : ScriptableObject
 
 
     [Header("발사체 설정")]
-    [Tooltip("이 카드가 발사할 총알 프리팹을 직접 연결하세요.")]
-    public GameObject bulletPrefab; // [수정] string에서 다시 GameObject로 변경
-
-    [Header("발사 속도 (기동 값)")]
-    [Tooltip("0 이하로 설정 시 EffectExecutor의 기본 속도(10f)를 사용")]
-    public float bulletSpeed = 10f;  // 여기에 카드별 발사 속도 지정
-
+    public GameObject bulletPrefab;
+    public float bulletSpeed = 10f;
+    // ▼▼▼ [1] 이 줄을 추가하세요. ▼▼▼
+    [Tooltip("이 카드의 총알을 몇 개 미리 생성할지 정합니다.")]
+    public int bulletPreloadCount = 100;
 
     [Header("특수 효과 설정")]
-    [Tooltip("파동, 번개 등 총알이 아닌 시각 효과 프리팹")]
     public GameObject effectPrefab;
+    // ▼▼▼ [2] 이 줄을 추가하세요. ▼▼▼
+    [Tooltip("이 카드의 특수 효과를 몇 개 미리 생성할지 정합니다.")]
+    public int effectPreloadCount = 20;
     [Tooltip("독, 화상 등 적에게 적용할 상태 효과")]
     public StatusEffectDataSO statusEffectToApply;
 

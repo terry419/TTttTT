@@ -1,5 +1,3 @@
-// --- 파일명: UIPanel.cs (경로: D:\동기화\Unity\9th\Assets\1.Scripts\UI\UIPanel.cs) ---
-
 using UnityEngine;
 
 /// <summary>
@@ -19,17 +17,21 @@ public class UIPanel : MonoBehaviour
             panelName = gameObject.name;
         }
 
-        if (UIManager.Instance != null)
+        // --- [수정] ServiceLocator를 통해 UIManager 인스턴스를 가져옵니다. ---
+        var uiManager = ServiceLocator.Get<UIManager>();
+        if (uiManager != null)
         {
-            UIManager.Instance.RegisterPanel(panelName, gameObject);
+            uiManager.RegisterPanel(panelName, gameObject);
         }
     }
 
     void OnDestroy()
     {
-        if (UIManager.Instance != null && !string.IsNullOrEmpty(panelName))
+        // --- [수정] ServiceLocator를 통해 UIManager 인스턴스를 가져옵니다. ---
+        var uiManager = ServiceLocator.Get<UIManager>();
+        if (uiManager != null && !string.IsNullOrEmpty(panelName))
         {
-            UIManager.Instance.UnregisterPanel(panelName);
+            uiManager.UnregisterPanel(panelName);
         }
     }
 }

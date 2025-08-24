@@ -11,8 +11,6 @@ using System; // Action 사용을 위해 필요
 /// </summary>
 public class PopupController : MonoBehaviour
 {
-    public static PopupController Instance { get; private set; }
-
     [Header("오류 팝업 참조")]
     [SerializeField] private GameObject errorPopupPanel; // 오류 메시지 패널
     [SerializeField] private TextMeshProUGUI errorText; // 오류 메시지 텍스트
@@ -28,12 +26,7 @@ public class PopupController : MonoBehaviour
 
     void Awake()
     {
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-        Instance = this;
+        ServiceLocator.Register<PopupController>(this);
         DontDestroyOnLoad(gameObject);
 
         // 버튼 리스너 초기화

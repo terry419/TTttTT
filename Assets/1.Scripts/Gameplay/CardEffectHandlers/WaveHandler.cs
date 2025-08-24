@@ -1,36 +1,34 @@
-// --- ÆÄÀÏ À§Ä¡: Assets/1.Scripts/Gameplay/CardEffectHandlers/WaveHandler.cs ---
-
 using UnityEngine;
 using System;
 
 /// <summary>
-/// 'Wave' Å¸ÀÔÀÇ Ä«µå È¿°ú(ÆÄµ¿, ÀåÆÇ µî)¸¦ Ã³¸®ÇÏ´Â Å¬·¡½ºÀÔ´Ï´Ù.
+/// 'Wave' íƒ€ì…ì˜ ì¹´ë“œ íš¨ê³¼(íŒŒë™, ì¥íŒ ë“±)ë¥¼ ì²˜ë¦¬í•˜ëŠ” í´ë˜ìŠ¤ì…ë‹ˆë‹¤.
 /// </summary>
 public class WaveHandler : ICardEffectHandler
 {
-    public void Execute(CardDataSO cardData, EffectExecutor executor, Transform spawnPoint)
+    public void Execute(CardDataSO cardData, EffectExecutor executor, CharacterStats casterStats, Transform spawnPoint)
     {
         GameObject wavePrefab = cardData.effectPrefab;
         if (wavePrefab == null)
-        {
-            Debug.LogError($"[WaveHandler] ¿À·ù: ÆÄµ¿ Ä«µå '{cardData.cardName}'¿¡ effectPrefabÀÌ ÇÒ´çµÇÁö ¾Ê¾Ò½À´Ï´Ù!");
+        { 
+            Debug.LogError($"[WaveHandler] ì˜¤ë¥˜: ì›¨ì´ë¸Œ ì¹´ë“œ '{cardData.cardName}'ì— effectPrefabì´ í• ë‹¹ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤!");
             return;
         }
 
-        // Ç® ¸Å´ÏÀú¿¡¼­ ÆÄµ¿ ¿ÀºêÁ§Æ®¸¦ °¡Á®¿É´Ï´Ù.
+        // í’€ ë§¤ë‹ˆì €ì—ì„œ ì›¨ì´ë¸Œ ì˜¤ë¸Œì íŠ¸ë¥¼ ê°€ì ¸ì˜µë‹ˆë‹¤.
         GameObject waveGO = ServiceLocator.Get<PoolManager>().Get(wavePrefab);
 
         if (waveGO == null) return;
 
-        // È¿°ú »ı¼º À§Ä¡¸¦ ¼³Á¤ÇÕ´Ï´Ù.
+        // íš¨ê³¼ ìƒì„± ìœ„ì¹˜ë¥¼ ì§€ì •í•©ë‹ˆë‹¤.
         waveGO.transform.position = spawnPoint.position;
 
         if (waveGO.TryGetComponent<DamagingZone>(out var zone))
         {
-            float totalDamage = executor.CalculateTotalDamage(cardData);
+            float totalDamage = executor.CalculateTotalDamage(cardData, casterStats);
             string shotID = Guid.NewGuid().ToString();
 
-            // DamagingZoneÀ» Ä«µå µ¥ÀÌÅÍ¿¡ ¸Â°Ô ÃÊ±âÈ­ÇÕ´Ï´Ù.
+            // DamagingZoneì„ ì¹´ë“œ ë°ì´í„°ì— ë§ê²Œ ì´ˆê¸°í™”í•©ë‹ˆë‹¤.
             zone.Initialize(
                 singleHitDmg: totalDamage,
                 continuousDmgPerTick: cardData.effectDamagePerTick,
@@ -44,7 +42,7 @@ public class WaveHandler : ICardEffectHandler
         }
         else
         {
-            Debug.LogError($"[WaveHandler] ¿À·ù: '{wavePrefab.name}' ÇÁ¸®ÆÕ¿¡ DamagingZone.cs ½ºÅ©¸³Æ®°¡ ¾ø½À´Ï´Ù!");
+            Debug.LogError($"[WaveHandler] ì˜¤ë¥˜: '{wavePrefab.name}' í”„ë¦¬íŒ¹ì— DamagingZone.cs ìŠ¤í¬ë¦½íŠ¸ê°€ ì—†ìŠµë‹ˆë‹¤!");
         }
     }
 }

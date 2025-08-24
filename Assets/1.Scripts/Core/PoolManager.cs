@@ -1,23 +1,19 @@
-// --- 파일명: PoolManager.cs (최종 수정본) ---
-// 경로: Assets/1.Scripts/Core/PoolManager.cs
+// 파일명: PoolManager.cs (리팩토링 완료)
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class PoolManager : MonoBehaviour
 {
-    public static PoolManager Instance { get; private set; }
-
     private Dictionary<GameObject, Queue<GameObject>> poolDictionary = new Dictionary<GameObject, Queue<GameObject>>();
+    
+    // [추가] 현재 씬에 활성화된 모든 풀링 오브젝트를 추적하기 위한 HashSet
+    private readonly HashSet<GameObject> activePooledObjects = new HashSet<GameObject>();
 
     void Awake()
     {
-        // [디버그] PoolManager가 깨어났음을 알립니다.
         Debug.Log($"[ 진단 ] PoolManager.Awake() 호출됨. (Frame: {Time.frameCount})");
-
-        // ▼▼▼ 기존의 싱글톤 코드를 이 한 줄로 대체합니다. ▼▼▼
         ServiceLocator.Register<PoolManager>(this);
-
-        // 씬이 바뀌어도 파괴되지 않도록 설정합니다.
         DontDestroyOnLoad(gameObject);
     }
 
@@ -40,7 +36,6 @@ public class PoolManager : MonoBehaviour
         {
             GameObject obj = Instantiate(prefab, transform);
             obj.SetActive(false);
-            // PooledObjectInfo가 이미 프리팹에 붙어있을 수 있으므로, 없으면 추가
             if (!obj.TryGetComponent<PooledObjectInfo>(out var pooledInfo))
             {
                 pooledInfo = obj.AddComponent<PooledObjectInfo>();
@@ -49,6 +44,8 @@ public class PoolManager : MonoBehaviour
             poolDictionary[prefab].Enqueue(obj);
         }
     }
+
+    
 
     public GameObject Get(GameObject prefab)
     {
@@ -72,17 +69,23 @@ public class PoolManager : MonoBehaviour
 
         GameObject obj = poolDictionary[prefab].Dequeue();
         obj.SetActive(true);
+
+        // [추가] 오브젝트를 꺼내갈 때, 활성 목록에 등록합니다.
+        activePooledObjects.Add(obj);
+
         return obj;
     }
 
     public void Release(GameObject instance)
     {
         if (instance == null) return;
+        
+        // [추가] 오브젝트를 반납할 때, 활성 목록에서 제거합니다.
+        activePooledObjects.Remove(instance);
 
         PooledObjectInfo pooledInfo = instance.GetComponent<PooledObjectInfo>();
         if (pooledInfo == null || pooledInfo.originalPrefab == null)
         {
-            // 풀링된 오브젝트가 아닐 경우 그냥 파괴
             Destroy(instance);
             return;
         }
@@ -97,5 +100,47 @@ public class PoolManager : MonoBehaviour
         instance.SetActive(false);
         instance.transform.SetParent(transform);
         poolDictionary[originalPrefab].Enqueue(instance);
+    }
+
+    // [추가] 활성화된 모든 풀링 오브젝트를 정리하는 새로운 함수
+    public void ClearAllActiveObjects()
+    {
+        Debug.Log($"[PoolManager] 활성화된 모든 풀 오브젝트 ({activePooledObjects.Count}개)를 정리합니다.");
+        
+        // HashSet을 직접 순회하면서 요소를 제거하면 오류가 발생하므로, 리스트로 복사한 뒤 순회합니다.
+        foreach (var obj in activePooledObjects.ToList())
+        {
+            Release(obj);
+        }
+        
+        // 모든 객체가 Release를 통해 개별적으로 제거되지만, 만약을 위해 마지막에 Clear를 호출합니다.
+        activePooledObjects.Clear();
+    }
+
+    /// <summary>
+    /// 모든 풀링된 오브젝트(활성 및 비활성)를 즉시 파괴하고 풀을 초기화합니다.
+    /// 씬 전환 등 풀의 모든 오브젝트를 강제로 정리해야 할 때 사용합니다.
+    /// </summary>
+    public void DestroyAllPooledObjects()
+    {
+        Debug.Log($"[PoolManager] 모든 풀링된 오브젝트를 파괴합니다. (활성: {activePooledObjects.Count}개, 비활성 풀: {poolDictionary.Sum(kv => kv.Value.Count)}개)");
+
+        // 활성 오브젝트 먼저 파괴
+        foreach (var obj in activePooledObjects.ToList()) // ToList()로 복사하여 순회 중 수정 가능하게 함
+        {
+            Destroy(obj);
+        }
+        activePooledObjects.Clear();
+
+        // 비활성 풀 오브젝트 파괴
+        foreach (var kvp in poolDictionary)
+        {
+            foreach (var obj in kvp.Value)
+            {
+                Destroy(obj);
+            }
+        }
+        poolDictionary.Clear();
+        Debug.Log("[PoolManager] 모든 풀링된 오브젝트 파괴 완료.");
     }
 }

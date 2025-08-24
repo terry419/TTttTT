@@ -1,9 +1,5 @@
 using UnityEngine;
 
-/// <summary>
-/// 상태 효과(버프, 디버프)의 속성을 정의하는 ScriptableObject입니다.
-/// 독, 화상, 능력치 강화 등 다양한 효과를 데이터로 만들어 관리할 수 있습니다.
-/// </summary>
 [CreateAssetMenu(fileName = "StatusEffectData_", menuName = "GameData/StatusEffectData")]
 public class StatusEffectDataSO : ScriptableObject
 {
@@ -16,7 +12,7 @@ public class StatusEffectDataSO : ScriptableObject
     public float duration;
     public bool isBuff;
 
-    [Header("능력치 변경 효과")]
+    [Header("능력치 변경 효과 (백분율, %)")]
     public float damageRatioBonus;
     public float attackSpeedRatioBonus;
     public float moveSpeedRatioBonus;
@@ -29,36 +25,28 @@ public class StatusEffectDataSO : ScriptableObject
     public float healOverTime;
 
     /// <summary>
-    /// 대상 캐릭터에게 이 상태 효과의 능력치 보너스를 적용합니다.
+    /// [리팩토링] 대상 캐릭터에게 이 상태 효과의 능력치 보너스를 적용합니다.
     /// </summary>
     public void ApplyEffect(CharacterStats targetStats)
     {
         if (targetStats == null) return;
 
-        targetStats.buffDamageRatio += damageRatioBonus;
-        targetStats.buffAttackSpeedRatio += attackSpeedRatioBonus;
-        targetStats.buffMoveSpeedRatio += moveSpeedRatioBonus;
-        targetStats.buffHealthRatio += healthRatioBonus;
-        targetStats.buffCritRateRatio += critRateRatioBonus;
-        targetStats.buffCritDamageRatio += critDamageRatioBonus;
-
-        targetStats.CalculateFinalStats();
+        // 각 보너스 값이 0이 아닐 때만 Modifier를 추가합니다.
+        if (damageRatioBonus != 0) targetStats.AddModifier(StatType.Attack, new StatModifier(damageRatioBonus, this));
+        if (attackSpeedRatioBonus != 0) targetStats.AddModifier(StatType.AttackSpeed, new StatModifier(attackSpeedRatioBonus, this));
+        if (moveSpeedRatioBonus != 0) targetStats.AddModifier(StatType.MoveSpeed, new StatModifier(moveSpeedRatioBonus, this));
+        if (healthRatioBonus != 0) targetStats.AddModifier(StatType.Health, new StatModifier(healthRatioBonus, this));
+        if (critRateRatioBonus != 0) targetStats.AddModifier(StatType.CritRate, new StatModifier(critRateRatioBonus, this));
+        if (critDamageRatioBonus != 0) targetStats.AddModifier(StatType.CritMultiplier, new StatModifier(critDamageRatioBonus, this));
     }
 
     /// <summary>
-    /// 대상 캐릭터에게서 이 상태 효과의 능력치 보너스를 제거합니다.
+    /// [리팩토링] 대상 캐릭터에게서 이 상태 효과의 능력치 보너스를 제거합니다.
     /// </summary>
     public void RemoveEffect(CharacterStats targetStats)
     {
         if (targetStats == null) return;
 
-        targetStats.buffDamageRatio -= damageRatioBonus;
-        targetStats.buffAttackSpeedRatio -= attackSpeedRatioBonus;
-        targetStats.buffMoveSpeedRatio -= moveSpeedRatioBonus;
-        targetStats.buffHealthRatio -= healthRatioBonus;
-        targetStats.buffCritRateRatio -= critRateRatioBonus;
-        targetStats.buffCritDamageRatio -= critDamageRatioBonus;
-
-        targetStats.CalculateFinalStats();
+        targetStats.RemoveModifiersFromSource(this);
     }
 }

@@ -1,29 +1,33 @@
-// --- ÆÄÀÏ¸í: Wave.cs ---
+// --- ï¿½ï¿½ï¿½Ï¸ï¿½: Wave.cs ---
 using UnityEngine;
 
-// [Ãß°¡] ½ºÆù ¹æ½ÄÀ» Á¤ÀÇÇÏ´Â enum. ÀÌ ºÎºÐÀÌ ¾ø¾î¼­ Ã¹ ¹øÂ° ¿¡·¯°¡ ¹ß»ýÇß¾î.
+// [ï¿½ß°ï¿½] ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ enum. ï¿½ï¿½ ï¿½Îºï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½î¼­ Ã¹ ï¿½ï¿½Â° ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ß»ï¿½ï¿½ß¾ï¿½.
 public enum SpawnType
 {
-    Spread, // ÁöÁ¤µÈ ½Ã°£ µ¿¾È ²ÙÁØÈ÷ »ý¼º
-    Burst   // ÇÑ ¹ø¿¡ ¿Í¸£¸£ »ý¼º
+    Spread, // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+    Burst   // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Í¸ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 }
 
 [System.Serializable]
 public class Wave
 {
-    [Tooltip("ÀÌ ¿þÀÌºê¿¡¼­ ½ºÆùÇÒ ¸ó½ºÅÍÀÇ µ¥ÀÌÅÍ(SO)¸¦ Á÷Á¢ ¿©±â¿¡ ¿¬°áÇÏ¼¼¿ä.")]
-    // [¼öÁ¤] string ´ë½Å MonsterDataSO¸¦ Á÷Á¢ ÂüÁ¶ÇÕ´Ï´Ù.
+    [Tooltip("ï¿½ï¿½ ï¿½ï¿½ï¿½Ìºê¿¡ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(SO)ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½â¿¡ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¼ï¿½ï¿½ï¿½.")]
+    // [ï¿½ï¿½ï¿½ï¿½] string ï¿½ï¿½ï¿½ MonsterDataSOï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Õ´Ï´ï¿½.
     public MonsterDataSO monsterData;
 
-    [Tooltip("½ºÆùÇÒ ¸ó½ºÅÍÀÇ ¼ö")]
+    [Tooltip("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½")]
     public int count;
 
-    [Tooltip("SpawnTypeÀÌ SpreadÀÏ ¶§, Ã¹ ¸ó½ºÅÍºÎÅÍ ¸¶Áö¸· ¸ó½ºÅÍ±îÁö ½ºÆùµÇ´Â µ¥ °É¸®´Â ÃÑ ½Ã°£ÀÔ´Ï´Ù.")]
+    [Tooltip("SpawnTypeï¿½ï¿½ Spreadï¿½ï¿½ ï¿½ï¿½, Ã¹ ï¿½ï¿½ï¿½Íºï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Í±ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ç´ï¿½ ï¿½ï¿½ ï¿½É¸ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ã°ï¿½ï¿½Ô´Ï´ï¿½.")]
     public float duration = 10f;
 
-    [Tooltip("ÀÌ ¿þÀÌºê°¡ ³¡³­ ÈÄ ´ÙÀ½ ¿þÀÌºê°¡ ½ÃÀÛµÇ±â±îÁöÀÇ ´ë±â ½Ã°£ÀÔ´Ï´Ù.")]
+    [Tooltip("ï¿½ï¿½ ï¿½ï¿½ï¿½Ìºê°¡ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ìºê°¡ ï¿½ï¿½ï¿½ÛµÇ±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½ï¿½Ô´Ï´ï¿½.")]
     public float delayAfterWave;
 
-    [Tooltip("½ºÆù ¹æ½Ä (Spread: ½Ã°£Â÷, Burst: µ¿½Ã)")]
+    [Tooltip("ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ (Spread: ï¿½Ã°ï¿½ï¿½ï¿½, Burst: ï¿½ï¿½ï¿½ï¿½)")]
     public SpawnType spawnType;
+
+    // â–¼â–¼â–¼ [3] ì´ ì¤„ì„ ì¶”ê°€í•˜ì„¸ìš”. â–¼â–¼â–¼
+    [Tooltip("ì´ ì›¨ì´ë¸Œì˜ ëª¬ìŠ¤í„°ë¥¼ ëª‡ ë§ˆë¦¬ ë¯¸ë¦¬ ìƒì„±í• ì§€ ì •í•©ë‹ˆë‹¤. 0ìœ¼ë¡œ ë‘ë©´ 'Count' ê°’ì„ ë”°ë¦…ë‹ˆë‹¤.")]
+    public int preloadCount = 50;
 }

@@ -24,9 +24,9 @@ public class CharacterSelectUI : MonoBehaviour
 
     void Awake()
     {
-        warriorButton.onClick.AddListener(() => SelectCharacter("warrior"));
-        archerButton.onClick.AddListener(() => SelectCharacter("archer"));
-        mageButton.onClick.AddListener(() => SelectCharacter("mage"));
+        warriorButton.onClick.AddListener(() => SelectCharacter(CharacterIDs.Warrior));
+        archerButton.onClick.AddListener(() => SelectCharacter(CharacterIDs.Archer));
+        mageButton.onClick.AddListener(() => SelectCharacter(CharacterIDs.Mage));
         startButton.onClick.AddListener(OnGameStartClicked);
     }
 
@@ -68,15 +68,15 @@ public class CharacterSelectUI : MonoBehaviour
 
         switch (characterId)
         {
-            case "warrior":
+            case CharacterIDs.Warrior:
                 if (warriorCharacterIllust != null) warriorCharacterIllust.SetActive(true);
                 currentlySelectedCharacterButton = warriorButton;
                 break;
-            case "archer":
+            case CharacterIDs.Archer:
                 if (archerCharacterIllust != null) archerCharacterIllust.SetActive(true);
                 currentlySelectedCharacterButton = archerButton;
                 break;
-            case "mage":
+            case CharacterIDs.Mage:
                 if (mageCharacterIllust != null) mageCharacterIllust.SetActive(true);
                 currentlySelectedCharacterButton = mageButton;
                 break;

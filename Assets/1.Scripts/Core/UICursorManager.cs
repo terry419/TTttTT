@@ -1,11 +1,10 @@
+// 파일명: UICursorManager.cs (리팩토링 완료)
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public class UICursorManager : MonoBehaviour
 {
-    public static UICursorManager Instance { get; private set; }
-
     [SerializeField]
     private Image globalCursorImage;
 
@@ -13,7 +12,7 @@ public class UICursorManager : MonoBehaviour
 
     void Awake()
     {
-        Instance = this;
+        ServiceLocator.Register<UICursorManager>(this);
         if (globalCursorImage != null)
         {
             defaultCursorSprite = globalCursorImage.sprite;

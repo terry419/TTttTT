@@ -1,18 +1,17 @@
-// --- ÆÄÀÏ À§Ä¡: Assets/1.Scripts/Core/ICardEffectHandler.cs ---
-
 using UnityEngine;
 
 /// <summary>
-/// ¸ğµç Ä«µå È¿°ú Ã³¸®±â(Handler)°¡ ±¸ÇöÇØ¾ß ÇÏ´Â ÀÎÅÍÆäÀÌ½ºÀÔ´Ï´Ù.
-/// Àü·« ÆĞÅÏ(Strategy Pattern)À» Àû¿ëÇÏ¿© °¢ Ä«µå È¿°úÀÇ ½ÇÇà ·ÎÁ÷À» Ä¸½¶È­ÇÕ´Ï´Ù.
+/// ëª¨ë“  ì¹´ë“œ íš¨ê³¼ ì²˜ë¦¬ê¸°(Handler)ê°€ êµ¬í˜„í•´ì•¼ í•˜ëŠ” ì¸í„°í˜ì´ìŠ¤ì…ë‹ˆë‹¤.
+/// ì „ëµ íŒ¨í„´(Strategy Pattern)ì„ ì‚¬ìš©í•˜ì—¬ ê° ì¹´ë“œ íš¨ê³¼ë¥¼ ë³„ë„ í´ë˜ìŠ¤ë¡œ ìº¡ìŠí™”í•©ë‹ˆë‹¤.
 /// </summary>
 public interface ICardEffectHandler
 {
     /// <summary>
-    /// Ä«µå È¿°ú¸¦ ½ÇÇàÇÕ´Ï´Ù.
+    /// ì¹´ë“œ íš¨ê³¼ë¥¼ ì‹¤í–‰í•©ë‹ˆë‹¤.
     /// </summary>
-    /// <param name="cardData">½ÇÇàÇÒ È¿°ú°¡ Á¤ÀÇµÈ Ä«µå µ¥ÀÌÅÍÀÔ´Ï´Ù.</param>
-    /// <param name="executor">PoolManager, PlayerController µî ÇÙ½É ÂüÁ¶¸¦ Á¦°øÇÏ´Â EffectExecutorÀÇ ÀÎ½ºÅÏ½ºÀÔ´Ï´Ù.</param>
-    /// <param name="spawnPoint">È¿°ú°¡ »ı¼ºµÉ À§Ä¡ÀÔ´Ï´Ù. (¿¹: ¸ó½ºÅÍÀÇ À§Ä¡, ÇÃ·¹ÀÌ¾îÀÇ ¹ß»ç ÁöÁ¡)</param>
-    void Execute(CardDataSO cardData, EffectExecutor executor, Transform spawnPoint);
+    /// <param name="cardData">ì‹¤í–‰í•  íš¨ê³¼ê°€ ë‹´ê¸´ ì¹´ë“œ ë°ì´í„°ì…ë‹ˆë‹¤.</param>
+    /// <param name="executor">ë‹¤ë¥¸ ì‹œìŠ¤í…œì— ì ‘ê·¼í•  ë•Œ ì‚¬ìš©í•˜ëŠ” EffectExecutorì˜ ì¸ìŠ¤í„´ìŠ¤ì…ë‹ˆë‹¤.</param>
+    /// <param name="casterStats">íš¨ê³¼ë¥¼ ì‹œì „í•˜ëŠ” ì£¼ì²´ì˜ CharacterStatsì…ë‹ˆë‹¤.</param>
+    /// <param name="spawnPoint">íš¨ê³¼ê°€ ìƒì„±ë  ìœ„ì¹˜ì…ë‹ˆë‹¤. (ì˜ˆ: ì´êµ¬ ìœ„ì¹˜, í”Œë ˆì´ì–´ì˜ ë°œì‚¬ ì§€ì )</param>
+    void Execute(CardDataSO cardData, EffectExecutor executor, CharacterStats casterStats, Transform spawnPoint);
 }

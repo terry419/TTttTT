@@ -1,9 +1,8 @@
+// 파일명: AudioManager.cs (리팩토링 완료)
 using UnityEngine;
 
 public class AudioManager : MonoBehaviour
 {
-    public static AudioManager Instance { get; private set; }
-
     [Header("오디오 소스 (Audio Sources)")]
     [SerializeField] private AudioSource bgmSource;
     [SerializeField] private AudioSource sfxSource;
@@ -12,12 +11,8 @@ public class AudioManager : MonoBehaviour
 
     void Awake()
     {
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-        Instance = this;
+        // ServiceLocator에 자기 자신을 등록합니다.
+        ServiceLocator.Register<AudioManager>(this);
     }
 
     public void LoadCollection(AudioCollection newCollection)
@@ -56,7 +51,7 @@ public class AudioManager : MonoBehaviour
             sfxSource.PlayOneShot(clipToPlay);
         }
     }
-    
+
     public void StopBgm()
     {
         bgmSource.Stop();

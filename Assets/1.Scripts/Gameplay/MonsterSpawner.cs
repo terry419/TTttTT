@@ -14,6 +14,7 @@ public class MonsterSpawner : MonoBehaviour
     // ★★★ 핵심 수정: StartSpawning의 인자를 List<Wave>로 수정 (Assets.txt 기반) ★★★
     public void StartSpawning(List<Wave> waves)
     {
+        Debug.Log("[MonsterSpawner] StartSpawning called.");
         if (spawnCoroutine != null) StopCoroutine(spawnCoroutine);
         spawnCoroutine = StartCoroutine(SpawnRoutine(waves));
     }
@@ -21,6 +22,7 @@ public class MonsterSpawner : MonoBehaviour
     // ★★★ 핵심 수정: StopSpawning() 함수 복원 (CS1061 오류 해결) ★★★
     public void StopSpawning()
     {
+        Debug.Log("[MonsterSpawner] StopSpawning called.");
         if (spawnCoroutine != null)
         {
             StopCoroutine(spawnCoroutine);
@@ -33,20 +35,19 @@ public class MonsterSpawner : MonoBehaviour
         // --- 기존 디버그 로그 보존 ---
         Debug.Log($"[MonsterSpawner] 스폰 루틴 시작. 전달받은 웨이브 개수: {waves.Count}");
 
-        // ★★★ 핵심 수정: Player를 찾을 때까지 안전하게 대기 ★★★
+        // playerTransform을 찾을 때까지 대기
         while (playerTransform == null)
         {
-            GameObject playerObject = GameObject.FindGameObjectWithTag("Player");
-            if (playerObject != null)
+            var playerController = ServiceLocator.Get<PlayerController>();
+            if (playerController != null)
             {
-                playerTransform = playerObject.transform;
-                // --- 기존 디버그 로그 보존 ---
-                Debug.Log("[MonsterSpawner] 성공: 'Player' 태그를 가진 오브젝트를 찾아 playerTransform에 할당했습니다.");
+                playerTransform = playerController.transform;
+                Debug.Log($"[MonsterSpawner] 성공: ServiceLocator를 통해 PlayerController를 찾아 playerTransform에 할당했습니다.");
             }
             else
             {
-                // Player를 못 찾았으면 한 프레임 대기 후 다시 시도
-                yield return null;
+                // 아직 Player가 생성/등록되지 않았으면 한 프레임 대기 후 다시 시도
+                yield return null; 
             }
         }
 

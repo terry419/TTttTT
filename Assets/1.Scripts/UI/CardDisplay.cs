@@ -4,8 +4,9 @@ using UnityEngine.UI;
 using TMPro;
 using UnityEngine.Events;
 
+// [수정] 이벤트가 CardDataSO 대신 CardDisplay 자신을 전달하도록 변경합니다.
 [System.Serializable]
-public class CardSelectedEvent : UnityEvent<CardDataSO> { }
+public class CardSelectedEvent : UnityEvent<CardDisplay> { }
 
 public class CardDisplay : MonoBehaviour
 {
@@ -23,12 +24,10 @@ public class CardDisplay : MonoBehaviour
     private CardDataSO currentCard;
     public CardDataSO CurrentCard => currentCard;
 
-    // --- 아래 함수를 새로 추가하여 이전 스크립트와의 호환성 문제를 해결합니다. ---
     public CardDataSO GetCurrentCard()
     {
         return currentCard;
     }
-    // --------------------------------------------------------------------
 
     public void Setup(CardDataSO cardData)
     {
@@ -47,7 +46,8 @@ public class CardDisplay : MonoBehaviour
         if (selectButton != null)
         {
             selectButton.onClick.RemoveAllListeners();
-            selectButton.onClick.AddListener(() => OnCardSelected.Invoke(currentCard));
+            // [수정] 이벤트 발생 시 카드 데이터(currentCard) 대신 CardDisplay 컴포넌트(this)를 전달합니다.
+            selectButton.onClick.AddListener(() => OnCardSelected.Invoke(this));
         }
     }
 

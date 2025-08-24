@@ -66,7 +66,6 @@ public class MapGenerator : MonoBehaviour
         // 4. 노드 타입 할당 및 연결
         AssignNodeTypesAndConnectNodes(finalNodes, grid);
 
-        Debug.Log($"[MapGenerator] 맵 생성 완료. 총 {finalNodes.Count}개의 노드가 생성되었습니다.");
         return finalNodes;
     }
 

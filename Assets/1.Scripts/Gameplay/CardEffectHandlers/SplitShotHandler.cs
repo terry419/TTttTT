@@ -6,7 +6,7 @@ using System;
 /// </summary>
 public class SplitShotHandler : ICardEffectHandler
 {
-    public void Execute(CardDataSO cardData, EffectExecutor executor, Transform spawnPoint)
+    public void Execute(CardDataSO cardData, EffectExecutor executor, CharacterStats casterStats, Transform spawnPoint)
     {
         GameObject bulletPrefab = cardData.bulletPrefab;
         if (bulletPrefab == null)
@@ -17,12 +17,12 @@ public class SplitShotHandler : ICardEffectHandler
 
 
         // 기본 발사 각도를 계산합니다.
-        float baseAngle = executor.GetTargetingAngle(cardData.targetingType);
+        float baseAngle = executor.GetTargetingAngle(cardData.targetingType, casterStats.transform, spawnPoint);
 
         // 발사할 총알의 개수, 각도 등을 계산합니다.
         int projectileCount = Mathf.Max(1, (int)cardData.triggerValue);
         float angleStep = 360f / projectileCount;
-        float totalDamage = executor.CalculateTotalDamage(cardData);
+        float totalDamage = executor.CalculateTotalDamage(cardData, casterStats);
         string shotID = Guid.NewGuid().ToString(); // 모든 총알에 대해 동일한 관통 ID를 사용합니다.
 
         for (int i = 0; i < projectileCount; i++)
@@ -37,7 +37,6 @@ public class SplitShotHandler : ICardEffectHandler
             if (bulletGO == null) continue;
 
             // 총알 위치와 회전을 설정합니다.
-            // [수정됨] playerController.firePoint를 사용합니다.
             bulletGO.transform.position = spawnPoint.position;
             bulletGO.transform.rotation = rotation;
 
