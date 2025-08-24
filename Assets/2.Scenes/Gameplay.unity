@@ -3795,6 +3795,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6f32ccbfea84c364b81f456e6c59df70, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  numberOfRewardChoices: 3
 --- !u!4 &1237349108
 Transform:
   m_ObjectHideFlags: 0
@@ -4330,6 +4331,8 @@ MonoBehaviour:
   testStartingCards:
   - {fileID: 11400000, guid: 2ecce3066bb8ae04198b7ef59103467c, type: 2}
   - {fileID: 11400000, guid: fde96b367ae9b224a9d2b7a075796cf2, type: 2}
+  - {fileID: 0}
+  - {fileID: 0}
 --- !u!114 &1615835056
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4349,36 +4352,6 @@ MonoBehaviour:
     baseHealth: 0
     baseCritRate: 0
     baseCritDamage: 0
-  cardDamageRatio: 0
-  cardAttackSpeedRatio: 0
-  cardMoveSpeedRatio: 0
-  cardHealthRatio: 0
-  cardCritRateRatio: 0
-  cardCritDamageRatio: 0
-  artifactDamageRatio: 0
-  artifactAttackSpeedRatio: 0
-  artifactMoveSpeedRatio: 0
-  artifactHealthRatio: 0
-  artifactCritRateRatio: 0
-  artifactCritDamageRatio: 0
-  buffDamageRatio: 0
-  buffAttackSpeedRatio: 0
-  buffMoveSpeedRatio: 0
-  buffHealthRatio: 0
-  buffCritRateRatio: 0
-  buffCritDamageRatio: 0
-  boosterDamageRatio: 0
-  boosterAttackSpeedRatio: 0
-  boosterMoveSpeedRatio: 0
-  boosterHealthRatio: 0
-  boosterCritRateRatio: 0
-  boosterCritDamageRatio: 0
-  finalDamage: 0
-  finalAttackSpeed: 0
-  finalMoveSpeed: 0
-  finalHealth: 0
-  finalCritRate: 0
-  finalCritDamage: 0
   currentHealth: 0
   isInvulnerable: 0
   OnFinalStatsCalculated:

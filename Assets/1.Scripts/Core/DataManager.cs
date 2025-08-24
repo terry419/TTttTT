@@ -10,10 +10,16 @@ public class DataManager : MonoBehaviour
 {
     void Awake()
     {
-        ServiceLocator.Register<DataManager>(this);
-        DontDestroyOnLoad(gameObject);
-        // ▼▼▼ [2] Awake에서는 로딩 함수를 호출만 합니다. ▼▼▼
-        StartCoroutine(LoadAllDataAsync());
+        if (!ServiceLocator.IsRegistered<DataManager>())
+        {
+            ServiceLocator.Register<DataManager>(this);
+            DontDestroyOnLoad(gameObject);
+            StartCoroutine(LoadAllDataAsync());
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
     // [삭제] 프리팹 관련 필드 모두 삭제

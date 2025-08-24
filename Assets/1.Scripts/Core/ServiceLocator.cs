@@ -7,6 +7,14 @@ public static class ServiceLocator
 {
     private static readonly Dictionary<Type, object> services = new Dictionary<Type, object>();
 
+    /// <summary>
+    /// 특정 타입의 서비스가 이미 등록되어 있는지 확인합니다.
+    /// </summary>
+    public static bool IsRegistered<T>()
+    {
+        return services.ContainsKey(typeof(T));
+    }
+
     public static void Register<T>(T service)
     {
         Type type = typeof(T);

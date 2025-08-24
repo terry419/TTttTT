@@ -12,8 +12,15 @@ public class UIManager : MonoBehaviour
 
     void Awake()
     {
-        ServiceLocator.Register<UIManager>(this);
-        DontDestroyOnLoad(gameObject);
+        if (!ServiceLocator.IsRegistered<UIManager>())
+        {
+            ServiceLocator.Register<UIManager>(this);
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
     public void ShowPanel(string panelName, bool isActive)

@@ -19,8 +19,18 @@ public class CardManager : MonoBehaviour
 
     private void Awake()
     {
-        ServiceLocator.Register<CardManager>(this);
-        DontDestroyOnLoad(gameObject);
+        // ServiceLocator에 CardManager가 아직 등록되지 않았다면,
+        if (!ServiceLocator.IsRegistered<CardManager>())
+        {
+            // 자기 자신을 최초의 인스턴스로 등록하고 파괴되지 않도록 설정합니다.
+            ServiceLocator.Register<CardManager>(this);
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            // 만약 이미 등록된 CardManager가 있다면, 지금 생성된 나는 중복이므로 스스로를 파괴합니다.
+            Destroy(gameObject);
+        }
     }
 
     void OnEnable()
@@ -70,6 +80,8 @@ public class CardManager : MonoBehaviour
             Unequip(cardToUnequip);
             Equip(newCard);
         }
+
+        PrintEquippedCards("AcquireNewCard 직후");
     }
 
     public void AddCard(CardDataSO cardToAdd)
@@ -80,36 +92,47 @@ public class CardManager : MonoBehaviour
 
     public bool Equip(CardDataSO card)
     {
-        if (playerStats == null || equippedCards.Count > maxEquipSlots || !ownedCards.Contains(card) || equippedCards.Contains(card)) return false;
+        // 1. playerStats가 null이라는 이유만으로 함수가 종료되지 않도록 조건을 수정합니다.
+        if (equippedCards.Count >= maxEquipSlots || !ownedCards.Contains(card) || equippedCards.Contains(card))
+        {
+            // 실패 로그는 그대로 두거나 필요에 맞게 수정합니다.
+            // Debug.LogError($"[Equip 실패] 슬롯 부족, 미소유, 또는 중복 장착 시도: {card.cardName}");
+            return false;
+        }
 
         equippedCards.Add(card);
-        Debug.Log($"[CardManager] 카드 장착: <color=yellow>{card.cardName}</color>. 현재 장착 카드 ({equippedCards.Count}/{maxEquipSlots}): {string.Join(", ", equippedCards.Select(c => c.cardName))}");
 
-        playerStats.AddModifier(StatType.Attack, new StatModifier(card.damageMultiplier, card));
-        playerStats.AddModifier(StatType.AttackSpeed, new StatModifier(card.attackSpeedMultiplier, card));
-        playerStats.AddModifier(StatType.MoveSpeed, new StatModifier(card.moveSpeedMultiplier, card));
-        playerStats.AddModifier(StatType.Health, new StatModifier(card.healthMultiplier, card));
-        playerStats.AddModifier(StatType.CritRate, new StatModifier(card.critRateMultiplier, card));
-        playerStats.AddModifier(StatType.CritMultiplier, new StatModifier(card.critDamageMultiplier, card));
+        // 2. 스탯 적용 로직은 playerStats 참조가 유효할 때만 실행되도록 합니다.
+        if (playerStats != null)
+        {
+            playerStats.AddModifier(StatType.Attack, new StatModifier(card.damageMultiplier, card));
+            playerStats.AddModifier(StatType.AttackSpeed, new StatModifier(card.attackSpeedMultiplier, card));
+            playerStats.AddModifier(StatType.MoveSpeed, new StatModifier(card.moveSpeedMultiplier, card));
+            playerStats.AddModifier(StatType.Health, new StatModifier(card.healthMultiplier, card));
+            playerStats.AddModifier(StatType.CritRate, new StatModifier(card.critRateMultiplier, card));
+            playerStats.AddModifier(StatType.CritMultiplier, new StatModifier(card.critDamageMultiplier, card));
+        }
+
         return true;
     }
-
     public bool Unequip(CardDataSO card)
     {
-        if (playerStats == null || !equippedCards.Contains(card)) return false;
-
+        // playerStats와 무관하게 리스트에서는 항상 제거되도록 합니다.
         bool removed = equippedCards.Remove(card);
-        if (removed)
+
+        if (removed && playerStats != null) // 제거에 성공했고, playerStats가 유효할 때만 스탯을 되돌립니다.
         {
             playerStats.RemoveModifiersFromSource(card);
-            Debug.Log($"[CardManager] 카드 해제: <color=orange>{card.cardName}</color>. 현재 장착 카드 ({equippedCards.Count}/{maxEquipSlots}): {string.Join(", ", equippedCards.Select(c => c.cardName))}");
         }
+
         return removed;
     }
-
     private void RecalculateCardStats()
     {
         if (playerStats == null) return;
+
+        // ▼▼▼ 1. 함수 진입 직후 상태 ▼▼▼
+        PrintEquippedCards("RecalculateCardStats 진입");
 
         var allOwnedCards = new List<CardDataSO>(ownedCards);
         foreach (var card in allOwnedCards)
@@ -118,11 +141,25 @@ public class CardManager : MonoBehaviour
         }
 
         var currentEquippedCards = new List<CardDataSO>(equippedCards);
+        
+        // ▼▼▼ 2. 임시 리스트 복사 후 상태 ▼▼▼
+        var tempCardNames = currentEquippedCards.Select(c => c.cardName).ToArray();
+        Debug.Log($"[디버그 추적] 임시 리스트 복사 완료 | 개수: {currentEquippedCards.Count} | 목록: [{string.Join(", ", tempCardNames)}]");
+
         equippedCards.Clear();
+        
+        // ▼▼▼ 3. Clear() 직후 상태 ▼▼▼
+        PrintEquippedCards("equippedCards.Clear() 직후");
+
         foreach (var card in currentEquippedCards)
         {
+            // ▼▼▼ 4. 재장착 시도하는 카드 정보 ▼▼▼
+            Debug.Log($"[디버그 추적] '{card.cardName}' 재장착 시도...");
             Equip(card);
         }
+        
+        // ▼▼▼ 5. 함수 종료 직전 최종 상태 ▼▼▼
+        PrintEquippedCards("RecalculateCardStats 종료");
     }
 
     public List<CardDataSO> GetEquippedCards()
@@ -209,5 +246,12 @@ public class CardManager : MonoBehaviour
         ownedCards.Clear();
         equippedCards.Clear();
         Debug.LogWarning("[CardManager] 새 게임 시작. 모든 보유/장착 카드 목록을 초기화합니다.");
+    }
+
+    private void PrintEquippedCards(string context)
+    {
+        var cardNames = equippedCards.Select(c => c.cardName).ToArray();
+        string cardList = string.Join(", ", cardNames);
+        Debug.Log($"[디버그 추적] {context} | 장착 카드 수: {equippedCards.Count} | 목록: [{cardList}]");
     }
 }

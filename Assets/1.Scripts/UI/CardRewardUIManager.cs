@@ -164,6 +164,11 @@ void Start()
 
         // 보상 선택이 완료되었음을 RewardManager에 알립니다.
         ServiceLocator.Get<RewardManager>()?.CompleteRewardSelection();
+        
+        // ▼▼▼ 디버그 로그 추가 ▼▼▼
+        // ServiceLocator를 통해 CardManager에 다시 접근하여 상태 확인
+        ServiceLocator.Get<CardManager>().SendMessage("PrintEquippedCards", "TransitionToMap 직전");
+
         // 맵 선택 화면으로 전환합니다.
         TransitionToMap();
     }

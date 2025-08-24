@@ -10,9 +10,16 @@ public class SceneTransitionManager : MonoBehaviour
 
     private void Awake()
     {
-        ServiceLocator.Register<SceneTransitionManager>(this);
-        DontDestroyOnLoad(gameObject);
-        InitializeFadeOverlay();
+        if (!ServiceLocator.IsRegistered<SceneTransitionManager>())
+        {
+            ServiceLocator.Register<SceneTransitionManager>(this);
+            DontDestroyOnLoad(gameObject);
+            InitializeFadeOverlay();
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
     private void InitializeFadeOverlay()

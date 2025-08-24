@@ -13,8 +13,15 @@ public class PoolManager : MonoBehaviour
     void Awake()
     {
         Debug.Log($"[ 진단 ] PoolManager.Awake() 호출됨. (Frame: {Time.frameCount})");
-        ServiceLocator.Register<PoolManager>(this);
-        DontDestroyOnLoad(gameObject);
+        if (!ServiceLocator.IsRegistered<PoolManager>())
+        {
+            ServiceLocator.Register<PoolManager>(this);
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
     public void Preload(GameObject prefab, int count)

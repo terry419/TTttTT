@@ -26,16 +26,23 @@ public class PopupController : MonoBehaviour
 
     void Awake()
     {
-        ServiceLocator.Register<PopupController>(this);
-        DontDestroyOnLoad(gameObject);
+        if (!ServiceLocator.IsRegistered<PopupController>())
+        {
+            ServiceLocator.Register<PopupController>(this);
+            DontDestroyOnLoad(gameObject);
 
-        // 버튼 리스너 초기화
-        confirmYesButton.onClick.AddListener(OnConfirmYesClicked);
-        confirmNoButton.onClick.AddListener(OnConfirmNoClicked);
+            // 버튼 리스너 초기화
+            confirmYesButton.onClick.AddListener(OnConfirmYesClicked);
+            confirmNoButton.onClick.AddListener(OnConfirmNoClicked);
 
-        // 초기에는 모든 팝업을 비활성화
-        errorPopupPanel.SetActive(false);
-        confirmPopupPanel.SetActive(false);
+            // 초기에는 모든 팝업을 비활성화
+            errorPopupPanel.SetActive(false);
+            confirmPopupPanel.SetActive(false);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
     /// <summary>

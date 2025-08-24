@@ -11,9 +11,16 @@ public class EffectExecutor : MonoBehaviour
     void Awake()
     {
         Debug.Log($"[생명주기] {GetType().Name} (ID: {gameObject.GetInstanceID()}) - Awake() 시작. (프레임: {Time.frameCount})");
-        ServiceLocator.Register<EffectExecutor>(this);
-        DontDestroyOnLoad(gameObject);
-        InitializeHandlers();
+        if (!ServiceLocator.IsRegistered<EffectExecutor>())
+        {
+            ServiceLocator.Register<EffectExecutor>(this);
+            DontDestroyOnLoad(gameObject);
+            InitializeHandlers();
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
     private void InitializeHandlers()

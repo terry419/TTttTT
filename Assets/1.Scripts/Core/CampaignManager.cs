@@ -14,8 +14,15 @@ public class CampaignManager : MonoBehaviour
     void Awake()
     {
         Debug.Log($"[생명주기] {GetType().Name} (ID: {gameObject.GetInstanceID()}) - Awake() 시작. (프레임: {Time.frameCount})");
-        ServiceLocator.Register<CampaignManager>(this);
-        DontDestroyOnLoad(gameObject);
+        if (!ServiceLocator.IsRegistered<CampaignManager>())
+        {
+            ServiceLocator.Register<CampaignManager>(this);
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
     /// <summary>

@@ -49,9 +49,16 @@ public class RewardManager : MonoBehaviour
     void Awake()
     {
         // ServiceLocator에 자기 자신을 등록하여 다른 시스템에서 접근할 수 있도록 합니다.
-        ServiceLocator.Register<RewardManager>(this);
-        // 씬이 전환되어도 파괴되지 않도록 설정합니다.
-        DontDestroyOnLoad(gameObject);
+        if (!ServiceLocator.IsRegistered<RewardManager>())
+        {
+            ServiceLocator.Register<RewardManager>(this);
+            // 씬이 전환되어도 파괴되지 않도록 설정합니다.
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
     // --- Public Methods --- //

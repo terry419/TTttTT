@@ -23,9 +23,16 @@ public class GameManager : MonoBehaviour
     private void Awake()
     {
         Debug.Log($"[GameManager] Awake() 호출됨. (ID: {GetInstanceID()})");
-        ServiceLocator.Register<GameManager>(this);
-        DontDestroyOnLoad(transform.root.gameObject);
-        SceneManager.sceneLoaded += OnSceneLoaded;
+        if (!ServiceLocator.IsRegistered<GameManager>())
+        {
+            ServiceLocator.Register<GameManager>(this);
+            DontDestroyOnLoad(transform.root.gameObject);
+            SceneManager.sceneLoaded += OnSceneLoaded;
+        }
+        else
+        {
+            Destroy(transform.root.gameObject);
+        }
     }
     private void OnDestroy()
     {
@@ -161,7 +168,9 @@ public class GameManager : MonoBehaviour
         var cardManager = ServiceLocator.Get<CardManager>();
         if (cardManager != null)
         {
-            Debug.Log($"--- [100% 검증] 2. 프리로드 시점의 장착 카드 수: {cardManager.equippedCards.Count} ---");
+            // ▼▼▼ 디버그 로그 수정 ▼▼▼
+            cardManager.SendMessage("PrintEquippedCards", "PreloadAssetsForRound 시점");
+
             foreach (var card in cardManager.equippedCards)
             {
                 AddOrUpdatePreloadRequest(card.bulletPrefab, card.bulletPreloadCount);

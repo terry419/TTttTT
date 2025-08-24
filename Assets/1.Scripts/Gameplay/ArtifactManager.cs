@@ -10,8 +10,15 @@ public class ArtifactManager : MonoBehaviour
 
     private void Awake()
     {
-        ServiceLocator.Register<ArtifactManager>(this);
-        DontDestroyOnLoad(gameObject);
+        if (!ServiceLocator.IsRegistered<ArtifactManager>())
+        {
+            ServiceLocator.Register<ArtifactManager>(this);
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
     public void LinkToNewPlayer(CharacterStats newPlayerStats)
@@ -44,7 +51,6 @@ public class ArtifactManager : MonoBehaviour
             playerStats.RemoveModifiersFromSource(artifact);
         }
 
-        ownedArtifacts.Clear();
         foreach (var artifact in allOwnedArtifacts)
         {
             EquipArtifact(artifact);

@@ -20,11 +20,18 @@ public class ProgressionManager : MonoBehaviour
 
     void Awake()
     {
-        ServiceLocator.Register<ProgressionManager>(this);
-        DontDestroyOnLoad(gameObject);
+        if (!ServiceLocator.IsRegistered<ProgressionManager>())
+        {
+            ServiceLocator.Register<ProgressionManager>(this);
+            DontDestroyOnLoad(gameObject);
 
-        savePath = Path.Combine(Application.persistentDataPath, "progression.json");
-        LoadData();
+            savePath = Path.Combine(Application.persistentDataPath, "progression.json");
+            LoadData();
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
     public void AddCurrency(MetaCurrencyType type, int amount)

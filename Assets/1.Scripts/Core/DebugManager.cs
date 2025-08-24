@@ -22,8 +22,15 @@ public class DebugManager : MonoBehaviour
 
     void Awake()
     {
-        ServiceLocator.Register<DebugManager>(this);
-        DontDestroyOnLoad(gameObject);
+        if (!ServiceLocator.IsRegistered<DebugManager>())
+        {
+            ServiceLocator.Register<DebugManager>(this);
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
     void Start()
