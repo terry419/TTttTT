@@ -13,9 +13,17 @@ public class MapManager : MonoBehaviour
 
     void Awake()
     {
-        // 중복이 아님이 확인되었으므로, 이제 ServiceLocator에 자기 자신을 등록합니다.
+        // ServiceLocator에 이미 등록된 인스턴스가 있는지 확인
+        if (ServiceLocator.IsRegistered<MapManager>())
+        {
+            // 이미 있다면 나는 중복이므로 스스로 파괴
+            Destroy(gameObject);
+            return;
+        }
+        
+        // 최초의 인스턴스일 경우, 등록하고 파괴되지 않도록 설정
         ServiceLocator.Register<MapManager>(this);
-        DontDestroyOnLoad(this.gameObject);
+        DontDestroyOnLoad(gameObject);
     }
     
     /// <summary>

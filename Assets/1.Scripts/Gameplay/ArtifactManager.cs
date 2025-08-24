@@ -29,16 +29,20 @@ public class ArtifactManager : MonoBehaviour
 
     public void EquipArtifact(ArtifactDataSO artifact)
     {
-        if (playerStats == null || ownedArtifacts.Contains(artifact)) return;
-
+        // 1. playerStats가 null이라는 이유로 함수가 조기 종료되지 않도록 조건을 수정합니다.
+        if (ownedArtifacts.Contains(artifact)) return;
+        
         ownedArtifacts.Add(artifact);
         
-        // [리팩토링] AddModifier 호출 (올바른 StatType 사용)
-        playerStats.AddModifier(StatType.Attack, new StatModifier(artifact.attackBoostRatio, artifact));
-        playerStats.AddModifier(StatType.Health, new StatModifier(artifact.healthBoostRatio, artifact));
-        playerStats.AddModifier(StatType.MoveSpeed, new StatModifier(artifact.moveSpeedBoostRatio, artifact));
-        playerStats.AddModifier(StatType.CritRate, new StatModifier(artifact.critChanceBoostRatio, artifact));
-        playerStats.AddModifier(StatType.CritMultiplier, new StatModifier(artifact.critDamageBoostRatio, artifact));
+        // 2. 스탯 적용 로직은 playerStats 참조가 유효할 때만 실행되도록 if문으로 감싸줍니다.
+        if (playerStats != null)
+        {
+            playerStats.AddModifier(StatType.Attack, new StatModifier(artifact.attackBoostRatio, artifact));
+            playerStats.AddModifier(StatType.Health, new StatModifier(artifact.healthBoostRatio, artifact));
+            playerStats.AddModifier(StatType.MoveSpeed, new StatModifier(artifact.moveSpeedBoostRatio, artifact));
+            playerStats.AddModifier(StatType.CritRate, new StatModifier(artifact.critChanceBoostRatio, artifact));
+            playerStats.AddModifier(StatType.CritMultiplier, new StatModifier(artifact.critDamageBoostRatio, artifact));
+        }
     }
 
     private void RecalculateArtifactStats()

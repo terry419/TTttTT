@@ -62,6 +62,14 @@ public class MonsterSpawner : MonoBehaviour
                 continue;
             }
 
+            // ▼▼▼ 방어 코드 추가 ▼▼▼
+            if (playerTransform == null)
+            {
+                Debug.LogWarning("[MonsterSpawner] Player가 파괴되어 스폰을 중단합니다.");
+                yield break; // 코루틴 즉시 종료
+            }
+            // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+
             switch (wave.spawnType)
             {
                 case SpawnType.Spread:
