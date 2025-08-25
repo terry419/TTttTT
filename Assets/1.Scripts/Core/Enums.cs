@@ -23,7 +23,7 @@ public enum TriggerType
 
 public enum CardEffectType
 {
-    SingleShot, // 기본 단일 발사
+    
     SplitShot,  // 분열샷
     Wave,       // 파동
     Lightning,  // 번개

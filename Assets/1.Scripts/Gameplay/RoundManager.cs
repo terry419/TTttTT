@@ -78,6 +78,26 @@ public class RoundManager : MonoBehaviour
         currentRoundData = roundData;
         Debug.Log($"[{GetType().Name}] 새로운 라운드 시작: '{currentRoundData.name}' (목표 킬: {currentRoundData.killGoal}, 제한 시간: {currentRoundData.roundDuration}초)");
 
+        // --- 플레이어 스탯 로그 (라운드 시작) ---
+        var playerController = ServiceLocator.Get<PlayerController>();
+        if (playerController != null)
+        {
+            var playerStats = playerController.GetComponent<CharacterStats>();
+            if (playerStats != null)
+            {
+                System.Text.StringBuilder sb = new System.Text.StringBuilder();
+                sb.AppendLine("--- 라운드 시작 플레이어 스탯 ---");
+                sb.AppendLine($"체력: {playerStats.currentHealth:F1} / {playerStats.FinalHealth:F1}");
+                sb.AppendLine($"공격력 보너스: {playerStats.FinalDamage:F2}%");
+                sb.AppendLine($"공격 속도: {playerStats.FinalAttackSpeed:F2}");
+                sb.AppendLine($"이동 속도: {playerStats.FinalMoveSpeed:F2}");
+                sb.AppendLine($"치명타 확률: {playerStats.FinalCritRate:F2}%");
+                sb.AppendLine($"치명타 피해: {playerStats.FinalCritDamage:F2}%");
+                Debug.Log(sb.ToString());
+            }
+        }
+        // --- 플레이어 스탯 로그 끝 ---
+
         // 라운드 상태 초기화
         killCount = 0;
         roundTimer = currentRoundData.roundDuration;
@@ -127,6 +147,26 @@ public class RoundManager : MonoBehaviour
         isRoundActive = false;
         roundTimerCoroutine = null; // 코루틴이 끝났으므로 참조를 비워줍니다.
         Debug.Log($"[{GetType().Name}] 라운드 종료 코루틴 시작. (승리: {wasKillGoalReached})");
+
+        // --- 플레이어 스탯 로그 (라운드 종료) ---
+        var playerController = ServiceLocator.Get<PlayerController>();
+        if (playerController != null)
+        {
+            var playerStats = playerController.GetComponent<CharacterStats>();
+            if (playerStats != null)
+            {
+                System.Text.StringBuilder sb = new System.Text.StringBuilder();
+                sb.AppendLine("--- 라운드 종료 플레이어 스탯 ---");
+                sb.AppendLine($"체력: {playerStats.currentHealth:F1} / {playerStats.FinalHealth:F1}");
+                sb.AppendLine($"공격력 보너스: {playerStats.FinalDamage:F2}%");
+                sb.AppendLine($"공격 속도: {playerStats.FinalAttackSpeed:F2}");
+                sb.AppendLine($"이동 속도: {playerStats.FinalMoveSpeed:F2}");
+                sb.AppendLine($"치명타 확률: {playerStats.FinalCritRate:F2}%");
+                sb.AppendLine($"치명타 피해: {playerStats.FinalCritDamage:F2}%");
+                Debug.Log(sb.ToString());
+            }
+        }
+        // --- 플레이어 스탯 로그 끝 ---
 
         MonsterController.OnMonsterDied -= HandleMonsterDied;
         OnRoundEnded?.Invoke(wasKillGoalReached);

@@ -117,50 +117,94 @@ public class MonsterController : MonoBehaviour
 
         void OnTriggerEnter2D(Collider2D other)
     {
-        if (isDead)
-        {
-            return;
-        }
+        if (isDead) return;
 
-        // 1. 부딪힌 것이 BulletController 컴포넌트를 가진 오브젝트인지 확인합니다.
         if (other.TryGetComponent<BulletController>(out var bullet))
         {
             if (bullet == null || bullet.SourceCard == null) return;
 
-            // 관통/다단히트 방지를 위해 이미 처리한 총알인지 확인
             if (hitShotIDs.Contains(bullet.shotInstanceID))
             {
-                ServiceLocator.Get<PoolManager>().Release(other.gameObject); // 이미 처리한 총알도 풀로 돌려보냅니다.
+                ServiceLocator.Get<PoolManager>().Release(other.gameObject);
                 return;
             }
             hitShotIDs.Add(bullet.shotInstanceID);
-            
-            // 2. 총알의 데미지를 몬스터에게 적용합니다.
-            TakeDamage(bullet.damage);
 
-            // 3. ★★★ 핵심 로직: 총알을 쏜 원본 카드에 'secondaryEffect'가 있는지 확인합니다. ★★★
+            // --- 크리티컬 로직 시작 ---
+            float finalDamage = bullet.damage; // 총알로부터 기본 데미지를 가져옵니다.
+
+            var playerController = ServiceLocator.Get<PlayerController>();
+            if (playerController != null)
+            {
+                var playerStats = playerController.GetComponent<CharacterStats>();
+                if (playerStats != null)
+                {
+                    // 크리티컬 확률을 계산합니다.
+                    if (Random.Range(0f, 100f) < playerStats.FinalCritRate)
+                    {
+                        // 크리티컬 발생!
+                        Debug.Log("CRITICAL HIT!");
+                        finalDamage *= (1 + playerStats.FinalCritDamage / 100f);
+
+                        // 크리티컬 이펙트를 생성합니다.
+                        var prefabProvider = ServiceLocator.Get<PrefabProvider>();
+                        if (prefabProvider != null && prefabProvider.critEffectPrefab != null)
+                        {
+                            var poolManager = ServiceLocator.Get<PoolManager>();
+                            if (poolManager != null)
+                            {
+                                GameObject critEffect = poolManager.Get(prefabProvider.critEffectPrefab);
+                                if (critEffect != null)
+                                {
+                                    critEffect.transform.position = transform.position;
+                                    critEffect.transform.rotation = Quaternion.identity;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            // --- 크리티컬 로직 끝 ---
+
+            // 최종 계산된 데미지를 몬스터에게 적용합니다.
+            TakeDamage(finalDamage);
+
+            // --- 흡혈 로직 시작 ---
+            if (playerController != null)
+            {
+                var playerStats = playerController.GetComponent<CharacterStats>();
+                if (playerStats != null && bullet.SourceCard != null && bullet.SourceCard.triggerType == TriggerType.OnHit && bullet.SourceCard.lifestealPercentage > 0 && finalDamage > 0)
+                {
+                    Debug.Log($"[Lifesteal Debug] 흡혈 조건 충족! 카드: {bullet.SourceCard.cardName}, 입힌 데미지: {finalDamage:F2}");
+                    float lifestealRatio = bullet.SourceCard.lifestealPercentage / 100f;
+                    float healAmount = finalDamage * lifestealRatio;
+                    Debug.Log($"[Lifesteal Debug] 흡혈 비율: {bullet.SourceCard.lifestealPercentage}% ({lifestealRatio:P2}), 회복량: {healAmount:F2}");
+                    playerStats.Heal(healAmount);
+                    Debug.Log($"[Lifesteal Debug] 플레이어 체력 {healAmount:F2} 회복 요청됨.");
+                }
+            }
+            // --- 흡혈 로직 끝 ---
+
+            // 상태 이상 적용 로직
+            if (bullet.SourceCard != null && bullet.SourceCard.statusEffectToApply != null)
+            {
+                Debug.Log($"[StatusEffect] {bullet.SourceCard.statusEffectToApply.effectName} 효과를 적용합니다.");
+                ServiceLocator.Get<StatusEffectManager>().ApplyStatusEffect(this.gameObject, bullet.SourceCard.statusEffectToApply);
+            }
+
+            // 기존 보조 효과 로직
             CardDataSO secondaryEffectCard = bullet.SourceCard.secondaryEffect;
             if (secondaryEffectCard != null)
             {
-                // 4. EffectExecutor와 시전자(Player)의 정보를 가져옵니다.
                 var effectExecutor = ServiceLocator.Get<EffectExecutor>();
-                var playerController = ServiceLocator.Get<PlayerController>();
-
-                // 5. 시전자 정보가 유효한지 최종 확인합니다.
                 if (effectExecutor != null && playerController != null)
                 {
-                    // ▼▼▼ 디버그 로그 추가 ▼▼▼
                     Debug.Log($"[디버그 1] 기본 카드 '{bullet.SourceCard.name}'가 명중. 보조 효과 '{secondaryEffectCard.name}'를 발동합니다.");
-                    
-                    // 6. secondaryEffect를 실행합니다.
-                    //    - CardData: secondaryEffect 카드 ('Zone' 카드)
-                    //    - CasterStats: 플레이어의 CharacterStats
-                    //    - SpawnPoint: 몬스터 자신의 위치 (this.transform)
-                    effectExecutor.Execute(secondaryEffectCard, playerController.GetComponent<CharacterStats>(), this.transform);
+                    effectExecutor.Execute(secondaryEffectCard, playerController.GetComponent<CharacterStats>(), this.transform, finalDamage);
                 }
             }
-            
-            // 7. 총알을 풀(Pool)로 돌려보내 비활성화시킵니다.
+
+            Debug.Log($"[MonsterController] 총알 {other.gameObject.name} (ID: {other.gameObject.GetInstanceID()}) 풀로 반환 요청.");
             ServiceLocator.Get<PoolManager>().Release(other.gameObject);
         }
         else

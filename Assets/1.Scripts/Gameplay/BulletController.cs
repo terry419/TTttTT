@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic; // Added this line
 
 /// <summary>
 /// 총알의 행동(이동, 소멸)과 데이터(데미지)를 관리합니다.
@@ -11,6 +12,8 @@ public class BulletController : MonoBehaviour
     public string shotInstanceID; // [추가] 발사 인스턴스 고유 ID
     public float lifetime = 3f; // 총알의 최대 생존 시간
     public CardDataSO SourceCard { get; private set; } // [추가] 이 총알을 발사한 카드 데이터
+    public int _currentPierceCount;
+    public HashSet<GameObject> _hitMonsters = new HashSet<GameObject>();
 
 
     /// <summary>
@@ -21,13 +24,15 @@ public class BulletController : MonoBehaviour
     /// <param name="damage">총알이 줄 데미지</param>
     /// <param name="shotID">[추가] 발사 인스턴스 고유 ID</param>
 
-    public void Initialize(Vector2 direction, float initialSpeed, float damage, string shotID, CardDataSO cardData)
+    public void Initialize(Vector2 direction, float initialSpeed, float damage, string shotID, CardDataSO cardData, int pierceCount)
     {
         _direction = direction.normalized; // 방향 벡터 정규화
         speed = initialSpeed; // 초기 속도 설정
         this.damage = damage; // 전달받은 데미지 설정
         this.shotInstanceID = shotID; // [추가] 발사 ID 설정
         this.SourceCard = cardData; // [추가] 카드 데이터 저장
+        this._currentPierceCount = pierceCount; // 현재 관통 횟수 저장
+        this._hitMonsters.Clear(); // 풀링을 위해 이전에 맞춘 몬스터 목록 초기화
 
         // 총알의 초기 회전 설정 (선택 사항: 방향에 따라 총알 스프라이트 회전)
         // 예를 들어, Vector2.right가 기본 방향일 때
@@ -47,7 +52,6 @@ public class BulletController : MonoBehaviour
 
     private void Deactivate()
     {
-        // PoolManager를 통해 오브젝트를 풀로 반환합니다.
         ServiceLocator.Get<PoolManager>().Release(gameObject);
     }
 

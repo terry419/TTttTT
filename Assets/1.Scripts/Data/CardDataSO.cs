@@ -23,6 +23,7 @@ public class CardDataSO : ScriptableObject
     public float healthMultiplier;            // 체력에 적용될 배율
     public float critRateMultiplier;          // 치명타 확률에 적용될 배율 (선택 사항)
     public float critDamageMultiplier;        // 치명타 피해에 적용될 배율
+    [Range(0, 100)] // Add this line
     public float lifestealPercentage;         // 흡혈 효과의 회복량 비율 (0.0 ~ 1.0)
     public string effectDescription;          // 카드의 효과에 대한 설명 텍스트
 
@@ -41,6 +42,8 @@ public class CardDataSO : ScriptableObject
     [Header("발사체 설정")]
     public GameObject bulletPrefab;
     public float bulletSpeed = 10f;
+    [Tooltip("총알이 관통할 수 있는 횟수입니다. 0이면 관통하지 않습니다.")]
+    public int bulletPierceCount = 0;
     // ▼▼▼ [1] 이 줄을 추가하세요. ▼▼▼
     [Tooltip("이 카드의 총알을 몇 개 미리 생성할지 정합니다.")]
     public int bulletPreloadCount = 100;

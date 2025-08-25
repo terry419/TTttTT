@@ -87,12 +87,15 @@ public class PoolManager : MonoBehaviour
     {
         if (instance == null) return;
         
+        Debug.Log($"[PoolManager] Release 요청: {instance.name} (ID: {instance.GetInstanceID()})");
+
         // [추가] 오브젝트를 반납할 때, 활성 목록에서 제거합니다.
         activePooledObjects.Remove(instance);
 
         PooledObjectInfo pooledInfo = instance.GetComponent<PooledObjectInfo>();
         if (pooledInfo == null || pooledInfo.originalPrefab == null)
         {
+            Debug.LogWarning($"[PoolManager] Release 실패: {instance.name} (ID: {instance.GetInstanceID()}) PooledObjectInfo 없음. 즉시 파괴.");
             Destroy(instance);
             return;
         }
@@ -105,6 +108,7 @@ public class PoolManager : MonoBehaviour
         }
 
         instance.SetActive(false);
+        Debug.Log($"[PoolManager] {instance.name} (ID: {instance.GetInstanceID()}) 비활성화 완료.");
         instance.transform.SetParent(transform);
         poolDictionary[originalPrefab].Enqueue(instance);
     }

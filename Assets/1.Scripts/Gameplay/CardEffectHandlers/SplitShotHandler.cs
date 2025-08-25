@@ -42,7 +42,7 @@ public class SplitShotHandler : ICardEffectHandler
 
             if (bulletGO.TryGetComponent<BulletController>(out var bullet))
             {
-                bullet.Initialize(direction, cardData.bulletSpeed, totalDamage, shotID, cardData);
+                bullet.Initialize(direction, cardData.bulletSpeed, totalDamage, shotID, cardData, cardData.bulletPierceCount);
             }
         }
     }

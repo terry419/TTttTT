@@ -27,9 +27,9 @@ public class EffectExecutor : MonoBehaviour
     {
         effectHandlers = new Dictionary<CardEffectType, ICardEffectHandler>
         {
-            { CardEffectType.SingleShot, new SingleShotHandler() },
             { CardEffectType.SplitShot, new SplitShotHandler() },
-            { CardEffectType.Wave, new WaveHandler() }
+            { CardEffectType.Wave, new WaveHandler() },
+            { CardEffectType.Lightning, new LightningHandler() }
         };
     }
 
@@ -42,11 +42,7 @@ public class EffectExecutor : MonoBehaviour
             return;
         }
 
-        // OnHit 효과 처리 (예: 생명력 흡수)
-        if (cardData.triggerType == TriggerType.OnHit && cardData.lifestealPercentage > 0 && actualDamageDealt > 0)
-        {
-            casterStats.Heal(actualDamageDealt * cardData.lifestealPercentage);
-        }
+        
 
         // 카드 효과 타입에 따른 핸들러 실행
         if (effectHandlers.TryGetValue(cardData.effectType, out ICardEffectHandler handler))
@@ -63,7 +59,7 @@ public class EffectExecutor : MonoBehaviour
     // [리팩토링] 데미지 계산 시에도 시전자의 스탯을 직접 받습니다.
     public float CalculateTotalDamage(CardDataSO cardData, CharacterStats casterStats)
     {
-        if (casterStats == null || cardData == null || casterStats.stats.baseDamage <= 0)
+        if (casterStats == null || cardData == null)
         {
             return cardData != null ? cardData.baseDamage : 0f;
         }
@@ -73,11 +69,11 @@ public class EffectExecutor : MonoBehaviour
             return 0f;
         }
 
-        // 캐릭터의 최종 데미지 배율을 계산합니다.
-        float damageMultiplier = casterStats.FinalDamage / casterStats.stats.baseDamage;
-        
-        // 카드의 기본 데미지에 캐릭터의 최종 데미지 배율을 곱합니다.
-        float finalDamage = cardData.baseDamage * damageMultiplier;
+        // CharacterStats의 FinalDamage가 이제 '총 공격력 보너스'를 의미합니다.
+        float totalAttackBonus = casterStats.FinalDamage;
+
+        // 최종 대미지 = 카드 기본 대미지 * (1 + 총 공격력 보너스 / 100)
+        float finalDamage = cardData.baseDamage * (1 + totalAttackBonus / 100f);
 
         return finalDamage;
     }

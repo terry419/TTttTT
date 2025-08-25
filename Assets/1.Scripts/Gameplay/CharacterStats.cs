@@ -22,7 +22,14 @@ public class CharacterStats : MonoBehaviour
     private readonly Dictionary<StatType, List<StatModifier>> statModifiers = new Dictionary<StatType, List<StatModifier>>();
 
     // [리팩토링] 최종 스탯을 실시간으로 계산하는 프로퍼티 (올바른 StatType 사용)
-    public float FinalDamage => CalculateFinalValue(StatType.Attack, stats.baseDamage);
+    public float FinalDamage
+    {
+        get
+        {
+            float totalBonusRatio = statModifiers[StatType.Attack].Sum(mod => mod.Value);
+            return stats.baseDamage + totalBonusRatio;
+        }
+    }
     public float FinalAttackSpeed => Mathf.Max(0.1f, CalculateFinalValue(StatType.AttackSpeed, stats.baseAttackSpeed));
     public float FinalMoveSpeed => Mathf.Max(0f, CalculateFinalValue(StatType.MoveSpeed, stats.baseMoveSpeed));
     public float FinalHealth => Mathf.Max(1f, CalculateFinalValue(StatType.Health, stats.baseHealth));
@@ -61,6 +68,8 @@ public class CharacterStats : MonoBehaviour
         }
         CalculateFinalStats();
     }
+
+    
 
     private float CalculateFinalValue(StatType type, float baseValue)
     {

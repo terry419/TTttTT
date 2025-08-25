@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 81574118116538726}
   - component: {fileID: -8146191362725043051}
   m_Layer: 0
-  m_Name: Bullet_Base
+  m_Name: life_steal
   m_TagString: PlayerBullet
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -164,7 +164,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 21300000, guid: 99af61578a2317c449e29344b2b17479, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 14c5c48283a8eeb4098db89eda4a48ff, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0

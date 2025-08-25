@@ -18,6 +18,10 @@ public class PrefabProvider : MonoBehaviour
     [Header("공용 프리팹 목록 (Damage Text 등)")]
     [SerializeField] private List<PreloadItem> commonPreloadItems;
 
+    [Header("특수 효과 프리팹")]
+    [Tooltip("크리티컬 히트 시 생성될 이펙트 프리팹입니다.")]
+    public GameObject critEffectPrefab;
+
     private readonly Dictionary<string, GameObject> prefabDictionary = new Dictionary<string, GameObject>();
 
     void Awake()
