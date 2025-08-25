@@ -4329,8 +4329,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   testStartingCards:
-  - {fileID: 11400000, guid: 2ecce3066bb8ae04198b7ef59103467c, type: 2}
-  - {fileID: 11400000, guid: fde96b367ae9b224a9d2b7a075796cf2, type: 2}
+  - {fileID: 11400000, guid: 48a2e52f9e04d65428b758da209d864e, type: 2}
+  - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
 --- !u!114 &1615835056

@@ -47,8 +47,12 @@ public class MonsterController : MonoBehaviour
 
     void OnDisable()
     {
-        // ... 기존 코드 ...
-        ServiceLocator.Get<MonsterManager>()?.UnregisterMonster(this); // 비활성화될 때 리스트에서 제거
+        // 1. ServiceLocator에 MonsterManager가 아직 등록되어 있는지 먼저 확인합니다.
+        if (ServiceLocator.IsRegistered<MonsterManager>())
+        {
+            // 2. 등록되어 있을 경우에만 안전하게 Get을 호출하여 Unregister를 실행합니다.
+            ServiceLocator.Get<MonsterManager>()?.UnregisterMonster(this);
+        }
     }
 
     
@@ -111,34 +115,52 @@ public class MonsterController : MonoBehaviour
         LeavePlayer(collision.gameObject);
     }
 
-    void OnTriggerEnter2D(Collider2D other)
+        void OnTriggerEnter2D(Collider2D other)
     {
         if (isDead)
         {
             return;
         }
 
-        if (other.TryGetComponent<BulletController>(out var hitBullet))
+        // 1. 부딪힌 것이 BulletController 컴포넌트를 가진 오브젝트인지 확인합니다.
+        if (other.TryGetComponent<BulletController>(out var bullet))
         {
-            if (hitShotIDs.Contains(hitBullet.shotInstanceID))
+            if (bullet == null || bullet.SourceCard == null) return;
+
+            // 관통/다단히트 방지를 위해 이미 처리한 총알인지 확인
+            if (hitShotIDs.Contains(bullet.shotInstanceID))
             {
-                ServiceLocator.Get<PoolManager>().Release(other.gameObject);
+                ServiceLocator.Get<PoolManager>().Release(other.gameObject); // 이미 처리한 총알도 풀로 돌려보냅니다.
                 return;
             }
+            hitShotIDs.Add(bullet.shotInstanceID);
+            
+            // 2. 총알의 데미지를 몬스터에게 적용합니다.
+            TakeDamage(bullet.damage);
 
-            hitShotIDs.Add(hitBullet.shotInstanceID);
-            TakeDamage(hitBullet.damage);
-
-            if (hitBullet.SourceCard != null && hitBullet.SourceCard.statusEffectToApply != null)
+            // 3. ★★★ 핵심 로직: 총알을 쏜 원본 카드에 'secondaryEffect'가 있는지 확인합니다. ★★★
+            CardDataSO secondaryEffectCard = bullet.SourceCard.secondaryEffect;
+            if (secondaryEffectCard != null)
             {
-                ServiceLocator.Get<StatusEffectManager>().ApplyStatusEffect(this.gameObject, hitBullet.SourceCard.statusEffectToApply);
-            }
+                // 4. EffectExecutor와 시전자(Player)의 정보를 가져옵니다.
+                var effectExecutor = ServiceLocator.Get<EffectExecutor>();
+                var playerController = ServiceLocator.Get<PlayerController>();
 
-            if (hitBullet.SourceCard != null && hitBullet.SourceCard.secondaryEffect != null)
-            {
-                ServiceLocator.Get<EffectExecutor>().Execute(hitBullet.SourceCard.secondaryEffect, GetComponent<CharacterStats>(), this.transform);
+                // 5. 시전자 정보가 유효한지 최종 확인합니다.
+                if (effectExecutor != null && playerController != null)
+                {
+                    // ▼▼▼ 디버그 로그 추가 ▼▼▼
+                    Debug.Log($"[디버그 1] 기본 카드 '{bullet.SourceCard.name}'가 명중. 보조 효과 '{secondaryEffectCard.name}'를 발동합니다.");
+                    
+                    // 6. secondaryEffect를 실행합니다.
+                    //    - CardData: secondaryEffect 카드 ('Zone' 카드)
+                    //    - CasterStats: 플레이어의 CharacterStats
+                    //    - SpawnPoint: 몬스터 자신의 위치 (this.transform)
+                    effectExecutor.Execute(secondaryEffectCard, playerController.GetComponent<CharacterStats>(), this.transform);
+                }
             }
-
+            
+            // 7. 총알을 풀(Pool)로 돌려보내 비활성화시킵니다.
             ServiceLocator.Get<PoolManager>().Release(other.gameObject);
         }
         else

@@ -207,6 +207,23 @@ public class GameManager : MonoBehaviour
         }
         yield return new WaitForSecondsRealtime(3f); // Use real-time seconds
         Time.timeScale = 1; // Resume game time before changing scene
+
+        // ▼▼▼ 메인 메뉴 씬으로 바꾸기 직전에 이 부분을 추가하세요! ▼▼▼
+        var cardManager = ServiceLocator.Get<CardManager>();
+        if (cardManager != null)
+        {
+            cardManager.ClearAndResetDeck(); // 카드 매니저 초기화
+        }
+
+        // 만약 ArtifactManager도 초기화해야 한다면 비슷한 함수를 만들어 호출합니다.
+        // var artifactManager = ServiceLocator.Get<ArtifactManager>();
+        // if (artifactManager != null)
+        // {
+        //     artifactManager.ClearAndResetArtifacts(); 
+        // }
+
+        isFirstRound = true; // '첫 라운드'라는 표시도 다시 true로!
+
         ChangeState(GameState.MainMenu);
     }
 

@@ -98,8 +98,18 @@ public class DebugManager : MonoBehaviour
             infoBuilder.AppendLine("PlayerStats not registered.");
         }
 
-        infoBuilder.AppendLine("\n--- Game Info ---");
-        infoBuilder.AppendLine($"Active Monsters: {FindObjectsOfType<MonsterController>().Length}");
+        infoBuilder.AppendLine("--- Game Info ---");
+
+        // ▼▼▼ 이 부분을 ▼▼▼
+        // infoBuilder.AppendLine($"Active Monsters: {FindObjectsOfType<MonsterController>().Length}");
+
+        // ▼▼▼ 아래처럼 바꾸세요! ▼▼▼
+        var monsterManager = ServiceLocator.Get<MonsterManager>();
+        if (monsterManager != null)
+        {
+            infoBuilder.AppendLine($"Active Monsters: {monsterManager.ActiveMonsters.Count}");
+        }
+
         infoText.text = infoBuilder.ToString();
     }
 

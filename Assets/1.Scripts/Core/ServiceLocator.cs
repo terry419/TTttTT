@@ -7,6 +7,15 @@ public static class ServiceLocator
 {
     private static readonly Dictionary<Type, object> services = new Dictionary<Type, object>();
 
+    // ▼▼▼ 이 부분을 새로 추가하세요 ▼▼▼
+    // static 생성자는 클래스가 처음 사용될 때 딱 한 번 호출됩니다.
+    static ServiceLocator()
+    {
+        // Unity 에디터가 종료되거나 플레이 모드가 중지될 때 Clear 서비스를 호출하도록 등록합니다.
+        Application.quitting += Clear;
+    }
+    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+
     /// <summary>
     /// 특정 타입의 서비스가 이미 등록되어 있는지 확인합니다.
     /// </summary>

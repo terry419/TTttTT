@@ -28,6 +28,13 @@ public class WaveHandler : ICardEffectHandler
             float totalDamage = executor.CalculateTotalDamage(cardData, casterStats);
             string shotID = Guid.NewGuid().ToString();
 
+            Debug.Log($"[디버그 최종 확인] DamagingZone 초기화 정보:" +
+              $"\n - 카드 이름: <color=yellow>{cardData.name}</color>" +
+              $"\n - 지속 대미지(effectDamagePerTick): <color=red>{cardData.effectDamagePerTick}</color>" +
+              $"\n - 단일 대미지(baseDamage): {cardData.baseDamage}" +
+              $"\n - 장판 모드(isSingleHitWaveMode): {!cardData.isEffectSingleHitWaveMode}");
+
+
             // DamagingZone을 카드 데이터에 맞게 초기화합니다.
             zone.Initialize(
                 singleHitDmg: totalDamage,
