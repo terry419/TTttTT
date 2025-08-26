@@ -1,4 +1,4 @@
-﻿// 파일명: SceneTransitionManager.cs (리팩토링 완료)
+// 파일명: SceneTransitionManager.cs (리팩토링 완료)
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;

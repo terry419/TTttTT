@@ -1,4 +1,4 @@
-// 경로: Assets/1/Scripts/UI/AutoFocusScroller.cs
+// : Assets/1/Scripts/UI/AutoFocusScroller.cs
 
 using UnityEngine;
 using UnityEngine.UI;
@@ -6,11 +6,11 @@ using UnityEngine.EventSystems;
 
 public class AutoFocusScroller : MonoBehaviour
 {
-    [Header("제어 대상")]
+    [Header(" ")]
     [SerializeField] private ScrollRect mapScrollRect;
     [SerializeField] private MapView mapView;
 
-    [Header("스크롤 설정")]
+    [Header("크 ")]
     [SerializeField] private float edgeScrollSpeed = 1.0f;
     [SerializeField] private float scrollBoundaryOffset = 50f;
 
@@ -42,12 +42,12 @@ public class AutoFocusScroller : MonoBehaviour
 
         if (shouldScrollUp)
         {
-            // --- [디버그 DELTA: 조건 발동] ---
+            // --- [ DELTA:  森] ---
             Scroll(1);
         }
         else if (shouldScrollDown)
         {
-            // --- [디버그 DELTA: 조건 발동] ---
+            // --- [ DELTA:  森] ---
             Scroll(-1);
         }
     }

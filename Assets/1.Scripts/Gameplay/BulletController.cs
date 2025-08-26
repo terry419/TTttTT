@@ -22,7 +22,7 @@ public class BulletController : MonoBehaviour
     /// <param name="direction">총알의 이동 방향 (정규화된 벡터)</param>
     /// <param name="initialSpeed">총알의 초기 속도</param>
     /// <param name="damage">총알이 줄 데미지</param>
-    /// <param name="shotID">[추가] 발사 인스턴스 고유 ID</param>
+    /// <param name="shotID">[추가] 발사 ID 설정</param>
 
     public void Initialize(Vector2 direction, float initialSpeed, float damage, string shotID, CardDataSO cardData, int pierceCount)
     {
@@ -59,4 +59,3 @@ public class BulletController : MonoBehaviour
     // 이 스크립스는 데미지 값을 가지고 있는 역할만 수행합니다.
     // 충돌 처리는 MonsterController의 OnTriggerEnter2D에서 담당합니다.
 }
-

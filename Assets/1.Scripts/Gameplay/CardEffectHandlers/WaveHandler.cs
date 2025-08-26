@@ -10,7 +10,7 @@ public class WaveHandler : ICardEffectHandler
     {
         GameObject wavePrefab = cardData.effectPrefab;
         if (wavePrefab == null)
-        { 
+        {
             Debug.LogError($"[WaveHandler] 오류: 웨이브 카드 '{cardData.cardName}'에 effectPrefab이 할당되지 않았습니다!");
             return;
         }

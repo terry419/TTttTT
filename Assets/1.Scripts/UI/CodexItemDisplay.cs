@@ -55,7 +55,7 @@ public class CodexItemDisplay : MonoBehaviour
         }
         else
         {
-            nameText.text = "????????";
+            nameText.text = "????";
             typeText.text = "";
             rarityText.text = "";
             descriptionText.text = "";
@@ -84,7 +84,7 @@ public class CodexItemDisplay : MonoBehaviour
         }
         else
         {
-            nameText.text = "????????";
+            nameText.text = "????";
             typeText.text = "";
             rarityText.text = "";
             descriptionText.text = "";

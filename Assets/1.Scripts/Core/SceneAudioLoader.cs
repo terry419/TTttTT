@@ -1,30 +1,30 @@
-// ÆÄÀÏ °æ·Î: Assets/1.Scripts/Core/SceneAudioLoader.cs
+//  : Assets/1.Scripts/Core/SceneAudioLoader.cs
 
 using UnityEngine;
 
 public class SceneAudioLoader : MonoBehaviour
 {
-    [Header("¾À ¿Àµð¿À ÄÃ·º¼Ç")]
+    [Header("  Ã·")]
     [SerializeField]
     private AudioCollection sceneAudioCollection;
 
-    [Header("½ÃÀÛ BGM ÀÌ¸§ (¼±ÅÃ »çÇ×)")]
+    [Header(" BGM Ì¸ ( )")]
     [SerializeField]
     private string startingBgmName;
 
     void Start()
     {
-        // [¼öÁ¤] ServiceLocator¸¦ ÅëÇØ AudioManager¸¦ °¡Á®¿É´Ï´Ù.
+        // [] ServiceLocator  AudioManager É´Ï´.
         var audioManager = ServiceLocator.Get<AudioManager>();
         if (audioManager == null)
         {
-            Debug.LogError("SceneAudioLoader: AudioManager¸¦ Ã£À» ¼ö ¾ø½À´Ï´Ù!");
+            Debug.LogError("SceneAudioLoader: AudioManager Ã£  Ï´!");
             return;
         }
 
         if (sceneAudioCollection != null)
         {
-            // [¼öÁ¤] °¡Á®¿Â audioManager º¯¼ö¸¦ »ç¿ëÇÕ´Ï´Ù.
+            // []  audioManager  Õ´Ï´.
             audioManager.LoadCollection(sceneAudioCollection);
             if (!string.IsNullOrEmpty(startingBgmName))
             {
@@ -33,7 +33,7 @@ public class SceneAudioLoader : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("SceneAudioLoader: AudioCollectionÀÌ ÇÒ´çµÇÁö ¾Ê¾Ò½À´Ï´Ù!", this.gameObject);
+            Debug.LogWarning("SceneAudioLoader: AudioCollection Ò´ Ê¾Ò½Ï´!", this.gameObject);
         }
     }
 }

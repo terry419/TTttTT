@@ -4,12 +4,12 @@ using TMPro;
 
 public class DamageText : MonoBehaviour
 {
-    [Header("¾Ö´Ï¸ÞÀÌ¼Ç ¼³Á¤")]
-    [Tooltip("ÅØ½ºÆ®°¡ Æ¢¾î ¿À¸£´Â ¾Ö´Ï¸ÞÀÌ¼ÇÀÇ ÀüÃ¼ÀûÀÎ Å©±â¸¦ Á¶ÀýÇÕ´Ï´Ù. (1 = 100%)")]
+    [Header("Ö´Ï¸Ì¼ ")]
+    [Tooltip("Ø½Æ® Æ¢  Ö´Ï¸Ì¼ Ã¼ Å©â¸¦ Õ´Ï´. (1 = 100%)")]
     public float animationScale = 1.0f;
-    [Tooltip("¾Ö´Ï¸ÞÀÌ¼ÇÀÌ Àç»ýµÇ´Â ½Ã°£ÀÔ´Ï´Ù.")]
+    [Tooltip("Ö´Ï¸Ì¼ Ç´ Ã°Ô´Ï´.")]
     public float animationDuration = 0.8f;
-    [Tooltip("ÅØ½ºÆ®°¡ À§·Î ¿Ã¶ó°¡´Â °Å¸®ÀÔ´Ï´Ù.")]
+    [Tooltip("Ø½Æ®  Ã¶ó°¡´ Å¸Ô´Ï´.")]
     public float moveUpDistance = 1.5f;
 
     private TextMeshProUGUI textMesh;
@@ -20,13 +20,13 @@ public class DamageText : MonoBehaviour
         textMesh = GetComponentInChildren<TextMeshProUGUI>();
         if (textMesh == null)
         {
-            Debug.LogError("DamageText: ÀÚ½Ä ¿ÀºêÁ§Æ®¿¡¼­ TextMeshProUGUI ÄÄÆ÷³ÍÆ®¸¦ Ã£À» ¼ö ¾ø½À´Ï´Ù!");
+            Debug.LogError("DamageText: Ú½ Æ® TextMeshProUGUI Æ® Ã£  Ï´!");
         }
     }
 
     void Start()
     {
-        // --- [¼öÁ¤] ServiceLocator¸¦ ÅëÇØ PoolManager¸¦ Ã£¾Æ¿É´Ï´Ù. ---
+        // --- [] ServiceLocator  PoolManager Ã£Æ¿É´Ï´. ---
         poolManager = ServiceLocator.Get<PoolManager>();
     }
 

@@ -2,11 +2,11 @@ using UnityEngine;
 
 public class CameraFollow : MonoBehaviour
 {
-    public Transform target; // Ä«¸Ş¶ó°¡ µû¶ó°¥ ´ë»ó (ÇÃ·¹ÀÌ¾î)
-    public float smoothSpeed = 0.125f; // Ä«¸Ş¶ó°¡ µû¶ó°¡´Â ºÎµå·¯¿òÀÇ Á¤µµ
-    public Vector3 offset; // Ä«¸Ş¶ó¿Í ´ë»ó »çÀÌÀÇ °Å¸®
+    public Transform target; // Ä«Ş¶   (Ã·Ì¾)
+    public float smoothSpeed = 0.125f; // Ä«Ş¶ ó°¡´ Îµå·¯ 
+    public Vector3 offset; // Ä«Ş¶   Å¸
 
-    // ÇÃ·¹ÀÌ¾îÀÇ ¿òÁ÷ÀÓÀÌ ¸ğµÎ ³¡³­ ÈÄ¿¡ Ä«¸Ş¶ó°¡ ¿òÁ÷ÀÌµµ·Ï LateUpdate¸¦ »ç¿ëÇÕ´Ï´Ù.
+    // Ã·Ì¾    Ä¿ Ä«Ş¶ Ìµ LateUpdate Õ´Ï´.
     void LateUpdate()
     {
         if (target != null)

@@ -1,4 +1,4 @@
-// ÆÄÀÏ¸í: MonsterManager.cs
+// Ï¸: MonsterManager.cs
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -10,7 +10,7 @@ public class MonsterManager : MonoBehaviour
     void Awake()
     {
         ServiceLocator.Register<MonsterManager>(this);
-        // ÀÌ ¸Å´ÏÀú´Â _GameplaySession ÇÁ¸®ÆÕ¿¡ ³Ö¾îµÎ¸é DontDestroyOnLoad°¡ ÇÊ¿ä ¾ø½À´Ï´Ù.
+        //  Å´ _GameplaySession Õ¿ Ö¾Î¸ DontDestroyOnLoad Ê¿ Ï´.
     }
 
     public void RegisterMonster(MonsterController monster)

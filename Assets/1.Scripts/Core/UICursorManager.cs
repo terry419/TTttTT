@@ -1,4 +1,4 @@
-// ÆÄÀÏ¸í: UICursorManager.cs (¸®ÆÑÅä¸µ ¿Ï·á)
+// Ï¸: UICursorManager.cs (ä¸µ Ï·)
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;

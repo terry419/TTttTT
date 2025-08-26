@@ -83,5 +83,3 @@ public class StatDictionaryData
     public List<bool> unlockedStatuses = new List<bool>();
     public List<float> investedRatios = new List<float>();
 }
-
-

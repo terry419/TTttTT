@@ -1,31 +1,31 @@
-// ÆÄÀÏ¸í: MonsterDataSO.cs
-// °æ·Î: Assets/1.Scripts/Data/MonsterDataSO.cs
+// Ï¸: MonsterDataSO.cs
+// : Assets/1.Scripts/Data/MonsterDataSO.cs
 using UnityEngine;
 
 /// <summary>
-/// ¸ó½ºÅÍ ÇÑ Á¾·ùÀÇ ¸ğµç µ¥ÀÌÅÍ¸¦ Á¤ÀÇÇÏ´Â ScriptableObjectÀÔ´Ï´Ù.
-/// Ã¼·Â, ¼Óµµ, °ø°İ·Â, ÇÁ¸®ÆÕ µî ¸ó½ºÅÍÀÇ ¸ğµç ¼Ó¼ºÀ» ÀÌ ÆÄÀÏ ÇÏ³ª·Î °ü¸®ÇÒ ¼ö ÀÖ½À´Ï´Ù.
+///     Í¸ Ï´ ScriptableObjectÔ´Ï´.
+/// Ã¼, Óµ, İ·,     Ó¼   Ï³   Ö½Ï´.
 /// </summary>
 [CreateAssetMenu(fileName = "MonsterData_", menuName = "GameData/MonsterData")]
 public class MonsterDataSO : ScriptableObject
 {
-    [Header("±âº» Á¤º¸")]
-    [Tooltip("µ¥ÀÌÅÍ¸¦ Ã£±â À§ÇÑ °íÀ¯ IDÀÔ´Ï´Ù. (¿¹: slime_normal, goblin_archer)")]
+    [Header("âº» ")]
+    [Tooltip("Í¸ Ã£   IDÔ´Ï´. (: slime_normal, goblin_archer)")]
     public string monsterID;
 
-    [Tooltip("°ÔÀÓ ³»¿¡ Ç¥½ÃµÉ ÀÌ¸§ÀÔ´Ï´Ù.")]
+    [Tooltip("  Ç¥Ãµ Ì¸Ô´Ï´.")]
     public string monsterName;
 
-    [Header("´É·ÂÄ¡")]
+    [Header("É·Ä¡")]
     public float maxHealth = 100f;
     public float moveSpeed = 3f;
     public float contactDamage = 10f;
 
-    [Header("ÂüÁ¶")]
-    [Tooltip("ÀÌ ¸ó½ºÅÍ°¡ »ç¿ëÇÒ ÇÁ¸®ÆÕÀ» Á÷Á¢ ¿¬°áÇÏ¼¼¿ä.")]
-    public GameObject prefab; // [¼öÁ¤] string¿¡¼­ ´Ù½Ã GameObject·Î º¯°æ
+    [Header("")]
+    [Tooltip(" Í°    Ï¼.")]
+    public GameObject prefab; // [] string Ù½ GameObject 
 
-    // [È®Àå ¿¹Á¤] ±âÈ¹¼­¿¡ ¾ğ±ŞµÈ ´Ù¾çÇÑ ¸ó½ºÅÍ Çàµ¿ ÆĞÅÏÀ» À§ÇÑ µ¥ÀÌÅÍ
+    // [È® ] È¹ Şµ Ù¾  àµ¿   
     // public enum MonsterBehaviorType { Chase, Flee, Patrol, ExplodeOnDeath }
     // public MonsterBehaviorType behaviorType;
 }

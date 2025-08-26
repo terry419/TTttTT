@@ -1,4 +1,4 @@
-// 파일명: GameInitializer.cs
+// 玖: GameInitializer.cs
 using System.Collections;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
@@ -13,27 +13,27 @@ public class GameInitializer : MonoBehaviour
 
     private IEnumerator LoadEssentialDataAndProceed()
     {
-        // 0. (선택사항) 여기에 로딩 화면 UI를 표시하는 코드를 넣을 수 있습니다.
-        Debug.Log("[GameInitializer] 필수 데이터 로딩을 시작합니다...");
+        // 0. (청) 藪� 琯 화 UI 표求 湄躍�   笭求.
+        Debug.Log("[GameInitializer] 迦  琯 爛求...");
 
-        // 1. Addressables 시스템 초기화 (최초 한 번만 실행)
+        // 1. Addressables 첵 珂화 (   )
         yield return Addressables.InitializeAsync();
 
-        // 2. 핵심 매니저 프리팹들을 비동기적으로 인스턴스화합니다.
+        // 2. 母 킴 蘭 宙엽 館絿화爛求.
         yield return Addressables.InstantiateAsync(PrefabKeys.Managers);
         yield return Addressables.InstantiateAsync(PrefabKeys.GameplaySession);
 
-        Debug.Log("[GameInitializer] 핵심 매니저 생성 완료.");
+        Debug.Log("[GameInitializer] 母 킴  狗.");
 
-        // 3. DataManager의 모든 데이터 로딩이 끝날 때까지 기다립니다.
+        // 3. DataManager   琯   摸求.
         var dataManager = ServiceLocator.Get<DataManager>();
         if (dataManager != null)
         {
             yield return dataManager.LoadAllDataAsync();
         }
 
-        // 4. 모든 로딩이 끝나면 MainMenu 씬으로 이동합니다.
-        Debug.Log("[GameInitializer] 모든 데이터 로딩 완료. 메인 메뉴로 이동합니다.");
+        // 4.  琯  MainMenu  絹爛求.
+        Debug.Log("[GameInitializer]   琯 狗.  濱 絹爛求.");
         SceneManager.LoadScene(SceneNames.MainMenu);
     }
 }

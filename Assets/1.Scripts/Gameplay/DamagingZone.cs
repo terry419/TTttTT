@@ -3,14 +3,14 @@ using System.Collections.Generic;
 
 public class DamagingZone : MonoBehaviour
 {
-    [Header("데미지 설정")]
+    [Header(" ")]
     public float singleHitDamage = 0f;
     public float damagePerTick = 10f;
-    [Tooltip("장판 형태 공격 시 데미지를 주는 간격 (초). 파동으로 사용할 경우 100 이상을 입력하세요.")]
+    [Tooltip("     獵  (). 캔   100 鵑 韜究.")]
     public float tickInterval = 1.0f;
     public float duration = 5.0f;
 
-    [Header("파동/장판 확장 설정")]
+    [Header("캔/ 확 ")]
     public float expansionSpeed = 1.0f;
     public float expansionDuration = 2.0f;
 
@@ -62,7 +62,7 @@ public class DamagingZone : MonoBehaviour
         durationTimer -= Time.deltaTime;
         if (durationTimer <= 0)
         {
-            // --- [수정] PoolManager 호출 코드를 하나로 정리합니다. ---
+            // --- [] PoolManager 호 湄躍� 毬 爛求. ---
             var poolManager = ServiceLocator.Get<PoolManager>();
             if (poolManager != null)
                 poolManager.Release(gameObject);

@@ -6,7 +6,7 @@ using System.Linq;
 [CreateAssetMenu(fileName = "UIGraphicsDB", menuName = "GameData/UIGraphics Database")]
 public class UIGraphicsDB : ScriptableObject
 {
-    // --- 싱글톤(Singleton) 설정 ---
+    // --- 堅(Singleton)  ---
     private static UIGraphicsDB _instance;
     public static UIGraphicsDB Instance
     {
@@ -22,7 +22,7 @@ public class UIGraphicsDB : ScriptableObject
         }
     }
 
-    // --- 데이터 구조 ---
+    // ---   ---
     [System.Serializable]
     public struct RaritySpriteEntry
     {
@@ -32,12 +32,12 @@ public class UIGraphicsDB : ScriptableObject
 
     public List<RaritySpriteEntry> raritySprites;
 
-    // --- 내부 데이터 및 함수 ---
+    // ---    獨 ---
     private Dictionary<CardRarity, Sprite> raritySpriteDict;
 
     private void OnEnable()
     {
-        // 리스트를 딕셔너리로 변환하여 검색 속도를 높입니다.
+        // 트 킬訶 환臼 講 撻 都求.
         raritySpriteDict = raritySprites.ToDictionary(x => x.rarity, x => x.sprite);
     }
 
@@ -47,6 +47,6 @@ public class UIGraphicsDB : ScriptableObject
         {
             return sprite;
         }
-        return null; // 해당하는 스프라이트가 없을 경우
+        return null; // 娩求 트  
     }
 }
