@@ -1,3 +1,5 @@
+//Assets/1.Scripts/Data/CardEffects/AreaEffectSO.cs
+
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 
@@ -10,6 +12,10 @@ public class AreaEffectSO : CardEffectSO
     [Header("광역 효과 프리팹")]
     [Tooltip("생성할 파동 또는 장판 효과의 프리팹 (DamagingZone.cs 포함)")]
     public AssetReferenceGameObject effectPrefabRef;
+
+    [Header("모드 설정")]
+    [Tooltip("체크 시: 단일 피해 파동 모드 / 해제 시: 지속 피해 장판 모드")]
+    public bool isSingleHitWaveMode = true;
 
     [Header("파동/장판 효과 설정")]
     [Tooltip("파동/장판의 총 지속 시간 (초)")]
