@@ -1,4 +1,20 @@
 using UnityEngine;
+using UnityEngine.AddressableAssets;
+using System.Collections.Generic;
+using System;
+
+/// <summary>
+/// 피격 시 순차적으로 발동할 연쇄 효과를 정의하는 클래스입니다.
+/// </summary>
+[Serializable]
+public class SequentialPayload
+{
+    [Tooltip("이 효과가 발동될 튕김 횟수입니다. (0 = 최초 피격 시)")]
+    public int onBounceNumber = 0;
+
+    [Tooltip("발동시킬 효과 모듈입니다.")]
+    public AssetReferenceT<CardEffectSO> effectToTrigger;
+}
 
 /// <summary>
 /// 투사체에 관통, 튕김, 추적 등의 특수 능력을 부여하는 모듈입니다.
@@ -6,6 +22,16 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "Module_Projectile_", menuName = "GameData/v8.0/Modules/ProjectileEffect")]
 public class ProjectileEffectSO : CardEffectSO
 {
+    [Header("발사체 기본 설정")]
+    [Tooltip("타겟팅 방식 (전방, 가장 가까운 적 등)")]
+    public TargetingType targetingType = TargetingType.Nearest;
+
+    [Tooltip("발사할 투사체 프리팹의 Addressable 참조")]
+    public AssetReferenceGameObject bulletPrefabReference;
+
+    [Tooltip("투사체 속도. 플랫폼의 baseSpeed에 곱해질 배율입니다. (1 = 100%)")]
+    public float speedMultiplier = 1f;
+
     [Header("투사체 특수 능력")]
     [Tooltip("관통 횟수")]
     public int pierceCount = 0;
@@ -13,18 +39,33 @@ public class ProjectileEffectSO : CardEffectSO
     [Tooltip("튕김 횟수")]
     public int ricochetCount = 0;
 
+    [Tooltip("이미 맞춘 적에게 다시 튕길 수 있는지 여부")]
+    public bool canRicochetToSameTarget = false;
+
     [Tooltip("가장 가까운 적을 추적하는 기능")]
     public bool isTracking = false;
 
-    // TODO: Sequential Payloads (연쇄 효과) 기능 추가 필요
+    [Header("VFX 설정 (Addressable Key)")]
+    [Tooltip("피격 시 재생할 VFX의 Addressable 참조")]
+    public AssetReferenceGameObject onHitVFXRef;
 
-    /// <summary>
-    /// ProjectileEffect의 로직을 실행합니다. (현재는 플레이스홀더)
-    /// </summary>
+    [Tooltip("치명타 피격 시 재생할 VFX의 Addressable 참조")]
+    public AssetReferenceGameObject onCritVFXRef;
+
+    [Header("연쇄 효과 (Sequential Payloads)")]
+    [Tooltip("피격 또는 튕김 시 순차적으로 발동할 효과 목록")]
+    public List<SequentialPayload> sequentialPayloads;
+
+    public ProjectileEffectSO()
+    {
+        // 이 모듈은 발사 시점에 투사체를 생성하는 역할을 하므로 OnFire가 기본값입니다.
+        trigger = EffectTrigger.OnFire;
+    }
+
     public override void Execute(EffectContext context)
     {
         Debug.Log($"<color=lime>[{GetType().Name}]</color> '{this.name}' 실행.");
-        // 여기에 실제 투사체 능력치에 관여하는 로직이 추가되어야 합니다.
-        // 예: context.FiringSpec.pierceCount += this.pierceCount;
+        // 이 모듈은 데이터를 제공하는 역할이 핵심입니다.
+        // 실제 투사체 발사 로직은 이 데이터를 읽어갈 EffectExecutor에서 처리됩니다.
     }
 }
