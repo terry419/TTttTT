@@ -177,7 +177,7 @@ public class EffectExecutor : MonoBehaviour
                 if (handle.Status == AsyncOperationStatus.Succeeded && handle.Result.TryGetComponent<BulletController>(out var bullet))
                 {
                     // 새로 만든 v8.0용 Initialize 함수 호출
-                    bullet.Initialize(direction, platform.baseSpeed * pModule.speed, totalDamage, shotID, pModule);
+                    bullet.Initialize(direction, platform.baseSpeed * pModule.speed, totalDamage, shotID, pModule, context.Caster);
                 }
                 else
                 {
@@ -188,6 +188,7 @@ public class EffectExecutor : MonoBehaviour
         }
     }
 
+    // EffectExecutor.cs의 HandleAreaModule 함수를 아래 코드로 교체하세요.
     private void HandleAreaModule(AreaEffectSO aModule, NewCardDataSO platform, EffectContext context)
     {
         Debug.Log($" -> 광역 효과 모듈 처리: {aModule.name}");
@@ -197,17 +198,18 @@ public class EffectExecutor : MonoBehaviour
         {
             if (handle.Status == AsyncOperationStatus.Succeeded && handle.Result.TryGetComponent<DamagingZone>(out var zone))
             {
-                // 파동 모드일 때는 플랫폼의 기본 피해량을, 장판 모드일 때는 모듈의 초기 충격 피해량을 사용
-                float initialDamage = aModule.isSingleHitWaveMode ? platform.baseDamage * (1 + context.Caster.FinalDamage / 100f) : aModule.singleHitDamage;
+                // [수정] singleHitDamage와 damagePerTick 값에 따라 파동/장판 모드가 자동으로 결정됩니다.
+                bool isWave = aModule.damagePerTick <= 0;
+                float initialDamage = aModule.singleHitDamage * (1 + context.Caster.FinalDamage / 100f);
 
                 zone.Initialize(
                     singleHitDmg: initialDamage,
-                    continuousDmgPerTick: aModule.damagePerTick,
+                    continuousDmgPerTick: aModule.damagePerTick * (1 + context.Caster.FinalDamage / 100f),
                     tickInt: aModule.effectTickInterval,
                     totalDur: aModule.effectDuration,
                     expSpeed: aModule.effectExpansionSpeed,
                     expDur: aModule.effectExpansionDuration,
-                    isWave: aModule.isSingleHitWaveMode,
+                    isWave: isWave,
                     shotID: Guid.NewGuid().ToString()
                 );
             }

@@ -45,51 +45,52 @@ public class BulletController : MonoBehaviour
     private int _bounceCountForPayload = 0; // [추가] 연쇄 효과 발동을 위한 튕김 횟수 카운터
 
 
+    // --- 구버전 Initialize ---
     public void Initialize(Vector2 direction, float initialSpeed, float damage, string shotID, CardDataSO cardData, int pierceCount, CharacterStats caster)
     {
-        _direction = direction.normalized; // 방향 벡터 정규화
-        speed = initialSpeed; // 초기 속도 설정
-        this.damage = damage; // 전달받은 데미지 설정
-        this.shotInstanceID = shotID; // [추가] 발사 ID 설정
-        this.SourceCard = cardData; // [추가] 카드 데이터 저장
-        this._currentPierceCount = pierceCount; // 현재 관통 횟수 저장
-        this._hitMonsters.Clear(); // 풀링을 위해 이전에 맞춘 몬스터 목록 초기화
-        this.casterStats = caster;
-        _bounceCountForPayload = 0;
-
-        // 총알의 초기 회전 설정 (선택 사항: 방향에 따라 총알 스프라이트 회전)
-        // 예를 들어, Vector2.right가 기본 방향일 때
-        float angle = Mathf.Atan2(_direction.y, _direction.x) * Mathf.Rad2Deg;
-        transform.rotation = Quaternion.Euler(0, 0, angle);
-
-        // 활성화될 때마다 소멸 타이머를 재시작합니다.
-        // Invoke는 간단하지만, 성능이 중요한 경우 코루틴이나 Update에서 직접 시간을 빼는 것이 더 좋습니다.
-        Invoke(nameof(Deactivate), lifetime);
-    }
-
-    public void Initialize(Vector2 direction, float initialSpeed, float damage, string shotID, ProjectileEffectSO module, CharacterStats caster)
-    {
-        _direction = direction.normalized;
-        speed = initialSpeed;
+        this._direction = direction.normalized;
+        this.speed = initialSpeed;
         this.damage = damage;
-        shotInstanceID = shotID;
-        SourceCard = null;
-        SourceModule = module;
-        _currentPierceCount = module.pierceCount;
-        _currentRicochetCount = module.ricochetCount;
-        isTracking = module.isTracking; // [추가] 추적 여부 초기화
-        trackingTarget = null; // 타겟 초기화
-        _hitMonsters.Clear();
-        this.casterStats = caster; // [추가] 시전자 정보 저장
-        _bounceCountForPayload = 0; // [추가] 튕김 횟수 초기화
-
+        this.shotInstanceID = shotID;
+        this.SourceCard = cardData;
+        this.SourceModule = null; 
+        this._currentPierceCount = pierceCount;
+        this._currentRicochetCount = 0;
+        this.isTracking = false;
+        this.trackingTarget = null;
+        this._hitMonsters.Clear();
+        this.casterStats = caster;
+        this._bounceCountForPayload = 0;
+        
         float angle = Mathf.Atan2(_direction.y, _direction.x) * Mathf.Rad2Deg;
         transform.rotation = Quaternion.Euler(0, 0, angle);
-
+        
         CancelInvoke(nameof(Deactivate));
         Invoke(nameof(Deactivate), lifetime);
     }
+    // --- v8.0 Initialize ---
+    public void Initialize(Vector2 direction, float initialSpeed, float damage, string shotID, ProjectileEffectSO module, CharacterStats caster)
+    {
+        this._direction = direction.normalized;
+        this.speed = initialSpeed;
+        this.damage = damage;
+        this.shotInstanceID = shotID;
+        this.SourceCard = null; 
+        this.SourceModule = module;
+        this._currentPierceCount = module.pierceCount;
+        this._currentRicochetCount = module.ricochetCount;
+        this.isTracking = module.isTracking;
+        this.trackingTarget = null;
+        this._hitMonsters.Clear();
+        this.casterStats = caster;
+        this._bounceCountForPayload = 0;
 
+        float angle = Mathf.Atan2(_direction.y, _direction.x) * Mathf.Rad2Deg;
+        transform.rotation = Quaternion.Euler(0, 0, angle);
+        
+        CancelInvoke(nameof(Deactivate));
+        Invoke(nameof(Deactivate), lifetime);
+    }
     private void FixedUpdate()
     {
         if (isTracking)
@@ -151,6 +152,7 @@ public class BulletController : MonoBehaviour
     {
         if (_currentRicochetCount <= 0) return false;
         _currentRicochetCount--;
+        _bounceCountForPayload++; // [추가] 튕길 때마다 카운터 증가
 
         var exclusions = new HashSet<GameObject>(_hitMonsters);
         if (SourceModule != null && !SourceModule.canRicochetToSameTarget)

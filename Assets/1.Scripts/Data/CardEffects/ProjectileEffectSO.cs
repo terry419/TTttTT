@@ -52,6 +52,9 @@ public class ProjectileEffectSO : CardEffectSO, IPreloadable
     [Tooltip("치명타 피격 시 재생할 VFX의 Addressable 참조")]
     public AssetReferenceGameObject onCritVFXRef;
 
+    [Tooltip("투사체 소멸 시 재생할 VFX의 Addressable 참조")]
+    public AssetReferenceGameObject onExpireVFXRef;
+
     [Header("연쇄 효과 (Sequential Payloads)")]
     [Tooltip("피격 또는 튕김 시 순차적으로 발동할 효과 목록")]
     public List<SequentialPayload> sequentialPayloads;
@@ -80,6 +83,9 @@ public class ProjectileEffectSO : CardEffectSO, IPreloadable
 
         if (onCritVFXRef != null && onCritVFXRef.RuntimeKeyIsValid())
             yield return onCritVFXRef;
+
+        if (onExpireVFXRef != null && onExpireVFXRef.RuntimeKeyIsValid())
+            yield return onExpireVFXRef;
 
         // The user's request did not include onExpireVFXRef, so I will not add it.
     }
