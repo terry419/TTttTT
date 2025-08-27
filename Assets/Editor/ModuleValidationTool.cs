@@ -90,15 +90,16 @@ public class ModuleValidationTool : EditorWindow
                 isValid = false;
             }
 
-            if (asset.effectExpansionSpeed <= 0)
+            if (asset.effectExpansionDuration <= 0)
             {
-                Debug.LogError($"[Validation] {asset.name}: effectExpansionSpeed must be > 0");
+                Debug.LogError($"[Validation] {asset.name}: effectExpansionDuration must be > 0");
                 isValid = false;
             }
 
-            if (asset.effectPrefabRef == null || !asset.effectPrefabRef.RuntimeKeyIsValid())
+            if (asset.maxExpansionRadius <= 0)
             {
-                Debug.LogWarning($"[Validation] {asset.name}: effectPrefabRef is not assigned or invalid");
+                Debug.LogError($"[Validation] {asset.name}: maxExpansionRadius must be > 0");
+                isValid = false;
             }
 
             if (isValid) validCount++;

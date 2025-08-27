@@ -68,7 +68,10 @@ public class CardDataSO : ScriptableObject
     
     [Tooltip("파동/장판이 확장하는 시간 (초). 파동으로 쓸 경우 Duration보다 조금 더 크게 입력.")]
     public float effectExpansionDuration = 3.1f; // DamagingZone의 expansionDuration에 해당
-   
+
+    [Tooltip("파동/장판이 도달할 최대 반지름입니다.")]
+    public float maxExpansionRadius = 5f;
+
     [Tooltip("장판 모드일 때 틱 데미지 간격 (초). 파동 모드일 때는 100 이상으로 설정.")]
     public float effectTickInterval = 100.0f; // DamagingZone의 tickInterval에 해당
    

@@ -1,4 +1,5 @@
-// 추천 경로: Assets/1.Scripts/Core/EffectContext.cs
+// 경로: ./TTttTT/Assets/1.Scripts/Core/EffectContext.cs
+
 using UnityEngine;
 using System.Collections.Generic;
 
@@ -8,6 +9,7 @@ public class EffectContext
     public CharacterStats Caster;           // 효과 시전자
     public Transform SpawnPoint;            // 효과 발현 위치 (총구 등)
     public List<Vector2> FiringDirections;  // 계산된 최종 발사 방향 목록
+    public NewCardDataSO Platform;          // [추가] 이 효과를 발동시킨 원본 카드(플랫폼)
 
     // --- 실행 중 변경되는 데이터 (모듈이 채우거나 참조) ---
     public MonsterController HitTarget;     // 현재 피격된 대상
@@ -26,6 +28,7 @@ public class EffectContext
         Caster = null;
         SpawnPoint = null;
         HitTarget = null;
+        Platform = null; // [추가] 플랫폼 정보 초기화
 
         if (FiringDirections != null) FiringDirections.Clear();
         else FiringDirections = new List<Vector2>();

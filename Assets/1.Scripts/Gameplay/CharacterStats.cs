@@ -1,3 +1,5 @@
+// 경로: ./TTttTT/Assets/1.Scripts/Gameplay/CharacterStats.cs
+
 using UnityEngine;
 using UnityEngine.Events;
 using System.Collections.Generic;
@@ -8,21 +10,19 @@ public class CharacterStats : MonoBehaviour
 {
     [Header("기본 능력치")]
     public BaseStats stats;
-
     [Header("현재 상태 (런타임)")]
     public float currentHealth;
     public bool isInvulnerable = false;
-
     [Header("이벤트")]
     public UnityEvent OnFinalStatsCalculated = new UnityEvent();
 
     private PlayerHealthBar playerHealthBar;
     public float cardSelectionInterval = 10f;
-
     private readonly Dictionary<StatType, List<StatModifier>> statModifiers = new Dictionary<StatType, List<StatModifier>>();
 
     // [리팩토링] 최종 스탯을 실시간으로 계산하는 프로퍼티 (올바른 StatType 사용)
-    public float FinalDamage
+    // [수정] FinalDamage -> FinalDamageBonus로 변경하여 '추가 피해량 %'임을 명확히 함
+    public float FinalDamageBonus
     {
         get
         {
@@ -35,6 +35,9 @@ public class CharacterStats : MonoBehaviour
     public float FinalHealth => Mathf.Max(1f, CalculateFinalValue(StatType.Health, stats.baseHealth));
     public float FinalCritRate => Mathf.Clamp(CalculateFinalValue(StatType.CritRate, stats.baseCritRate), 0f, 100f);
     public float FinalCritDamage => Mathf.Max(0f, CalculateFinalValue(StatType.CritMultiplier, stats.baseCritDamage));
+
+    // 이하 코드는 기존과 동일합니다...
+    // Awake(), OnDestroy(), AddModifier(), RemoveModifiersFromSource() 등은 변경 없음
 
     void Awake()
     {
@@ -68,8 +71,6 @@ public class CharacterStats : MonoBehaviour
         }
         CalculateFinalStats();
     }
-
-    
 
     private float CalculateFinalValue(StatType type, float baseValue)
     {
@@ -125,7 +126,6 @@ public class CharacterStats : MonoBehaviour
 
         List<StatType> availableStats = permStats.GetUnlockedStats();
         if (availableStats.Count == 0) return;
-
         for (int i = 0; i < points; i++)
         {
             StatType targetStat = availableStats[Random.Range(0, availableStats.Count)];
@@ -136,7 +136,8 @@ public class CharacterStats : MonoBehaviour
 
     private float GetWeightForStat(StatType stat)
     {
-        return stat == StatType.Health ? 2f : 1f;
+        return stat == StatType.Health ?
+            2f : 1f;
     }
 
     public float GetCurrentHealth()
@@ -149,7 +150,6 @@ public class CharacterStats : MonoBehaviour
         BaseStats previewStats = new BaseStats();
         float healthGeneBoosterRatio = allocatedPoints * 2f;
         float otherStatsGeneBoosterRatio = allocatedPoints * 1f;
-
         previewStats.baseHealth = baseStats.baseHealth * (1 + healthGeneBoosterRatio / 100f);
         previewStats.baseDamage = baseStats.baseDamage * (1 + otherStatsGeneBoosterRatio / 100f);
         previewStats.baseAttackSpeed = baseStats.baseAttackSpeed * (1 + otherStatsGeneBoosterRatio / 100f);

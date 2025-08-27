@@ -88,7 +88,7 @@ public class RoundManager : MonoBehaviour
                 System.Text.StringBuilder sb = new System.Text.StringBuilder();
                 sb.AppendLine("--- 라운드 시작 플레이어 스탯 ---");
                 sb.AppendLine($"체력: {playerStats.currentHealth:F1} / {playerStats.FinalHealth:F1}");
-                sb.AppendLine($"공격력 보너스: {playerStats.FinalDamage:F2}%");
+                sb.AppendLine($"공격력 보너스: {playerStats.FinalDamageBonus:F2}%");
                 sb.AppendLine($"공격 속도: {playerStats.FinalAttackSpeed:F2}");
                 sb.AppendLine($"이동 속도: {playerStats.FinalMoveSpeed:F2}");
                 sb.AppendLine($"치명타 확률: {playerStats.FinalCritRate:F2}%");
@@ -158,7 +158,7 @@ public class RoundManager : MonoBehaviour
                 System.Text.StringBuilder sb = new System.Text.StringBuilder();
                 sb.AppendLine("--- 라운드 종료 플레이어 스탯 ---");
                 sb.AppendLine($"체력: {playerStats.currentHealth:F1} / {playerStats.FinalHealth:F1}");
-                sb.AppendLine($"공격력 보너스: {playerStats.FinalDamage:F2}%");
+                sb.AppendLine($"공격력 보너스: {playerStats.FinalDamageBonus:F2}%");
                 sb.AppendLine($"공격 속도: {playerStats.FinalAttackSpeed:F2}");
                 sb.AppendLine($"이동 속도: {playerStats.FinalMoveSpeed:F2}");
                 sb.AppendLine($"치명타 확률: {playerStats.FinalCritRate:F2}%");

@@ -87,7 +87,7 @@ public class DebugManager : MonoBehaviour
             infoBuilder.AppendLine("--- Player Stats ---");
             infoBuilder.AppendLine($"Health: {playerStats.currentHealth:F1} / {playerStats.FinalHealth:F1}");
             infoBuilder.AppendLine($"Is Invulnerable: {playerStats.isInvulnerable}");
-            infoBuilder.AppendLine($"Damage: {playerStats.FinalDamage:F2}");
+            infoBuilder.AppendLine($"Damage: {playerStats.FinalDamageBonus:F2}");
             infoBuilder.AppendLine($"Attack Speed: {playerStats.FinalAttackSpeed:F2}");
             infoBuilder.AppendLine($"Move Speed: {playerStats.FinalMoveSpeed:F2}");
             infoBuilder.AppendLine($"Crit Rate: {playerStats.FinalCritRate:P2}");
