@@ -23,6 +23,12 @@ public class ApplyBuffToCasterSO : CardEffectSO
     {
         Debug.Log($"<color=lime>[{GetType().Name}]</color> '{this.name}' 실행. 대상: {context.Caster?.name}");
 
+        if (buffToApply != null && context.Caster != null)
+        {
+            ServiceLocator.Get<StatusEffectManager>()?.ApplyStatusEffect(context.Caster.gameObject, buffToApply);
+            // TODO: VFXManager를 통해 onBuffAppliedVFXRef 재생 로직 추가
+        }
+
         if (buffToApply == null)
         {
             Debug.LogWarning($"[ApplyBuffToCasterSO] '{this.name}' 모듈에 적용할 버프가 할당되지 않았습니다.");

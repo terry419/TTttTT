@@ -27,6 +27,9 @@ public class AreaEffectSO : CardEffectSO
     [Tooltip("파동/장판이 확장하는 시간 (초)")]
     public float effectExpansionDuration = 3.1f;
 
+    [Header("파동 모드 전용")]
+    public float singleHitDamage = 100f; // 장판이 커질 때 대미지
+
     [Tooltip("장판 모드일 때 틱 데미지 간격 (초)")]
     public float effectTickInterval = 100.0f;
 

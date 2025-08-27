@@ -132,7 +132,7 @@ public class ModuleValidationTool : EditorWindow
                 isValid = false;
             }
 
-            if (asset.speedMultiplier <= 0)
+            if (asset.speed <= 0)
             {
                 Debug.LogError($"[Validation] {asset.name}: speedMultiplier must be > 0");
                 isValid = false;

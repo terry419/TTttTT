@@ -1,4 +1,4 @@
-// [리팩토링 완료]
+// [리팩토링 완료] v8.0 공존을 위한 분기 로직 추가
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
@@ -6,16 +6,19 @@ using System;
 
 public class EffectExecutor : MonoBehaviour
 {
+    // --- 구버전 시스템을 위한 핸들러 ---
     private Dictionary<CardEffectType, ICardEffectHandler> effectHandlers;
+
+    // --- v8.0 시스템을 위한 풀 ---
+    private EffectContextPool contextPool = new EffectContextPool();
 
     void Awake()
     {
-        Debug.Log($"[생명주기] {GetType().Name} (ID: {gameObject.GetInstanceID()}) - Awake() 시작. (프레임: {Time.frameCount})");
         if (!ServiceLocator.IsRegistered<EffectExecutor>())
         {
             ServiceLocator.Register<EffectExecutor>(this);
             DontDestroyOnLoad(gameObject);
-            InitializeHandlers();
+            InitializeHandlers(); // 구버전 핸들러 초기화
         }
         else
         {
@@ -23,6 +26,47 @@ public class EffectExecutor : MonoBehaviour
         }
     }
 
+    // --- 구버전 시스템을 위한 Execute 메소드 (기존 코드 유지) ---
+    public void Execute(CardDataSO cardData, CharacterStats casterStats, Transform spawnPoint, float actualDamageDealt = 0f)
+    {
+        Debug.Log($"[Exec<Legacy>] 구버전 시스템 실행: {cardData.cardName}");
+        if (cardData == null || casterStats == null || spawnPoint == null) return;
+
+        if (effectHandlers.TryGetValue(cardData.effectType, out ICardEffectHandler handler))
+        {
+            handler.Execute(cardData, this, casterStats, spawnPoint);
+        }
+    }
+
+    // ★★★ [핵심 추가] v8.0 신규 시스템을 위한 Execute 메소드 ★★★
+    public void Execute(NewCardDataSO cardData, CharacterStats casterStats, Transform spawnPoint)
+    {
+        Debug.Log($"<color=cyan>[Exec<v8.0>]</color> 신규 시스템 실행: {cardData.basicInfo.cardName}");
+        if (cardData == null || casterStats == null || spawnPoint == null) return;
+
+        // 1. 컨텍스트 풀에서 EffectContext 가져오기
+        EffectContext context = contextPool.Get();
+        context.Caster = casterStats;
+        context.SpawnPoint = spawnPoint;
+
+        // 2. 카드에 연결된 모든 모듈을 순차적으로 실행
+        foreach (var moduleEntry in cardData.modules)
+        {
+            // Addressable을 통해 실제 모듈 에셋을 로드합니다. (실제 로딩은 비동기 처리 필요)
+            CardEffectSO module = moduleEntry.moduleReference.Asset as CardEffectSO;
+            if (module != null)
+            {
+                // 각 모듈의 Execute 실행
+                module.Execute(context);
+            }
+        }
+
+        // 3. 사용이 끝난 컨텍스트는 풀에 반환
+        contextPool.Return(context);
+    }
+
+
+    // --- 구버전 시스템을 위한 초기화 및 헬퍼 메소드 (기존 코드 유지) ---
     private void InitializeHandlers()
     {
         effectHandlers = new Dictionary<CardEffectType, ICardEffectHandler>
@@ -33,75 +77,22 @@ public class EffectExecutor : MonoBehaviour
         };
     }
 
-    // [리팩토링] 시전자(Caster)의 정보를 직접 매개변수로 받습니다.
-    public void Execute(CardDataSO cardData, CharacterStats casterStats, Transform spawnPoint, float actualDamageDealt = 0f)
-    {
-        if (cardData == null || casterStats == null || spawnPoint == null)
-        {
-            Debug.LogError("[EffectExecutor] 필수 인자(CardData, CasterStats, SpawnPoint) 중 하나가 null입니다!");
-            return;
-        }
-
-        
-
-        // 카드 효과 타입에 따른 핸들러 실행
-        if (effectHandlers.TryGetValue(cardData.effectType, out ICardEffectHandler handler))
-        { 
-            // 핸들러에게도 시전자 정보를 넘겨주어야 할 수 있습니다. (지금은 EffectExecutor만 넘김)
-            handler.Execute(cardData, this, casterStats, spawnPoint);
-        }
-        else
-        {
-            Debug.LogError($"[EffectExecutor] '{cardData.effectType}' 타입에 대한 핸들러가 등록되어 있지 않습니다!");
-        }
-    }
-
-    // [리팩토링] 데미지 계산 시에도 시전자의 스탯을 직접 받습니다.
     public float CalculateTotalDamage(CardDataSO cardData, CharacterStats casterStats)
     {
-        if (casterStats == null || cardData == null)
-        {
-            return cardData != null ? cardData.baseDamage : 0f;
-        }
-
-        if (cardData.baseDamage <= 0)
-        {
-            return 0f;
-        }
-
-        // CharacterStats의 FinalDamage가 이제 '총 공격력 보너스'를 의미합니다.
+        if (casterStats == null || cardData == null || cardData.baseDamage <= 0) return 0f;
         float totalAttackBonus = casterStats.FinalDamage;
-
-        // 최종 대미지 = 카드 기본 대미지 * (1 + 총 공격력 보너스 / 100)
-        float finalDamage = cardData.baseDamage * (1 + totalAttackBonus / 100f);
-
-        return finalDamage;
+        return cardData.baseDamage * (1 + totalAttackBonus / 100f);
     }
 
-    // [리팩토링] 타겟팅 각도 계산 시에도 시전자의 위치 정보가 필요합니다.
     public float GetTargetingAngle(TargetingType targetingType, Transform casterTransform, Transform spawnPoint)
     {
-        if (casterTransform == null || spawnPoint == null)
-        {
-             Debug.LogError("[EffectExecutor] GetTargetingAngle: casterTransform 또는 spawnPoint가 null입니다!");
-            return 0f;
-        }
-
+        if (casterTransform == null || spawnPoint == null) return 0f;
         Transform target = TargetingSystem.FindTarget(targetingType, casterTransform);
-
         if (target != null)
         {
             Vector2 directionToTarget = (target.position - spawnPoint.position).normalized;
             return Mathf.Atan2(directionToTarget.y, directionToTarget.x) * Mathf.Rad2Deg;
         }
-        else
-        {
-            return spawnPoint.eulerAngles.z;
-        }
-    }
-
-    private void OnDestroy()
-    {
-        Debug.Log($"[생명주기] {GetType().Name} (ID: {gameObject.GetInstanceID()}) - OnDestroy() 시작. (프레임: {Time.frameCount})");
+        return spawnPoint.eulerAngles.z;
     }
 }

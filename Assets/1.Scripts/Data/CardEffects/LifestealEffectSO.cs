@@ -25,6 +25,10 @@ public class LifestealEffectSO : CardEffectSO
     public override void Execute(EffectContext context)
     {
         Debug.Log($"<color=lime>[{GetType().Name}]</color> '{this.name}' 실행. 흡혈률: {lifestealPercentage}%.");
-        // 이 모듈은 데이터를 제공하는 역할만 합니다.
+        if (context.Caster != null && context.DamageDealt > 0)
+        {
+            float healAmount = context.DamageDealt * (lifestealPercentage / 100f);
+            context.Caster.Heal(healAmount);
+        }
     }
 }

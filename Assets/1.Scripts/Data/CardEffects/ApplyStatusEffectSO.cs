@@ -24,16 +24,8 @@ public class ApplyStatusEffectSO : CardEffectSO
     public override void Execute(EffectContext context)
     {
         Debug.Log($"<color=lime>[{GetType().Name}]</color> '{this.name}' 실행. 대상: {context.HitTarget?.name}");
-
-        if (statusToApply == null)
+        if (statusToApply != null && context.HitTarget != null)
         {
-            Debug.LogWarning($"[ApplyStatusEffectSO] '{this.name}' 모듈에 적용할 StatusEffectDataSO가 할당되지 않았습니다.");
-            return;
-        }
-
-        if (context.HitTarget != null)
-        {
-            // StatusEffectManager를 통해 대상에게 상태 이상 효과를 적용하도록 요청합니다.
             ServiceLocator.Get<StatusEffectManager>()?.ApplyStatusEffect(context.HitTarget.gameObject, statusToApply);
         }
     }

@@ -29,8 +29,9 @@ public class ProjectileEffectSO : CardEffectSO
     [Tooltip("발사할 투사체 프리팹의 Addressable 참조")]
     public AssetReferenceGameObject bulletPrefabReference;
 
-    [Tooltip("투사체 속도. 플랫폼의 baseSpeed에 곱해질 배율입니다. (1 = 100%)")]
-    public float speedMultiplier = 1f;
+
+    [Tooltip("투사체 속도")]
+    public float speed = 10f;
 
     [Header("투사체 특수 능력")]
     [Tooltip("관통 횟수")]
@@ -51,6 +52,10 @@ public class ProjectileEffectSO : CardEffectSO
 
     [Tooltip("치명타 피격 시 재생할 VFX의 Addressable 참조")]
     public AssetReferenceGameObject onCritVFXRef;
+
+    [Tooltip("총알 소멸 시 VFX의 Addressable 참조")]
+    public AssetReferenceGameObject onExpireVFXRef;
+
 
     [Header("연쇄 효과 (Sequential Payloads)")]
     [Tooltip("피격 또는 튕김 시 순차적으로 발동할 효과 목록")]
