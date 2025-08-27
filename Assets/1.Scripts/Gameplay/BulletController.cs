@@ -17,8 +17,15 @@ public class BulletController : MonoBehaviour
     public int _currentPierceCount;
     public HashSet<GameObject> _hitMonsters = new HashSet<GameObject>();
 
-
+    private int _currentRicochetCount;
     private Rigidbody2D rb;
+
+    private bool isTracking;
+    private Transform trackingTarget;
+    [Tooltip("초당 회전할 수 있는 각도입니다. 높을수록 추적 성능이 좋아집니다.")]
+    private float turnSpeed = 200f;
+
+
 
     private void Awake()
     {
@@ -34,7 +41,11 @@ public class BulletController : MonoBehaviour
     /// <param name="damage">총알이 줄 데미지</param>
     /// <param name="shotID">[추가] 발사 ID 설정</param>
 
-    public void Initialize(Vector2 direction, float initialSpeed, float damage, string shotID, CardDataSO cardData, int pierceCount)
+    private CharacterStats casterStats; // [추가] 시전자 정보를 저장할 변수
+    private int _bounceCountForPayload = 0; // [추가] 연쇄 효과 발동을 위한 튕김 횟수 카운터
+
+
+    public void Initialize(Vector2 direction, float initialSpeed, float damage, string shotID, CardDataSO cardData, int pierceCount, CharacterStats caster)
     {
         _direction = direction.normalized; // 방향 벡터 정규화
         speed = initialSpeed; // 초기 속도 설정
@@ -43,6 +54,8 @@ public class BulletController : MonoBehaviour
         this.SourceCard = cardData; // [추가] 카드 데이터 저장
         this._currentPierceCount = pierceCount; // 현재 관통 횟수 저장
         this._hitMonsters.Clear(); // 풀링을 위해 이전에 맞춘 몬스터 목록 초기화
+        this.casterStats = caster;
+        _bounceCountForPayload = 0;
 
         // 총알의 초기 회전 설정 (선택 사항: 방향에 따라 총알 스프라이트 회전)
         // 예를 들어, Vector2.right가 기본 방향일 때
@@ -54,16 +67,21 @@ public class BulletController : MonoBehaviour
         Invoke(nameof(Deactivate), lifetime);
     }
 
-    public void Initialize(Vector2 direction, float initialSpeed, float damage, string shotID, ProjectileEffectSO module)
+    public void Initialize(Vector2 direction, float initialSpeed, float damage, string shotID, ProjectileEffectSO module, CharacterStats caster)
     {
         _direction = direction.normalized;
         speed = initialSpeed;
         this.damage = damage;
         shotInstanceID = shotID;
-        SourceCard = null; // 구버전 소스는 null로 초기화
+        SourceCard = null;
         SourceModule = module;
         _currentPierceCount = module.pierceCount;
+        _currentRicochetCount = module.ricochetCount;
+        isTracking = module.isTracking; // [추가] 추적 여부 초기화
+        trackingTarget = null; // 타겟 초기화
         _hitMonsters.Clear();
+        this.casterStats = caster; // [추가] 시전자 정보 저장
+        _bounceCountForPayload = 0; // [추가] 튕김 횟수 초기화
 
         float angle = Mathf.Atan2(_direction.y, _direction.x) * Mathf.Rad2Deg;
         transform.rotation = Quaternion.Euler(0, 0, angle);
@@ -72,49 +90,115 @@ public class BulletController : MonoBehaviour
         Invoke(nameof(Deactivate), lifetime);
     }
 
-    void Update()
-    {
-        // Rigidbody를 사용하므로 FixedUpdate에서 물리 이동 처리
-    }
-
     private void FixedUpdate()
     {
+        if (isTracking)
+        {
+            // 타겟이 없거나 비활성화 상태이면 새로운 타겟을 찾습니다.
+            if (trackingTarget == null || !trackingTarget.gameObject.activeInHierarchy)
+            {
+                trackingTarget = TargetingSystem.FindTarget(TargetingType.Nearest, transform, _hitMonsters);
+            }
+
+            if (trackingTarget != null)
+            {
+                // 타겟을 향하는 방향 벡터를 계산합니다.
+                Vector2 directionToTarget = (trackingTarget.position - transform.position).normalized;
+
+                // 현재 방향에서 타겟 방향으로 부드럽게 회전합니다.
+                float angle = Vector2.SignedAngle(_direction, directionToTarget);
+                float turnAmount = Mathf.Clamp(angle, -turnSpeed * Time.fixedDeltaTime, turnSpeed * Time.fixedDeltaTime);
+
+                _direction = Quaternion.Euler(0, 0, turnAmount) * _direction;
+                transform.rotation = Quaternion.LookRotation(Vector3.forward, _direction);
+            }
+        }
+
         rb.velocity = _direction * speed;
     }
+
     private void Deactivate()
     {
-        // TODO: 소멸 VFX (onExpireVFXRef) 재생 로직 추가
         ServiceLocator.Get<PoolManager>().Release(gameObject);
     }
+
     private void OnTriggerEnter2D(Collider2D other)
     {
         if (!other.CompareTag(Tags.Monster)) return;
-        if (_hitMonsters.Contains(other.gameObject)) return; // 이미 맞춘 몬스터는 무시 (관통 후 재충돌 방지)
+        if (_hitMonsters.Contains(other.gameObject)) return;
 
         if (other.TryGetComponent<MonsterController>(out var monster))
         {
-            // [수정된 검사] 구버전 카드 또는 신버전 모듈 둘 중 하나라도 있으면 통과!
-            if (SourceCard == null && SourceModule == null)
-            {
-                Debug.LogWarning("SourceCard와 SourceModule이 모두 null인 총알이 충돌했습니다.");
-                return;
-            }
+            if (SourceCard == null && SourceModule == null) return;
 
-            // 피해량 적용
             monster.TakeDamage(this.damage);
             _hitMonsters.Add(other.gameObject);
 
-            // TODO: 치명타, 흡혈, 상태이상 등 모든 추가 효과 로직을 이곳으로 이전해야 합니다.
+            // ★★★ [핵심 추가] 연쇄 효과(Payload) 발동 처리 ★★★
+            HandlePayloads(monster.transform);
 
-            // 관통 로직
-            if (_currentPierceCount > 0)
+            bool ricocheted = TryRicochet(monster.transform);
+            if (ricocheted) return;
+
+            bool pierced = TryPierce();
+            if (pierced) return;
+
+            Deactivate();
+        }
+    }
+
+    private bool TryRicochet(Transform lastHitTransform)
+    {
+        if (_currentRicochetCount <= 0) return false;
+        _currentRicochetCount--;
+
+        var exclusions = new HashSet<GameObject>(_hitMonsters);
+        if (SourceModule != null && !SourceModule.canRicochetToSameTarget)
+        {
+            exclusions.Add(lastHitTransform.gameObject);
+        }
+
+        Transform nextTarget = TargetingSystem.FindTarget(TargetingType.Nearest, transform, exclusions);
+
+        if (nextTarget != null)
+        {
+            Debug.Log($"<color=yellow>[Ricochet]</color> {lastHitTransform.name} -> {nextTarget.name}");
+            _direction = (nextTarget.position - transform.position).normalized;
+
+            // 튕길 때 추적 타겟을 초기화하여, 다음 프레임에 새로운 가장 가까운 적을 다시 찾도록 합니다.
+            if (isTracking)
             {
-                _currentPierceCount--;
+                trackingTarget = nextTarget;
             }
-            else
+            return true;
+        }
+
+        return false;
+    }
+
+    private void HandlePayloads(Transform hitTarget)
+    {
+        if (SourceModule == null || SourceModule.sequentialPayloads == null) return;
+
+        var effectExecutor = ServiceLocator.Get<EffectExecutor>();
+        if (effectExecutor == null) return;
+
+        // sequentialPayloads 리스트에서 현재 튕김 횟수와 일치하는 모든 효과를 찾습니다.
+        foreach (var payload in SourceModule.sequentialPayloads)
+        {
+            if (payload.onBounceNumber == _bounceCountForPayload)
             {
-                Deactivate(); // 관통 횟수를 모두 소진하면 소멸
+                // 조건이 맞으면 EffectExecutor에게 연쇄 효과 실행을 요청합니다.
+                effectExecutor.ExecuteChainedEffect(payload.effectToTrigger, this.casterStats, hitTarget);
             }
         }
+    }
+
+    private bool TryPierce()
+    {
+        if (_currentPierceCount <= 0) return false;
+        _currentPierceCount--;
+        Debug.Log($"<color=lightblue>[Pierce]</color> 관통! 남은 횟수: {_currentPierceCount}");
+        return true;
     }
 }

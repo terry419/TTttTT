@@ -90,6 +90,65 @@ public class EffectExecutor : MonoBehaviour
         contextPool.Return(context);
     }
 
+    public void ExecuteChainedEffect(AssetReferenceT<CardEffectSO> moduleRef, CharacterStats caster, Transform spawnPoint)
+    {
+        if (caster == null || spawnPoint == null || !moduleRef.RuntimeKeyIsValid()) return;
+
+        Debug.Log($"<color=magenta>[Chained Effect]</color> 연쇄 효과 실행 요청: {moduleRef.AssetGUID}");
+
+        // 새로운 컨텍스트를 생성하여 연쇄 효과를 실행하는 코루틴을 시작합니다.
+        StartCoroutine(ExecuteSingleModuleCoroutine(moduleRef, caster, spawnPoint));
+    }
+
+    private IEnumerator ExecuteSingleModuleCoroutine(AssetReferenceT<CardEffectSO> moduleRef, CharacterStats caster, Transform spawnPoint)
+    {
+        EffectContext context = contextPool.Get();
+        context.Caster = caster;
+        context.SpawnPoint = spawnPoint;
+        context.HitTarget = spawnPoint.GetComponent<MonsterController>(); // 연쇄 효과의 대상은 피격된 몬스터
+        context.HitPosition = spawnPoint.position;
+
+        var handle = moduleRef.LoadAssetAsync<CardEffectSO>();
+        yield return handle;
+
+        if (handle.Status == AsyncOperationStatus.Succeeded)
+        {
+            CardEffectSO module = handle.Result;
+            if (module != null)
+            {
+                // 모듈 타입에 따라 분기하여 실제 로직 실행
+                switch (module)
+                {
+                    case ProjectileEffectSO p:
+                        HandleProjectileModule(p, null, context); // 플랫폼 정보가 없으므로 null 전달
+                        break;
+                    case AreaEffectSO a:
+                        // 연쇄 광역 효과는 플랫폼의 baseDamage가 없으므로 모듈 자체의 피해량을 사용
+                        HandleAreaModule(a, null, context);
+                        break;
+                    default:
+                        module.Execute(context);
+                        break;
+                }
+            }
+            moduleRef.ReleaseAsset();
+        }
+        else
+        {
+            Debug.LogError($"[EffectExecutor] 연쇄 효과 모듈 로딩 실패: {moduleRef.AssetGUID}");
+        }
+
+        contextPool.Return(context);
+    }
+
+
+
+
+
+
+
+
+
     // --- v8.0 모듈 처리 헬퍼 함수들 ---
 
     private void HandleProjectileModule(ProjectileEffectSO pModule, NewCardDataSO platform, EffectContext context)
