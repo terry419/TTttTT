@@ -1,3 +1,4 @@
+using Cysharp.Threading.Tasks; // 파일 상단에 추가
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -47,7 +48,7 @@ public class PointAllocationManager : MonoBehaviour
         }
     }
 
-    private void OnConfirmAllocationClicked()
+    private async void OnConfirmAllocationClicked()
     {
         if (!int.TryParse(pointsToInvestInput_Actual.text, out int allocatedPoints))
         {
@@ -103,7 +104,7 @@ public class PointAllocationManager : MonoBehaviour
         MapNode firstNode = mapManager.GetReachableNodes().FirstOrDefault();
         RoundDataSO firstRoundData = campaignManager.GetRoundDataForNode(firstNode);
         if (firstRoundData == null)
-        {
+        { 
             Debug.LogError("첫 라운드 데이터를 찾을 수 없어 프리로딩을 시작할 수 없습니다!");
             confirmButton.interactable = true;
             backButton.interactable = true;
@@ -112,7 +113,8 @@ public class PointAllocationManager : MonoBehaviour
         }
 
         // 4. GameManager의 준비 코루틴에 첫 라운드 데이터를 전달하여 프리로딩을 시작합니다.
-        StartCoroutine(gameManager.PreloadAssetsForRound(firstRoundData, OnPreloadComplete));
+        await gameManager.PreloadAssetsForRound(firstRoundData);
+        OnPreloadComplete();
     }
 
     private void PrepareForNextScene(CharacterDataSO characterData)

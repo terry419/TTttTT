@@ -102,13 +102,14 @@ public class MonsterSpawner : MonoBehaviour
             return;
         }
 
-        string key = monsterData.prefab.name;
-
-        if (string.IsNullOrEmpty(key))
+        // [수정] monsterData.prefab.name -> monsterData.prefabRef.AssetGUID
+        // AssetReference가 유효한지 먼저 확인합니다.
+        if (monsterData.prefabRef == null || !monsterData.prefabRef.RuntimeKeyIsValid())
         {
-            Debug.LogError($"[MonsterSpawner] 스폰 실패! '{monsterData.monsterName}' 데이터의 프리팹 이름이 유효하지 않습니다.");
+            Debug.LogError($"[MonsterSpawner] 스폰 실패! '{monsterData.monsterName}' 데이터에 프리팹이 유효하게 연결되지 않았습니다.");
             return;
         }
+        string key = monsterData.prefabRef.AssetGUID;
 
         Vector2 randomDirection = Random.insideUnitCircle.normalized;
         float randomDistance = Random.Range(minSpawnRadius, maxSpawnRadius);
@@ -117,6 +118,7 @@ public class MonsterSpawner : MonoBehaviour
         GameObject monsterInstance = await ServiceLocator.Get<PoolManager>().GetAsync(key);
 
         if (monsterInstance == null) return;
+
         monsterInstance.transform.position = spawnPosition;
 
         MonsterController mc = monsterInstance.GetComponent<MonsterController>();

@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.AddressableAssets; // 상단에 추가
 
 [CreateAssetMenu(fileName = "CardData_", menuName = "GameData/CardData")]
 public class CardDataSO : ScriptableObject
@@ -40,7 +41,8 @@ public class CardDataSO : ScriptableObject
 
 
     [Header("발사체 설정")]
-    public GameObject bulletPrefab;
+    // public GameObject bulletPrefab; // 이 줄을 주석 처리하거나 삭제
+    public AssetReferenceGameObject bulletPrefabRef; // 이 줄로 교체
     public float bulletSpeed = 10f;
     [Tooltip("총알이 관통할 수 있는 횟수입니다. 0이면 관통하지 않습니다.")]
     public int bulletPierceCount = 0;
@@ -49,7 +51,8 @@ public class CardDataSO : ScriptableObject
     public int bulletPreloadCount = 100;
 
     [Header("특수 효과 설정")]
-    public GameObject effectPrefab;
+    // public GameObject effectPrefab; // 이 줄을 주석 처리하거나 삭제
+    public AssetReferenceGameObject effectPrefabRef; // 이 줄로 교체
     // ▼▼▼ [2] 이 줄을 추가하세요. ▼▼▼
     [Tooltip("이 카드의 특수 효과를 몇 개 미리 생성할지 정합니다.")]
     public int effectPreloadCount = 20;

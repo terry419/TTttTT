@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using System.Collections;
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 
 /// <summary>
 /// 맵 경로 선택 씬의 전체적인 흐름을 제어하는 '조율자(Coordinator)' 클래스입니다.
@@ -109,38 +110,35 @@ public class RouteSelectionController : MonoBehaviour
     // ▼▼▼▼▼ OnNodeClicked 함수를 아래 내용으로 교체 ▼▼▼▼▼
     private void OnNodeClicked(MapNode node)
     {
-        // 실제 로직은 코루틴에서 처리하도록 변경
-        StartCoroutine(SelectNodeAndPreload(node));
+        // StartCoroutine을 제거하고 async 메소드를 직접 호출합니다.
+        // UniTask의 결과를 기다리지 않고 다음으로 넘어가므로,
+        // C# 7.0 이상에서는 아래와 같이 `_ = ` 를 붙여주는 것이 좋습니다. (의도적으로 결과를 무시한다는 의미)
+        _ = SelectNodeAndPreload(node);
     }
-
     /// <summary>
     /// 노드 선택 후, 다음 라운드에 필요한 에셋을 프리로드하고 씬을 전환하는 코루틴입니다.
     /// </summary>
-    private IEnumerator SelectNodeAndPreload(MapNode node)
+    private async UniTask SelectNodeAndPreload(MapNode node)
     {
         Debug.Log($"[{GetType().Name}] 노드 {node.Position} 선택됨. 다음 라운드 프리로딩을 시작합니다.");
-
-        // 다른 노드를 중복 클릭하는 것을 방지하기 위해 모든 노드 비활성화
         mapView.UpdateNodeInteractability(new List<MapNode>());
 
-        // 필요한 매니저들 가져오기
         var gameManager = ServiceLocator.Get<GameManager>();
         var campaignManager = ServiceLocator.Get<CampaignManager>();
         var mapManager = ServiceLocator.Get<MapManager>();
 
-        // 다음 라운드 데이터 가져오기
         RoundDataSO nextRoundData = campaignManager.GetRoundDataForNode(node);
 
-        // GameManager의 새 프리로더를 호출하고 끝날 때까지 대기
-        yield return StartCoroutine(gameManager.PreloadAssetsForRound(nextRoundData, null));
+        // [수정] yield return StartCoroutine(...) -> await gameManager.PreloadAssetsForRound(...)
+        if (nextRoundData != null)
+        {
+            await gameManager.PreloadAssetsForRound(nextRoundData);
+        }
 
-        // 프리로딩이 끝나면 맵 위치를 업데이트하고 씬 전환
         mapManager.MoveToNode(node);
         Hide();
         gameManager.ChangeState(GameManager.GameState.Gameplay);
     }
-    // ▲▲▲▲▲ 여기까지 교체 및 추가 ▲▲▲▲▲
-
 
     /// <summary>
     /// 현재 플레이어가 이동할 수 있는 노드만 활성화하도록 MapView에 지시합니다.

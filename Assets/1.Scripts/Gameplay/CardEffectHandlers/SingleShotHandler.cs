@@ -1,6 +1,6 @@
 using UnityEngine;
 using System;
-using Cysharp.Threading.Tasks; // Added for async operations, though async void is used for now
+using Cysharp.Threading.Tasks;
 
 /// <summary>
 /// 'SingleShot' 타입의 카드 효과를 처리하는 클래스입니다.
@@ -9,13 +9,15 @@ public class SingleShotHandler : ICardEffectHandler
 {
     public async void Execute(CardDataSO cardData, EffectExecutor executor, CharacterStats casterStats, Transform spawnPoint)
     {
-        if (cardData.bulletPrefab == null)
+        // [수정] AssetReference가 유효한지 먼저 확인합니다.
+        if (cardData.bulletPrefabRef == null || !cardData.bulletPrefabRef.RuntimeKeyIsValid())
         { 
-            Debug.LogError($"[SingleShotHandler] 오류: 카드 '{cardData.cardName}'에 bulletPrefab이 할당되지 않았습니다!");
+            Debug.LogError($"[SingleShotHandler] 오류: 카드 '{cardData.cardName}'에 bulletPrefabRef가 할당되지 않았거나 유효하지 않습니다!");
             return;
         }
 
-        string key = cardData.bulletPrefab.name;
+        // [수정] .name 대신 .AssetGUID를 키로 사용합니다.
+        string key = cardData.bulletPrefabRef.AssetGUID;
 
         // 타겟팅 타입에 따라 발사 각도를 계산합니다.
         float angle = executor.GetTargetingAngle(cardData.targetingType, casterStats.transform, spawnPoint);

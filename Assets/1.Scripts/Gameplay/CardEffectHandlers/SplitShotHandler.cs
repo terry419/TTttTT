@@ -9,13 +9,13 @@ public class SplitShotHandler : ICardEffectHandler
 {
     public async void Execute(CardDataSO cardData, EffectExecutor executor, CharacterStats casterStats, Transform spawnPoint)
     {
-        if (cardData.bulletPrefab == null)
+        if (cardData.bulletPrefabRef == null)
         {
             Debug.LogError($"[SplitShotHandler] 오류: 스플릿샷 카드 '{cardData.cardName}'에 bulletPrefab이 할당되지 않았습니다!");
             return;
         }
 
-        string key = cardData.bulletPrefab.name;
+        string key = cardData.bulletPrefabRef.AssetGUID;
 
         // 기본 발사 각도를 계산합니다.
         float baseAngle = executor.GetTargetingAngle(cardData.targetingType, casterStats.transform, spawnPoint);

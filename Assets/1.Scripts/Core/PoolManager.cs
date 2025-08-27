@@ -24,26 +24,7 @@ public class PoolManager : MonoBehaviour
         }
     }
 
-    public async UniTask Preload(string key, int count)
-    {
-        if (string.IsNullOrEmpty(key) || count <= 0) return;
-        if (!_poolDictionary.ContainsKey(key)) _poolDictionary[key] = new Queue<GameObject>();
-
-        var resourceManager = ServiceLocator.Get<ResourceManager>();
-        GameObject prefab = await resourceManager.LoadAsync<GameObject>(key);
-
-        if (prefab == null) return;
-
-        _prefabTemplates[key] = prefab; // 템플릿 캐싱
-
-        for (int i = 0; i < count; i++)
-        {
-            GameObject obj = Instantiate(prefab, transform);
-            obj.SetActive(false);
-            obj.AddComponent<PooledObjectInfo>().Initialize(key);
-            _poolDictionary[key].Enqueue(obj);
-        }
-    }
+    
 
     public async UniTask<GameObject> GetAsync(string key)
     {
@@ -57,19 +38,55 @@ public class PoolManager : MonoBehaviour
             return obj;
         }
 
-        // 폴백 로딩: 템플릿이 캐싱되어 있으면 바로 사용, 없으면 로드 후 사용
+        Debug.Log($"[PoolManager] Prefab template for key '{key}' not found in cache. Attempting to load.");
         if (!_prefabTemplates.ContainsKey(key))
         {
             var resourceManager = ServiceLocator.Get<ResourceManager>();
             _prefabTemplates[key] = await resourceManager.LoadAsync<GameObject>(key);
+            if (_prefabTemplates[key] == null)
+            {
+                Debug.LogError($"[PoolManager] ResourceManager.LoadAsync returned null for key '{key}'.");
+            }
         }
 
-        if (_prefabTemplates[key] == null) return null;
+        if (_prefabTemplates[key] == null)
+        {
+            Debug.LogError($"[PoolManager] Prefab template for key '{key}' is null after loading attempt. Returning null.");
+            return null;
+        }
 
-        GameObject newObj = Instantiate(_prefabTemplates[key]);
+        GameObject newObj = Instantiate(_prefabTemplates[key], transform); // Added 'transform' here
         newObj.AddComponent<PooledObjectInfo>().Initialize(key);
         _activePooledObjects.Add(newObj);
         return newObj;
+    }
+
+    public async UniTask Preload(string key, int count)
+    {
+        Debug.Log($"[PoolManager] Preload called for key: {key}, count: {count}");
+        if (string.IsNullOrEmpty(key) || count <= 0) return;
+        if (!_poolDictionary.ContainsKey(key)) _poolDictionary[key] = new Queue<GameObject>();
+
+        var resourceManager = ServiceLocator.Get<ResourceManager>();
+        GameObject prefab = await resourceManager.LoadAsync<GameObject>(key);
+
+        if (prefab == null)
+        {
+            Debug.LogError($"[PoolManager] Preload failed: ResourceManager.LoadAsync returned null for key: {key}");
+            return;
+        }
+
+        _prefabTemplates[key] = prefab; // 템플릿 캐싱
+        Debug.Log($"[PoolManager] Prefab '{key}' successfully loaded and cached for preloading.");
+
+        for (int i = 0; i < count; i++)
+        {
+            GameObject obj = Instantiate(prefab, transform);
+            obj.SetActive(false);
+            obj.AddComponent<PooledObjectInfo>().Initialize(key);
+            _poolDictionary[key].Enqueue(obj);
+        }
+        Debug.Log($"[PoolManager] Preload for key '{key}' completed. Pool size: {_poolDictionary[key].Count}");
     }
 
     public void Release(GameObject instance)
