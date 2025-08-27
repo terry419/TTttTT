@@ -12,8 +12,18 @@ public class BulletController : MonoBehaviour
     public string shotInstanceID; // [추가] 발사 인스턴스 고유 ID
     public float lifetime = 3f; // 총알의 최대 생존 시간
     public CardDataSO SourceCard { get; private set; } // [추가] 이 총알을 발사한 카드 데이터
+    public ProjectileEffectSO SourceModule { get; private set; }
+
     public int _currentPierceCount;
     public HashSet<GameObject> _hitMonsters = new HashSet<GameObject>();
+
+
+    private Rigidbody2D rb;
+
+    private void Awake()
+    {
+        rb = GetComponent<Rigidbody2D>();
+    }
 
 
     /// <summary>
@@ -44,18 +54,67 @@ public class BulletController : MonoBehaviour
         Invoke(nameof(Deactivate), lifetime);
     }
 
+    public void Initialize(Vector2 direction, float initialSpeed, float damage, string shotID, ProjectileEffectSO module)
+    {
+        _direction = direction.normalized;
+        speed = initialSpeed;
+        this.damage = damage;
+        shotInstanceID = shotID;
+        SourceCard = null; // 구버전 소스는 null로 초기화
+        SourceModule = module;
+        _currentPierceCount = module.pierceCount;
+        _hitMonsters.Clear();
+
+        float angle = Mathf.Atan2(_direction.y, _direction.x) * Mathf.Rad2Deg;
+        transform.rotation = Quaternion.Euler(0, 0, angle);
+
+        CancelInvoke(nameof(Deactivate));
+        Invoke(nameof(Deactivate), lifetime);
+    }
+
     void Update()
     {
-        // 매 프레임 지정된 방향으로 이동합니다.
-        transform.Translate(_direction * speed * Time.deltaTime, Space.World);
+        // Rigidbody를 사용하므로 FixedUpdate에서 물리 이동 처리
     }
 
+    private void FixedUpdate()
+    {
+        rb.velocity = _direction * speed;
+    }
     private void Deactivate()
     {
+        // TODO: 소멸 VFX (onExpireVFXRef) 재생 로직 추가
         ServiceLocator.Get<PoolManager>().Release(gameObject);
     }
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if (!other.CompareTag(Tags.Monster)) return;
+        if (_hitMonsters.Contains(other.gameObject)) return; // 이미 맞춘 몬스터는 무시 (관통 후 재충돌 방지)
 
-    // 몬스터와 충돌했을 때 MonsterController가 이 메서드를 호출하지 않으므로,
-    // 이 스크립스는 데미지 값을 가지고 있는 역할만 수행합니다.
-    // 충돌 처리는 MonsterController의 OnTriggerEnter2D에서 담당합니다.
+        if (other.TryGetComponent<MonsterController>(out var monster))
+        {
+            // [수정된 검사] 구버전 카드 또는 신버전 모듈 둘 중 하나라도 있으면 통과!
+            if (SourceCard == null && SourceModule == null)
+            {
+                Debug.LogWarning("SourceCard와 SourceModule이 모두 null인 총알이 충돌했습니다.");
+                return;
+            }
+
+            // 피해량 적용
+            monster.TakeDamage(this.damage);
+            _hitMonsters.Add(other.gameObject);
+
+            // TODO: 치명타, 흡혈, 상태이상 등 모든 추가 효과 로직을 이곳으로 이전해야 합니다.
+
+            // 관통 로직
+            if (_currentPierceCount > 0)
+            {
+                _currentPierceCount--;
+            }
+            else
+            {
+                Deactivate(); // 관통 횟수를 모두 소진하면 소멸
+            }
+        }
+    }
 }
