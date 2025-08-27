@@ -1,5 +1,5 @@
-// 파일명: PlayerController.cs (리팩토링 완료)
 using UnityEngine;
+using Cysharp.Threading.Tasks; // UniTask 사용을 위해 추가
 
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerController : MonoBehaviour
@@ -7,9 +7,7 @@ public class PlayerController : MonoBehaviour
     private Rigidbody2D rb;
     private CharacterStats stats;
     private Vector2 moveInput;
-
     private CardManager cardManager;
-    private EffectExecutor effectExecutor;
     private InputManager inputManager;
 
     [Header("공격 시작 위치")]
@@ -17,21 +15,11 @@ public class PlayerController : MonoBehaviour
 
     void Awake()
     {
-        // 씬이 시작될 때 ServiceLocator에 자신을 등록합니다.
         ServiceLocator.Register<PlayerController>(this);
-        Debug.Log($"[{GetType().Name}] ServiceLocator에 PlayerController를 등록했습니다.");
-
         rb = GetComponent<Rigidbody2D>();
         stats = GetComponent<CharacterStats>();
-
         cardManager = ServiceLocator.Get<CardManager>();
-        effectExecutor = ServiceLocator.Get<EffectExecutor>();
         inputManager = ServiceLocator.Get<InputManager>();
-
-        if (cardManager == null || effectExecutor == null || inputManager == null)
-        {
-            Debug.LogError($"[{GetType().Name}] Awake에서 필수 매니저 중 하나를 가져오지 못했습니다! ServiceLocator 등록 순서를 확인하세요.");
-        }
     }
 
     void OnEnable()
@@ -52,76 +40,68 @@ public class PlayerController : MonoBehaviour
         RoundManager.OnRoundEnded -= HandleRoundEnd;
     }
 
-    // 오브젝트가 파괴될 때 ServiceLocator에서 등록을 해제합니다.
     private void OnDestroy()
     {
         ServiceLocator.Unregister<PlayerController>(this);
-        Debug.Log($"[{GetType().Name}] ServiceLocator에서 PlayerController를 등록 해제했습니다.");
     }
 
     private void HandleRoundEnd(bool success)
     {
-        Debug.Log($"[{GetType().Name}] 라운드 종료(성공: {success}). 자동 공격을 중지합니다.");
         CancelInvoke(nameof(PerformAttack));
     }
 
     public void StartAutoAttackLoop()
     {
         CancelInvoke(nameof(PerformAttack));
-        if (stats == null)
-        {
-            Debug.LogError($"[{GetType().Name}] CharacterStats가 없어 공격 루프를 시작할 수 없습니다!");
-            return;
-        }
+        if (stats == null) return;
 
         float interval = 1f / stats.FinalAttackSpeed;
-        Debug.Log($"[{GetType().Name}] 공격 루프 시작. (공격 속도: {stats.FinalAttackSpeed}, 반복 주기: {interval}초)");
-
         if (float.IsInfinity(interval) || interval <= 0)
         {
-            Debug.LogError($"[{GetType().Name}] 공격 주기가 비정상적({interval})이므로 공격을 시작할 수 없습니다!");
-            return;
+            // 공격 속도가 0 이하일 경우 1초에 한 번으로 고정하여 오류 방지
+            interval = 1f;
         }
-
         InvokeRepeating(nameof(PerformAttack), 0f, interval);
     }
 
-    private void PerformAttack()
+    // [핵심 수정] async void로 변경하여 새로운 Action 시스템 사용
+    private async void PerformAttack()
     {
-        if (cardManager == null || effectExecutor == null) return;
+        Debug.Log("[ATTACK-DEBUG 1/5] PerformAttack 호출됨.");
 
-        // [수정] v8.0 카드를 우선적으로 확인하고, 해당하는 Execute 오버로드를 호출
-        if (cardManager.activeNewCard != null)
+        if (cardManager == null || stats == null || firePoint == null)
         {
-            effectExecutor.Execute(cardManager.activeNewCard, stats, firePoint);
+            Debug.LogError("[ATTACK-DEBUG] 필수 컴포넌트가 없어 공격을 중단합니다.");
+            return;
         }
-        else if (cardManager.activeCard != null)
+
+        CardDataSO currentCard = cardManager.activeCard;
+        if (currentCard == null)
         {
-            effectExecutor.Execute(cardManager.activeCard, stats, firePoint);
+            Debug.LogWarning("[ATTACK-DEBUG 2/5] 활성화된 카드(activeCard)가 없습니다.");
+            return;
         }
+        Debug.Log($"[ATTACK-DEBUG 2/5] 활성화된 카드: {currentCard.cardName}");
+
+        ICardAction action = currentCard.CreateAction();
+        if (action == null)
+        {
+            Debug.LogError($"[ATTACK-DEBUG 3/5] '{currentCard.name}'로부터 Action을 생성하는데 실패했습니다.");
+            return;
+        }
+        Debug.Log($"[ATTACK-DEBUG 3/5] Action 생성 성공: {action.GetType().Name}");
+
+        var context = new CardActionContext(currentCard, stats, firePoint);
+        Debug.Log("[ATTACK-DEBUG 4/5] Action 실행(Execute) 직전입니다.");
+
+        await action.Execute(context);
+
+        Debug.Log("[ATTACK-DEBUG 5/5] Action 실행(Execute)이 완료되었습니다.");
     }
-
-
-
-
-    /*
-    private void PerformAttack()
-    {
-        if (cardManager == null) return;
-        if (cardManager.activeCard == null) return;
-        if (effectExecutor == null) return;
-
-        // 자신의 정보(stats, firePoint)를 인자로 넘겨줌
-        effectExecutor.Execute(cardManager.activeCard, stats, firePoint);
-    }
-
-    */
-
     void FixedUpdate()
     {
         if (stats == null || rb == null) return;
-        Vector2 finalVelocity = moveInput * stats.FinalMoveSpeed;
-        rb.velocity = finalVelocity;
+        rb.velocity = moveInput * stats.FinalMoveSpeed;
     }
 
     private void OnMove(Vector2 input)
@@ -133,7 +113,6 @@ public class PlayerController : MonoBehaviour
     {
         if (stats != null)
         {
-            Debug.Log($"[{GetType().Name}] {amount}만큼 체력을 회복합니다.");
             stats.Heal(amount);
         }
     }

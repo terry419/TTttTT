@@ -99,14 +99,23 @@ public class MonsterController : MonoBehaviour
 
     // [수정] OnTriggerEnter2D 삭제 -> BulletController가 처리
 
-    void OnCollisionEnter2D(Collision2D collision) { CheckForPlayer(collision.gameObject); }
-    void OnCollisionExit2D(Collision2D collision) { LeavePlayer(collision.gameObject); }
+    void OnCollisionEnter2D(Collision2D collision)
+    {
+        Debug.Log($"[DAMAGE-DEBUG 1A/4] OnCollisionEnter2D 충돌 감지! 대상: {collision.gameObject.name}");
+        CheckForPlayer(collision.gameObject);
+    }
+    void OnTriggerEnter2D(Collider2D other)
+    {
+        Debug.Log($"[DAMAGE-DEBUG 1B/4] OnTriggerEnter2D 충돌 감지! 대상: {other.gameObject.name}");
+        CheckForPlayer(other.gameObject);
+    }
     private void CheckForPlayer(GameObject target)
     {
         if (target.CompareTag(Tags.Player))
         {
+            Debug.Log("[DAMAGE-DEBUG 2/4] 충돌 대상이 Player임을 확인.");
             isTouchingPlayer = true;
-            damageTimer = DAMAGE_INTERVAL;
+            damageTimer = DAMAGE_INTERVAL; // 즉시 데미지를 주기 위해 타이머 초기화
         }
     }
     private void LeavePlayer(GameObject target)
@@ -120,12 +129,12 @@ public class MonsterController : MonoBehaviour
 
     private void ApplyContactDamage()
     {
+        Debug.Log("[DAMAGE-DEBUG 3/4] ApplyContactDamage 호출됨.");
         if (playerTransform != null && playerTransform.TryGetComponent<CharacterStats>(out var playerStats))
         {
             playerStats.TakeDamage(contactDamage);
         }
     }
-
     public void TakeDamage(float damage)
     {
         if (isDead || isInvulnerable) return;

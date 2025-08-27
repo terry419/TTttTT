@@ -1,7 +1,8 @@
 // 경로: ./TTttTT/Assets/1.Scripts/Gameplay/BulletController.cs
 
-using UnityEngine;
+using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
+using UnityEngine;
 
 public class BulletController : MonoBehaviour
 {
@@ -120,7 +121,8 @@ public class BulletController : MonoBehaviour
             monster.TakeDamage(this.damage);
             _hitMonsters.Add(other.gameObject);
 
-            HandlePayloads(monster.transform);
+            // [핵심 수정] async void 메소드로 연쇄 효과 처리
+            _ = HandlePayloads_Async(monster.transform);
 
             bool ricocheted = TryRicochet(monster.transform);
             if (ricocheted) return;
@@ -160,22 +162,38 @@ public class BulletController : MonoBehaviour
         return false;
     }
 
-    private void HandlePayloads(Transform hitTarget)
+    private async UniTaskVoid HandlePayloads_Async(Transform hitTarget)
     {
         if (SourceModule == null || SourceModule.sequentialPayloads == null) return;
-        var effectExecutor = ServiceLocator.Get<EffectExecutor>();
-        if (effectExecutor == null) return;
+
+        // 이제 EffectExecutor 대신 ResourceManager를 직접 사용합니다.
+        var resourceManager = ServiceLocator.Get<ResourceManager>();
 
         foreach (var payload in SourceModule.sequentialPayloads)
         {
             if (payload.onBounceNumber == _bounceCountForPayload)
             {
-                // [수정] 연쇄 효과 실행 시 원본 카드(sourcePlatform) 정보를 전달
-                effectExecutor.ExecuteChainedEffect(payload.effectToTrigger, this.casterStats, hitTarget, this.sourcePlatform);
+                // 1. 연쇄 효과 모듈(SO)을 안전하게 로드합니다.
+                CardEffectSO module = await resourceManager.LoadAsync<CardEffectSO>(payload.effectToTrigger.AssetGUID);
+                if (module == null) continue;
+
+                // 2. 연쇄 효과 실행에 필요한 정보(Context)를 생성합니다.
+                var context = new EffectContext
+                {
+                    Caster = this.casterStats,
+                    SpawnPoint = hitTarget,
+                    Platform = this.sourcePlatform,
+                    HitTarget = hitTarget.GetComponent<MonsterController>(),
+                    HitPosition = hitTarget.position
+                };
+
+                // 3. 모듈의 Execute 메소드를 직접 실행합니다.
+                module.Execute(context);
+
+                // 데이터 에셋이므로 여기서 Release하지 않습니다. ResourceManager가 관리합니다.
             }
         }
     }
-
     private bool TryPierce()
     {
         if (_currentPierceCount <= 0) return false;

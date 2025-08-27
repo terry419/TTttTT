@@ -17,21 +17,15 @@ public class DamageText : MonoBehaviour
 
     private void Awake()
     {
-        Debug.Log("[DamageText] Awake called.");
         textMesh = GetComponentInChildren<TextMeshProUGUI>();
         if (textMesh == null)
         {
             Debug.LogError("DamageText: TextMeshProUGUI component NOT found in children!");
         }
-        else
-        {
-            Debug.Log("[DamageText] TextMeshProUGUI component found.");
-        }
     }
 
     void Start()
     {
-        Debug.Log("[DamageText] Start called.");
         poolManager = ServiceLocator.Get<PoolManager>();
         if (poolManager == null)
         {
@@ -41,7 +35,6 @@ public class DamageText : MonoBehaviour
 
     public void ShowDamage(float damageAmount)
     {
-        Debug.Log($"[DamageText] ShowDamage called with amount: {damageAmount}");
         if (textMesh == null)
         {
             Debug.LogError("[DamageText] textMesh is null in ShowDamage. Cannot set text.");
@@ -49,17 +42,13 @@ public class DamageText : MonoBehaviour
         }
 
         textMesh.text = Mathf.RoundToInt(damageAmount).ToString();
-        Debug.Log($"[DamageText] Setting text to: {textMesh.text}");
         StartCoroutine(Animate());
-        Debug.Log("[DamageText] Animate coroutine started.");
     }
 
     private IEnumerator Animate()
     {
-        Debug.Log("[DamageText] Animate coroutine started.");
         transform.SetParent(null, true); // This line is still suspicious for UI elements
         transform.localScale = Vector3.zero;
-        Debug.Log($"[DamageText] Initial scale set to: {transform.localScale}");
 
         Color startColor = textMesh.color;
         startColor.a = 1f;
@@ -82,7 +71,6 @@ public class DamageText : MonoBehaviour
             yield return null;
         }
         transform.localScale = targetScale;
-        Debug.Log($"[DamageText] Popup animation complete. Final scale: {transform.localScale}");
 
         timer = 0f;
         while (timer < animationDuration)
@@ -92,11 +80,9 @@ public class DamageText : MonoBehaviour
             timer += Time.deltaTime;
             yield return null;
         }
-        Debug.Log("[DamageText] Fade and move animation complete.");
 
         if (poolManager != null)
         {
-            Debug.Log("[DamageText] Releasing GameObject to pool.");
             poolManager.Release(gameObject);
         }
         else

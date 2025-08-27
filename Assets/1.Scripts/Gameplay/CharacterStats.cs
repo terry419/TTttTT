@@ -85,7 +85,12 @@ public class CharacterStats : MonoBehaviour
 
     public void TakeDamage(float damage)
     {
-        if (isInvulnerable) return;
+        Debug.Log($"[DAMAGE-DEBUG 4/4] TakeDamage 호출됨. 데미지: {damage}, 현재 체력: {currentHealth}");
+        if (isInvulnerable)
+        {
+            Debug.Log("[DAMAGE-DEBUG] 무적 상태이므로 데미지를 받지 않습니다.");
+            return;
+        }
         currentHealth -= damage;
         playerHealthBar.UpdateHealth(currentHealth, FinalHealth);
         if (currentHealth <= 0)

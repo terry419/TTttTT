@@ -1,7 +1,8 @@
+using Cysharp.Threading.Tasks;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
-using System.Collections.Generic;
-using System;
 
 /// <summary>
 /// 피격 시 순차적으로 발동할 연쇄 효과를 정의하는 클래스입니다.
@@ -70,6 +71,35 @@ public class ProjectileEffectSO : CardEffectSO, IPreloadable
         Debug.Log($"<color=lime>[{GetType().Name}]</color> '{this.name}' 실행.");
         // 이 모듈은 데이터를 제공하는 역할이 핵심입니다.
         // 실제 투사체 발사 로직은 이 데이터를 읽어갈 EffectExecutor에서 처리됩니다.
+        _ = ExecuteAsync(context);
+    }
+    private async UniTaskVoid ExecuteAsync(EffectContext context)
+    {
+        Debug.Log($"<color=lime>[{GetType().Name}]</color> '{this.name}' 실행.");
+        if (!bulletPrefabReference.RuntimeKeyIsValid()) return;
+
+        var poolManager = ServiceLocator.Get<PoolManager>();
+
+        // 이 모듈을 발동시킨 플랫폼(카드)의 정보를 컨텍스트에서 가져옵니다.
+        var activePlatform = context.Platform;
+        if (activePlatform == null) return;
+
+        float totalDamage = activePlatform.baseDamage * (1 + context.Caster.FinalDamageBonus / 100f);
+        string shotID = System.Guid.NewGuid().ToString();
+
+        // 연쇄 효과로 발사되는 투사체는 일반적으로 1개이며, 전방으로 발사됩니다.
+        // (이 부분은 기획에 따라 얼마든지 수정 가능합니다)
+        GameObject bulletGO = await poolManager.GetAsync(bulletPrefabReference.AssetGUID);
+        if (bulletGO != null && bulletGO.TryGetComponent<BulletController>(out var bullet))
+        {
+            bullet.transform.position = context.SpawnPoint.position;
+            // 총알의 초기 방향은 일단 시전자의 앞 방향으로 설정합니다.
+            bullet.transform.rotation = context.Caster.transform.rotation;
+            Vector2 direction = context.Caster.transform.right;
+
+            // 투사체 모듈의 자체 속성(속도, 관통 등)을 사용하여 초기화합니다.
+            bullet.Initialize(direction, activePlatform.baseSpeed * this.speed, totalDamage, shotID, activePlatform, this, context.Caster);
+        }
     }
 
     // [추가] IPreloadable 인터페이스 구현
