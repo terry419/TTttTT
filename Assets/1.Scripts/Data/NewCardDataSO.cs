@@ -44,18 +44,9 @@ public class NewCardDataSO : ScriptableObject
     public string unlockCondition;
 
 
-    /// <summary>
-    /// EffectExecutor가 발사에 필요한 기본 사양을 요청할 때 사용하는 헬퍼 메소드입니다.
-    /// </summary>
-    /// <returns>발사 사양을 담은 FiringSpec 구조체</returns>
-    public FiringSpec GetFiringSpecs()
+    public ICardAction CreateAction()
     {
-        Log.Print($"[NewCardDataSO] '{basicInfo.cardName}'의 FiringSpec 요청. 기본 피해량: {baseDamage}");
-        // 현재는 FiringSpec에 baseDamage만 담지만, 추후 투사체 프리팹 참조 등 확장될 수 있습니다.
-        return new FiringSpec
-        {
-            baseDamage = this.baseDamage
-        };
+        return new ModuleAction();
     }
 }
 

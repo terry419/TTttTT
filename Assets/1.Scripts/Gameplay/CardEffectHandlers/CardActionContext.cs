@@ -1,13 +1,13 @@
 using UnityEngine;
 
-// 카드 액션 실행에 필요한 모든 정보를 담는 클래스
+// [수정] NewCardDataSO를 받도록 변경
 public class CardActionContext
 {
-    public CardDataSO SourceCard { get; }
+    public NewCardDataSO SourceCard { get; }
     public CharacterStats Caster { get; }
     public Transform SpawnPoint { get; }
 
-    public CardActionContext(CardDataSO sourceCard, CharacterStats caster, Transform spawnPoint)
+    public CardActionContext(NewCardDataSO sourceCard, CharacterStats caster, Transform spawnPoint)
     {
         SourceCard = sourceCard;
         Caster = caster;
