@@ -25,7 +25,6 @@ public enum CardEffectType
 {
     
     SplitShot,  // 분열샷
-    Wave,       // 파동
     Lightning,  // 번개
     Spiral      // 나선형 발사
 }

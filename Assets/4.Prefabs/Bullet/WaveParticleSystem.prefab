@@ -10,7 +10,6 @@ GameObject:
   m_Component:
   - component: {fileID: 401519865136063789}
   - component: {fileID: -503163269314670152}
-  - component: {fileID: 25007207060377811}
   - component: {fileID: 4228552070311926254}
   m_Layer: 0
   m_Name: WaveParticleSystem
@@ -86,26 +85,6 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!114 &25007207060377811
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4228891817467213148}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: af962b897aa1dcf4f9c98e47f8a51faa, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  singleHitDamage: 0
-  damagePerTick: 10
-  tickInterval: 1
-  duration: 5
-  expansionSpeed: 1
-  expansionDuration: 2
-  shotInstanceID: 
-  isSingleHitWaveMode: 1
 --- !u!58 &4228552070311926254
 CircleCollider2D:
   m_ObjectHideFlags: 0

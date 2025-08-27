@@ -13,10 +13,7 @@ public class ModuleValidationTool : EditorWindow
     {
         GUILayout.Label("Module Validation Tool", EditorStyles.boldLabel);
 
-        if (GUILayout.Button("Validate AreaEffectSO Assets"))
-        {
-            ValidateAreaEffectAssets();
-        }
+        
 
         if (GUILayout.Button("Validate ProjectileEffectSO Assets"))
         {
@@ -60,7 +57,7 @@ public class ModuleValidationTool : EditorWindow
     {
         Debug.Log("<color=yellow>[VALIDATION START]</color> Validating all v8.0 modules...");
 
-        ValidateAreaEffectAssets();
+        
         ValidateProjectileEffectAssets();
         ValidateLifestealEffectAssets();
         ValidateApplyStatusEffectAssets();
@@ -71,42 +68,7 @@ public class ModuleValidationTool : EditorWindow
         Debug.Log("<color=green>[VALIDATION COMPLETE]</color> All v8.0 modules validated!");
     }
 
-    private void ValidateAreaEffectAssets()
-    {
-        string[] guids = AssetDatabase.FindAssets("t:AreaEffectSO");
-        int validCount = 0;
-        int totalCount = guids.Length;
-
-        foreach (string guid in guids)
-        {
-            string path = AssetDatabase.GUIDToAssetPath(guid);
-            AreaEffectSO asset = AssetDatabase.LoadAssetAtPath<AreaEffectSO>(path);
-
-            bool isValid = true;
-
-            if (asset.effectDuration <= 0)
-            {
-                Debug.LogError($"[Validation] {asset.name}: effectDuration must be > 0");
-                isValid = false;
-            }
-
-            if (asset.effectExpansionDuration <= 0)
-            {
-                Debug.LogError($"[Validation] {asset.name}: effectExpansionDuration must be > 0");
-                isValid = false;
-            }
-
-            if (asset.maxExpansionRadius <= 0)
-            {
-                Debug.LogError($"[Validation] {asset.name}: maxExpansionRadius must be > 0");
-                isValid = false;
-            }
-
-            if (isValid) validCount++;
-        }
-
-        Debug.Log($"<color=cyan>[Validation]</color> AreaEffectSO: {validCount}/{totalCount} assets valid");
-    }
+    
 
     private void ValidateProjectileEffectAssets()
     {
@@ -198,7 +160,7 @@ public class ModuleValidationTool : EditorWindow
             if (asset.statusToApply == null)
             {
                 Debug.LogWarning($"[Validation] {asset.name}: statusToApply is not assigned");
-                // WarningÀÌ¹Ç·Î isValid´Â true À¯Áö
+                // Warningï¿½Ì¹Ç·ï¿½ isValidï¿½ï¿½ true ï¿½ï¿½ï¿½ï¿½
             }
 
             if (isValid) validCount++;

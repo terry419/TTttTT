@@ -70,9 +70,6 @@ public class EffectExecutor : MonoBehaviour
                         case ProjectileEffectSO p:
                             HandleProjectileModule(p, cardData, context);
                             break;
-                        case AreaEffectSO a:
-                            HandleAreaModule(a, cardData, context);
-                            break;
                         // TODO: 다른 모듈 타입에 대한 case 추가 필요
                         default:
                             module.Execute(context);
@@ -124,10 +121,6 @@ public class EffectExecutor : MonoBehaviour
                     case ProjectileEffectSO p:
                         // 연쇄 투사체는 platform 정보가 없으므로 null을 전달. 단, context에는 정보가 남아있음.
                         HandleProjectileModule(p, null, context);
-                        break;
-                    case AreaEffectSO a:
-                        // 연쇄 광역 효과도 platform 정보가 없으므로 null을 전달.
-                        HandleAreaModule(a, null, context);
                         break;
                     default:
                         module.Execute(context);
@@ -188,84 +181,12 @@ public class EffectExecutor : MonoBehaviour
         }
     }
 
-    private void HandleAreaModule(AreaEffectSO aModule, NewCardDataSO platform, EffectContext context)
-    {
-        // [디버그 추가 1] HandleAreaModule 진입 로그
-        Debug.Log($"[EffectExecutor-DEBUG 1] HandleAreaModule 진입. 모듈: '{aModule.name}'");
-
-        if (aModule.effectPrefabRef == null || !aModule.effectPrefabRef.RuntimeKeyIsValid())
-        {
-            // [디버그 추가 1-1] 프리팹 참조가 유효하지 않을 경우 로그
-            Debug.LogError($"[EffectExecutor-DEBUG 1-1] CRITICAL: '{aModule.name}' 모듈의 effectPrefabRef가 할당되지 않았거나 유효하지 않습니다!");
-            return;
-        }
-
-        // [디버그 추가 2] 프리팹 비동기 생성 시작 로그
-        Debug.Log($"[EffectExecutor-DEBUG 2] Addressables를 통해 '{aModule.effectPrefabRef.AssetGUID}' 프리팹 생성을 시작합니다.");
-
-        aModule.effectPrefabRef.InstantiateAsync(context.SpawnPoint.position, Quaternion.identity).Completed += (handle) =>
-        {
-            // [디버그 추가 3] 비동기 생성 완료 콜백 진입 로그
-            Debug.Log($"[EffectExecutor-DEBUG 3] 프리팹 생성 콜백 진입. Handle Status: {handle.Status}");
-
-            if (handle.Status == AsyncOperationStatus.Succeeded)
-            {
-                // [디버그 추가 4] 프리팹 생성 성공 로그
-                Debug.Log($"[EffectExecutor-DEBUG 4] 프리팹 생성 성공! 생성된 오브젝트: '{handle.Result?.name ?? "NULL"}'");
-
-                if (handle.Result.TryGetComponent<DamagingZone>(out var zone))
-                {
-                    // [디버그 추가 5] DamagingZone 컴포넌트 찾기 성공 로그
-                    Debug.Log("[EffectExecutor-DEBUG 5] DamagingZone 컴포넌트를 성공적으로 찾았습니다.");
-
-                    // [디버그 추가 6] NullReferenceException 발생 전, context.Caster 객체 상태 확인
-                    if (context.Caster == null)
-                    {
-                        Debug.LogError("[EffectExecutor-DEBUG 6] CRITICAL: zone.Initialize() 호출 직전, 'context.Caster'가 null입니다! 여기서 예외가 발생할 가능성이 높습니다.");
-                    }
-                    else
-                    {
-                        Debug.Log($"[EffectExecutor-DEBUG 6] 'context.Caster'가 유효합니다. Caster 이름: {context.Caster.name}");
-                    }
-
-                    float finalSingleHitDamage = aModule.singleHitDamage * (1 + context.Caster.FinalDamageBonus / 100f);
-                    float finalDamagePerTick = aModule.damagePerTick * (1 + context.Caster.FinalDamageBonus / 100f);
-
-                    // [디버그 추가 7] zone.Initialize() 호출 직전 로그
-                    Debug.Log("[EffectExecutor-DEBUG 7] zone.Initialize()를 호출합니다.");
-                    zone.Initialize(
-                        singleHitDmg: finalSingleHitDamage,
-                        continuousDmgPerTick: finalDamagePerTick,
-                        tickInt: aModule.effectTickInterval,
-                        totalDur: aModule.effectDuration,
-                        maxRadius: aModule.maxExpansionRadius,
-                        expDur: aModule.effectExpansionDuration,
-                        isWave: aModule.isSingleHitWaveMode,
-                        shotID: Guid.NewGuid().ToString()
-                    );
-                }
-                else
-                {
-                    // [디버그 추가 5-1] DamagingZone 컴포넌트 찾기 실패 로그
-                    Debug.LogError($"[EffectExecutor-DEBUG 5-1] CRITICAL: 생성된 프리팹 '{handle.Result.name}'에서 DamagingZone 컴포넌트를 찾지 못했습니다!");
-                    Addressables.Release(handle); // 컴포넌트 없으면 릴리즈 처리
-                }
-            }
-            else
-            {
-                // [디버그 추가 4-1] 프리팹 생성 실패 로그
-                Debug.LogError($"[EffectExecutor-DEBUG 4-1] CRITICAL: 프리팹 생성에 실패했습니다! Status: {handle.Status}");
-            }
-        };
-    }
-
     // --- 기타 헬퍼 및 구버전 호환용 코드 ---
     private void InitializeHandlers()
     {
         effectHandlers = new Dictionary<CardEffectType, ICardEffectHandler>
         {
             { CardEffectType.SplitShot, new SplitShotHandler() },
-            { CardEffectType.Wave, new WaveHandler() },
             { CardEffectType.Lightning, new LightningHandler() }
         };
     }
