@@ -118,100 +118,75 @@ public class GameManager : MonoBehaviour
     /// </summary>
     public IEnumerator PreloadAssetsForRound(RoundDataSO roundData, System.Action onComplete)
     {
-        Debug.Log("--- [GameManager] v8.0 동적 리소스 프리로딩 시작 ---");
+        Debug.Log("--- [GameManager] 프리로딩 시작 (공용 프리팹 포함) ---");
         var poolManager = ServiceLocator.Get<PoolManager>();
         var cardManager = ServiceLocator.Get<CardManager>();
-        if (poolManager == null || cardManager == null)
+        var prefabProvider = ServiceLocator.Get<PrefabProvider>(); // PrefabProvider 참조
+
+        if (poolManager == null || cardManager == null || prefabProvider == null)
         {
-            Debug.LogError("[GameManager] PoolManager 또는 CardManager를 찾을 수 없습니다!");
+            Debug.LogError("[GameManager] 필수 매니저를 찾을 수 없어 프리로딩을 중단합니다!");
             yield break;
         }
 
-        var preloadRequests = new Dictionary<AssetReferenceGameObject, int>();
+        var preloadRequests = new Dictionary<string, int>();
 
-        // 헬퍼 함수: AssetReferenceGameObject에 대한 요청을 추가/갱신
-        void AddOrUpdatePreloadRequest(AssetReferenceGameObject assetRef, int count)
+        void AddOrUpdatePreloadRequest(string key, int count)
         {
-            if (assetRef == null || !assetRef.RuntimeKeyIsValid()) return;
-            if (preloadRequests.ContainsKey(assetRef))
+            if (string.IsNullOrEmpty(key) || count <= 0) return;
+            if (preloadRequests.ContainsKey(key))
             {
-                preloadRequests[assetRef] = Mathf.Max(preloadRequests[assetRef], count);
+                preloadRequests[key] = Mathf.Max(preloadRequests[key], count);
             }
             else
             {
-                preloadRequests.Add(assetRef, count);
+                preloadRequests.Add(key, count);
             }
         }
 
-        // --- 데이터 수집 단계 ---
 
-        // 1. 다음 라운드 몬스터 수집 (변경 없음)
-        if (roundData != null && roundData.waves != null)
+        // 1. [추가] PrefabProvider로부터 공용 프리팹 목록 수집
+        List<PreloadItem> commonItems = prefabProvider.GetCommonPreloadItems();
+        if (commonItems != null)
+        {
+            foreach (var item in commonItems)
+            {
+                // Addressables에서는 에셋의 경로가 아닌, 고유 주소(키)가 필요합니다.
+                // 지금은 임시로 프리팹의 이름을 키로 사용하겠습니다.
+                if (item.prefab != null) AddOrUpdatePreloadRequest(item.prefab.name, item.count);
+            }
+        }
+
+
+        // 2. 다음 라운드 몬스터 수집
+        if (roundData != null)
         {
             foreach (var wave in roundData.waves)
             {
-                // AssetReference로 변경되었다면 이 부분도 수정 필요, 현재는 GameObject 직접 참조
-                if (wave.monsterData != null && wave.monsterData.prefab != null)
+                if (wave.monsterData?.prefab != null)
                 {
-                    // poolManager.Preload는 GameObject를 받으므로 이 부분은 그대로 둡니다.
+                    AddOrUpdatePreloadRequest(wave.monsterData.prefab.name, wave.preloadCount > 0 ? wave.preloadCount : wave.count);
                 }
             }
         }
 
-        // 2. 현재 장착된 모든 카드(구버전, 신버전 모두)의 프리팹 수집
-        // 현재 CardManager는 구버전 CardDataSO만 다루므로, 해당 로직은 유지합니다.
+
+        // 3. 현재 장착된 카드의 프리팹 수집 (이제 시작 카드 정보가 들어있음)
         foreach (var card in cardManager.equippedCards)
         {
-            if (card.bulletPrefab != null) AddOrUpdatePreloadRequest(new AssetReferenceGameObject(card.bulletPrefab.name), card.bulletPreloadCount);
-            if (card.effectPrefab != null) AddOrUpdatePreloadRequest(new AssetReferenceGameObject(card.effectPrefab.name), card.effectPreloadCount);
+            if (card.bulletPrefab != null) AddOrUpdatePreloadRequest(card.bulletPrefab.name, card.bulletPreloadCount);
+            if (card.effectPrefab != null) AddOrUpdatePreloadRequest(card.effectPrefab.name, card.effectPreloadCount);
         }
 
-        // [핵심] v8.0 NewCardDataSO의 모듈 프리팹 수집
-        // TODO: CardManager가 NewCardDataSO를 관리하게 되면 아래 로직 활성화
-        /*
-        foreach (var newCard in cardManager.GetEquippedNewCards()) // 가상의 함수
-        {
-            foreach (var moduleEntry in newCard.modules)
-            {
-                if (moduleEntry.moduleReference.RuntimeKeyIsValid())
-                {
-                    var handle = moduleEntry.moduleReference.LoadAssetAsync<CardEffectSO>();
-                    yield return handle;
-
-                    if (handle.Status == AsyncOperationStatus.Succeeded && handle.Result is IPreloadable preloadableModule)
-                    {
-                        foreach (var prefabRef in preloadableModule.GetPrefabsToPreload())
-                        {
-                            AddOrUpdatePreloadRequest(prefabRef, newCard.preloadCount);
-                        }
-                    }
-                    moduleEntry.moduleReference.ReleaseAsset(); // 핸들 정리
-                }
-            }
-        }
-        */
 
         // --- 프리로드 실행 단계 ---
-        Debug.Log($"[GameManager] 총 {preloadRequests.Count} 종류의 Addressable 프리팹에 대한 프리로드를 실행합니다.");
+        Debug.Log($"[GameManager] 총 {preloadRequests.Count} 종류의 프리팹에 대한 프리로드를 실행합니다.");
         foreach (var request in preloadRequests)
         {
-            // Addressable 프리팹을 실제로 로드하여 PoolManager에 전달
-            var loadHandle = request.Key.LoadAssetAsync<GameObject>();
-            yield return loadHandle;
-
-            if (loadHandle.Status == AsyncOperationStatus.Succeeded)
-            {
-                poolManager.Preload(loadHandle.Result, request.Value);
-            }
-            else
-            {
-                Debug.LogError($"[GameManager] Addressable 프리팹 로딩 실패: {request.Key.AssetGUID}");
-            }
-            // 주의: 여기서 핸들을 바로 Release하면 PoolManager가 원본을 잃을 수 있으므로,
-            // 씬이 끝날 때 일괄 해제하는 것이 더 안전합니다.
+            poolManager.Preload(request.Key, request.Value);
         }
 
-        yield return null;
+        yield return new WaitForSeconds(1.0f); // 모든 프리로드가 시작될 시간을 줍니다.
         Debug.Log("--- [GameManager] 동적 프리로딩 완료 ---");
         onComplete?.Invoke();
     }

@@ -99,6 +99,7 @@ GameObject:
   - component: {fileID: 8357709887526590436}
   - component: {fileID: -8380851934559431773}
   - component: {fileID: 8866278500554523883}
+  - component: {fileID: 1155775409289165655}
   m_Layer: 0
   m_Name: _Managers
   m_TagString: Untagged
@@ -150,6 +151,7 @@ MonoBehaviour:
   commonPreloadItems:
   - prefab: {fileID: 3276330006535599853, guid: d449cd9647b76924ca8c8df2ba7b338e, type: 3}
     count: 500
+  critEffectPrefab: {fileID: 0}
 --- !u!114 &6847162976572293575
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -399,6 +401,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c73f41763f7f23c4391628bb2b0dc2ea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &1155775409289165655
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4942033990092616327}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: efdfcf8df91d53d4194b536bcafe1563, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &5861229137604210786

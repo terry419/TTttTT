@@ -12,18 +12,15 @@ public class UIFeedbackManager : MonoBehaviour
         MonsterController.OnMonsterDamaged -= HandleMonsterDamaged;
     }
 
-    private void HandleMonsterDamaged(float damageAmount, Vector3 position)
+    private async void HandleMonsterDamaged(float damageAmount, Vector3 position)
     {
+        if (ServiceLocator.Get<PoolManager>() == null) return;
 
-        // DataManager ��� PrefabProvider�� PoolManager�� ���� ����ϴ� ���� �� ȿ�����Դϴ�.
-        if (ServiceLocator.Get<PoolManager>() == null || ServiceLocator.Get<PrefabProvider>() == null) return;
+        string key = "DamageTextCanvas"; // 키를 직접 사용
+        GameObject textGO = await ServiceLocator.Get<PoolManager>().GetAsync(key);
 
-        GameObject damageTextPrefab = ServiceLocator.Get<PrefabProvider>().GetPrefab("DamageTextCanvas");
-        if (damageTextPrefab == null) return;
-
-        GameObject textGO = ServiceLocator.Get<PoolManager>().Get(damageTextPrefab);
         if (textGO == null) return;
-
+        
         textGO.transform.position = position + Vector3.up * 0.5f;
 
         DamageText damageTextComponent = textGO.GetComponent<DamageText>();

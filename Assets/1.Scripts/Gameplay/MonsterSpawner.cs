@@ -94,21 +94,19 @@ public class MonsterSpawner : MonoBehaviour
     }
 
     // ★★★ 핵심 수정: MonsterData를 MonsterDataSO로 변경 (CS0246 오류 해결) ★★★
-    private void SpawnMonster(MonsterDataSO monsterData, Vector3 center)
+    private async void SpawnMonster(MonsterDataSO monsterData, Vector3 center)
     {
         if (monsterData == null)
         {
-            // --- 기존 디버그 로그 보존 ---
             Debug.LogWarning("[MonsterSpawner] 스폰 실패! 전달된 MonsterDataSO가 null입니다.");
             return;
         }
 
-        GameObject monsterPrefab = monsterData.prefab;
+        string key = monsterData.prefab.name;
 
-        if (monsterPrefab == null)
+        if (string.IsNullOrEmpty(key))
         {
-            // --- 기존 디버그 로그 보존 ---
-            Debug.LogError($"[MonsterSpawner] 스폰 실패! '{monsterData.monsterName}' 데이터에 프리팹이 연결되지 않았습니다.");
+            Debug.LogError($"[MonsterSpawner] 스폰 실패! '{monsterData.monsterName}' 데이터의 프리팹 이름이 유효하지 않습니다.");
             return;
         }
 
@@ -116,8 +114,9 @@ public class MonsterSpawner : MonoBehaviour
         float randomDistance = Random.Range(minSpawnRadius, maxSpawnRadius);
         Vector3 spawnPosition = center + (Vector3)(randomDirection * randomDistance);
 
-        GameObject monsterInstance = ServiceLocator.Get<PoolManager>().Get(monsterPrefab);
+        GameObject monsterInstance = await ServiceLocator.Get<PoolManager>().GetAsync(key);
 
+        if (monsterInstance == null) return;
         monsterInstance.transform.position = spawnPosition;
 
         MonsterController mc = monsterInstance.GetComponent<MonsterController>();

@@ -59,6 +59,7 @@ public class PointAllocationManager : MonoBehaviour
         var progressionManager = ServiceLocator.Get<ProgressionManager>();
         var mapManager = ServiceLocator.Get<MapManager>();
         var campaignManager = ServiceLocator.Get<CampaignManager>();
+         PrepareForNextScene(selectedCharacter);
 
         gameManager.AllocatedPoints = allocatedPoints;
 
@@ -112,6 +113,38 @@ public class PointAllocationManager : MonoBehaviour
 
         // 4. GameManager의 준비 코루틴에 첫 라운드 데이터를 전달하여 프리로딩을 시작합니다.
         StartCoroutine(gameManager.PreloadAssetsForRound(firstRoundData, OnPreloadComplete));
+    }
+
+    private void PrepareForNextScene(CharacterDataSO characterData)
+    {
+        var cardManager = ServiceLocator.Get<CardManager>();
+        var artifactManager = ServiceLocator.Get<ArtifactManager>();
+
+        if (cardManager == null || artifactManager == null)
+        {
+            Debug.LogError("[PointAllocationManager] CardManager 또는 ArtifactManager를 찾을 수 없어 데이터 준비에 실패했습니다.");
+            return;
+        }
+
+        // 카드 매니저와 유물 매니저를 초기 상태로 리셋합니다.
+        cardManager.ClearAndResetDeck();
+        // artifactManager.ClearAndResetArtifacts(); // 필요하다면 유물 매니저에도 리셋 함수를 만드세요.
+
+        // 시작 카드와 유물을 장착'만' 해둡니다. (스탯 계산 X)
+        // PlayerInitializer의 테스트 카드 로직을 참고하여 동일하게 구성합니다.
+        if (characterData.startingCard != null)
+        {
+            cardManager.AddCard(characterData.startingCard);
+            cardManager.Equip(characterData.startingCard);
+        }
+        if (characterData.startingArtifacts != null)
+        {
+            foreach (var artifact in characterData.startingArtifacts)
+            {
+                artifactManager.EquipArtifact(artifact);
+            }
+        }
+        Debug.Log("[PointAllocationManager] 다음 씬을 위한 시작 아이템 데이터 준비 완료.");
     }
 
     private void OnPreloadComplete()

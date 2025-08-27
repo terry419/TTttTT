@@ -1,31 +1,32 @@
 using UnityEngine;
 using System;
+using Cysharp.Threading.Tasks; // Added for async operations, though async void is used for now
 
 /// <summary>
 /// 'SingleShot' 타입의 카드 효과를 처리하는 클래스입니다.
 /// </summary>
 public class SingleShotHandler : ICardEffectHandler
 {
-    public void Execute(CardDataSO cardData, EffectExecutor executor, CharacterStats casterStats, Transform spawnPoint)
+    public async void Execute(CardDataSO cardData, EffectExecutor executor, CharacterStats casterStats, Transform spawnPoint)
     {
-        GameObject bulletPrefab = cardData.bulletPrefab;
-        if (bulletPrefab == null)
+        if (cardData.bulletPrefab == null)
         { 
             Debug.LogError($"[SingleShotHandler] 오류: 카드 '{cardData.cardName}'에 bulletPrefab이 할당되지 않았습니다!");
             return;
         }
 
+        string key = cardData.bulletPrefab.name;
 
         // 타겟팅 타입에 따라 발사 각도를 계산합니다.
         float angle = executor.GetTargetingAngle(cardData.targetingType, casterStats.transform, spawnPoint);
         Quaternion rotation = Quaternion.Euler(0, 0, angle);
         Vector2 direction = rotation * Vector2.right;
 
-        // 풀 매니저에서 총알 인스턴스를 가져옵니다.
-        GameObject bulletGO = ServiceLocator.Get<PoolManager>().Get(bulletPrefab);
+        // 풀 매니저에서 총알 인스턴스를 비동기적으로 가져옵니다.
+        GameObject bulletGO = await ServiceLocator.Get<PoolManager>().GetAsync(key);
         if (bulletGO == null)
         { 
-            Debug.LogError($"[SingleShotHandler] 오류: 풀 매니저에서 총알 오브젝트를 가져오지 못했습니다!");
+            Debug.LogError($"[SingleShotHandler] 오류: 풀 매니저에서 '{key}' 총알 오브젝트를 가져오지 못했습니다!");
             return;
         }
 
@@ -43,7 +44,7 @@ public class SingleShotHandler : ICardEffectHandler
         }
         else
         {
-            Debug.LogError($"[SingleShotHandler] 오류: '{bulletPrefab.name}' 프리팹에 BulletController.cs 스크립트가 없습니다!");
+            Debug.LogError($"[SingleShotHandler] 오류: '{key}' 프리팹에 BulletController.cs 스크립트가 없습니다!");
         }
     }
 }

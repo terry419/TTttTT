@@ -32,46 +32,43 @@ public class DataManager : MonoBehaviour
 
     public IEnumerator LoadAllDataAsync()
     {
-        Debug.Log("[DataManager] 모든 ScriptableObject 데이터 비동기 로드 시작...");
-
-        // [추가] "data_effect" 레이블을 가진 모든 CardEffectSO 에셋을 로드하는 핸들 추가
-        var cardHandle = Addressables.LoadAssetsAsync<CardDataSO>("data_card", null);
-        var artifactHandle = Addressables.LoadAssetsAsync<ArtifactDataSO>("data_artifact", null);
-        var characterHandle = Addressables.LoadAssetsAsync<CharacterDataSO>("data_character", null);
-        var monsterHandle = Addressables.LoadAssetsAsync<MonsterDataSO>("data_monster", null);
-        var moduleHandle = Addressables.LoadAssetsAsync<CardEffectSO>("data_effect", null);
-
-        // [수정] 모든 핸들을 그룹으로 묶어 한번에 처리
-        var groupHandle = Addressables.ResourceManager.CreateGenericGroupOperation(
-            new List<AsyncOperationHandle> { cardHandle, artifactHandle, characterHandle, monsterHandle, moduleHandle }, true);
-
-        yield return groupHandle;
-
-        if (groupHandle.Status == AsyncOperationStatus.Succeeded)
+        Debug.Log("[DataManager] 모든 ScriptableObject 데이터 로드 시작 (via ResourceManager)...");
+        var resourceManager = ServiceLocator.Get<ResourceManager>();
+        if (resourceManager == null)
         {
-            // 기존 데이터 로딩
-            foreach (var card in cardHandle.Result) { if (!cardDataDict.ContainsKey(card.cardID)) cardDataDict.Add(card.cardID, card); }
-            foreach (var artifact in artifactHandle.Result) { if (!artifactDataDict.ContainsKey(artifact.artifactID)) artifactDataDict.Add(artifact.artifactID, artifact); }
-            foreach (var character in characterHandle.Result) { if (!characterDict.ContainsKey(character.characterId)) characterDict.Add(character.characterId, character); }
-            foreach (var monster in monsterHandle.Result) { if (!monsterDataDict.ContainsKey(monster.monsterID)) monsterDataDict.Add(monster.monsterID, monster); }
+            Debug.LogError("[DataManager] ResourceManager를 찾을 수 없습니다! 로드를 진행할 수 없습니다.");
+            yield break;
+        }
 
-            // [추가] 새로 로드한 모듈들을 딕셔너리에 저장
+        // 각 데이터 타입별로 로드를 요청하고 핸들을 저장합니다.
+        var cardHandle = resourceManager.LoadAllAsync<CardDataSO>("data_card");
+        var artifactHandle = resourceManager.LoadAllAsync<ArtifactDataSO>("data_artifact");
+        var characterHandle = resourceManager.LoadAllAsync<CharacterDataSO>("data_character");
+        var monsterHandle = resourceManager.LoadAllAsync<MonsterDataSO>("data_monster");
+        var moduleHandle = resourceManager.LoadAllAsync<CardEffectSO>("data_effect");
+
+        // 모든 핸들이 완료될 때까지 기다립니다.
+        yield return cardHandle;
+        yield return artifactHandle;
+        yield return characterHandle;
+        yield return monsterHandle;
+        yield return moduleHandle;
+
+        // 로드 결과를 확인하고 딕셔너리에 추가합니다.
+        if (cardHandle.Status == AsyncOperationStatus.Succeeded)
+            foreach (var card in cardHandle.Result) { if (!cardDataDict.ContainsKey(card.cardID)) cardDataDict.Add(card.cardID, card); }
+        if (artifactHandle.Status == AsyncOperationStatus.Succeeded)
+            foreach (var artifact in artifactHandle.Result) { if (!artifactDataDict.ContainsKey(artifact.artifactID)) artifactDataDict.Add(artifact.artifactID, artifact); }
+        if (characterHandle.Status == AsyncOperationStatus.Succeeded)
+            foreach (var character in characterHandle.Result) { if (!characterDict.ContainsKey(character.characterId)) characterDict.Add(character.characterId, character); }
+        if (monsterHandle.Status == AsyncOperationStatus.Succeeded)
+            foreach (var monster in monsterHandle.Result) { if (!monsterDataDict.ContainsKey(monster.monsterID)) monsterDataDict.Add(monster.monsterID, monster); }
+        if (moduleHandle.Status == AsyncOperationStatus.Succeeded)
             foreach (var module in moduleHandle.Result) { if (!moduleDataDict.ContainsKey(module.name)) moduleDataDict.Add(module.name, module); }
 
-            Debug.Log($"[DataManager] 모든 ScriptableObject 데이터 로드 완료. (카드: {cardDataDict.Count}, 유물: {artifactDataDict.Count}, 캐릭터: {characterDict.Count}, 몬스터: {monsterDataDict.Count}, 모듈: {moduleDataDict.Count})");
-        }
-        else
-        {
-            // [수정] 5단계 목표에 맞게 오류 모니터링 강화
-            Debug.LogError("[DataManager] CRITICAL ERROR: 하나 이상의 핵심 데이터 그룹 로딩에 실패했습니다! Addressables Groups 창에서 각 레이블('data_card', 'data_artifact', 'data_character', 'data_monster', 'data_effect')에 에셋이 올바르게 할당되었는지 확인하세요.");
-        }
+        Debug.Log($"[DataManager] 모든 ScriptableObject 데이터 로드 완료. (카드: {cardDataDict.Count}, 유물: {artifactDataDict.Count}, 캐릭터: {characterDict.Count}, 몬스터: {monsterDataDict.Count}, 모듈: {moduleDataDict.Count})");
 
-        // 핸들 메모리 해제
-        Addressables.Release(cardHandle);
-        Addressables.Release(artifactHandle);
-        Addressables.Release(characterHandle);
-        Addressables.Release(monsterHandle);
-        Addressables.Release(moduleHandle);
+        // 핸들 자체는 ResourceManager가 관리하므로 여기서 Release 하지 않습니다.
     }
 
     // --- Getter 함수들 ---

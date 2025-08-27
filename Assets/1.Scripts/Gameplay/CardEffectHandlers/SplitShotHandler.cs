@@ -1,20 +1,21 @@
 using UnityEngine;
 using System;
+using Cysharp.Threading.Tasks;
 
 /// <summary>
 /// 'SplitShot' 타입의 카드 효과를 처리하는 클래스입니다.
 /// </summary>
 public class SplitShotHandler : ICardEffectHandler
 {
-    public void Execute(CardDataSO cardData, EffectExecutor executor, CharacterStats casterStats, Transform spawnPoint)
+    public async void Execute(CardDataSO cardData, EffectExecutor executor, CharacterStats casterStats, Transform spawnPoint)
     {
-        GameObject bulletPrefab = cardData.bulletPrefab;
-        if (bulletPrefab == null)
+        if (cardData.bulletPrefab == null)
         {
             Debug.LogError($"[SplitShotHandler] 오류: 스플릿샷 카드 '{cardData.cardName}'에 bulletPrefab이 할당되지 않았습니다!");
             return;
         }
 
+        string key = cardData.bulletPrefab.name;
 
         // 기본 발사 각도를 계산합니다.
         float baseAngle = executor.GetTargetingAngle(cardData.targetingType, casterStats.transform, spawnPoint);
@@ -32,7 +33,7 @@ public class SplitShotHandler : ICardEffectHandler
             Quaternion rotation = Quaternion.Euler(0, 0, currentAngle);
             Vector2 direction = rotation * Vector2.right;
 
-            GameObject bulletGO = ServiceLocator.Get<PoolManager>().Get(bulletPrefab);
+            GameObject bulletGO = await ServiceLocator.Get<PoolManager>().GetAsync(key);
 
             if (bulletGO == null) continue;
 

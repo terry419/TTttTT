@@ -1,18 +1,18 @@
-// 파일명: PoolManager.cs (리팩토링 완료)
+using Cysharp.Threading.Tasks; // UniTask 사용
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
 public class PoolManager : MonoBehaviour
 {
-    private Dictionary<GameObject, Queue<GameObject>> poolDictionary = new Dictionary<GameObject, Queue<GameObject>>();
-    
-    // [추가] 현재 씬에 활성화된 모든 풀링 오브젝트를 추적하기 위한 HashSet
-    private readonly HashSet<GameObject> activePooledObjects = new HashSet<GameObject>();
+    private readonly Dictionary<string, Queue<GameObject>> _poolDictionary = new Dictionary<string, Queue<GameObject>>();
+    private readonly HashSet<GameObject> _activePooledObjects = new HashSet<GameObject>();
+
+    // [추가] 제안해주신 '키-프리팹 템플릿' 매핑 딕셔너리
+    private readonly Dictionary<string, GameObject> _prefabTemplates = new Dictionary<string, GameObject>();
 
     void Awake()
     {
-        Debug.Log($"[ 진단 ] PoolManager.Awake() 호출됨. (Frame: {Time.frameCount})");
         if (!ServiceLocator.IsRegistered<PoolManager>())
         {
             ServiceLocator.Register<PoolManager>(this);
@@ -24,134 +24,101 @@ public class PoolManager : MonoBehaviour
         }
     }
 
-    public void Preload(GameObject prefab, int count)
+    public async UniTask Preload(string key, int count)
     {
-        if (prefab == null || count <= 0)
-        {
-            Debug.LogWarning("[PoolManager] Preload 실패: 프리팹이 null이거나 수량이 0 이하입니다.");
-            return;
-        }
+        if (string.IsNullOrEmpty(key) || count <= 0) return;
+        if (!_poolDictionary.ContainsKey(key)) _poolDictionary[key] = new Queue<GameObject>();
 
-        Debug.Log($"[ 진단-Preload ] 프리팹 '{prefab.name}' (ID: {prefab.GetInstanceID()}) {count}개 미리 생성 요청됨.");
+        var resourceManager = ServiceLocator.Get<ResourceManager>();
+        GameObject prefab = await resourceManager.LoadAsync<GameObject>(key);
 
-        if (!poolDictionary.ContainsKey(prefab))
-        {
-            poolDictionary[prefab] = new Queue<GameObject>();
-        }
+        if (prefab == null) return;
+
+        _prefabTemplates[key] = prefab; // 템플릿 캐싱
 
         for (int i = 0; i < count; i++)
         {
             GameObject obj = Instantiate(prefab, transform);
             obj.SetActive(false);
-            if (!obj.TryGetComponent<PooledObjectInfo>(out var pooledInfo))
-            {
-                pooledInfo = obj.AddComponent<PooledObjectInfo>();
-            }
-            pooledInfo.Initialize(prefab);
-            poolDictionary[prefab].Enqueue(obj);
+            obj.AddComponent<PooledObjectInfo>().Initialize(key);
+            _poolDictionary[key].Enqueue(obj);
         }
     }
 
-    
-
-    public GameObject Get(GameObject prefab)
+    public async UniTask<GameObject> GetAsync(string key)
     {
-        if (prefab == null)
+        if (string.IsNullOrEmpty(key)) return null;
+
+        if (_poolDictionary.TryGetValue(key, out var queue) && queue.Count > 0)
         {
-            Debug.LogError("[PoolManager] Get 실패: 요청한 프리팹이 null입니다.");
-            return null;
+            GameObject obj = queue.Dequeue();
+            obj.SetActive(true);
+            _activePooledObjects.Add(obj);
+            return obj;
         }
 
-        if (!poolDictionary.ContainsKey(prefab) || poolDictionary[prefab].Count == 0)
+        // 폴백 로딩: 템플릿이 캐싱되어 있으면 바로 사용, 없으면 로드 후 사용
+        if (!_prefabTemplates.ContainsKey(key))
         {
-            Debug.LogWarning($"[PoolManager] {prefab.name} 풀이 비어있어 새로 생성합니다. Preload가 정상적으로 작동했는지 확인해보세요.");
-            GameObject newObj = Instantiate(prefab);
-            if (!newObj.TryGetComponent<PooledObjectInfo>(out var pooledInfo))
-            {
-                pooledInfo = newObj.AddComponent<PooledObjectInfo>();
-            }
-            pooledInfo.Initialize(prefab);
-            return newObj;
+            var resourceManager = ServiceLocator.Get<ResourceManager>();
+            _prefabTemplates[key] = await resourceManager.LoadAsync<GameObject>(key);
         }
 
-        GameObject obj = poolDictionary[prefab].Dequeue();
-        obj.SetActive(true);
+        if (_prefabTemplates[key] == null) return null;
 
-        // [추가] 오브젝트를 꺼내갈 때, 활성 목록에 등록합니다.
-        activePooledObjects.Add(obj);
-
-        return obj;
+        GameObject newObj = Instantiate(_prefabTemplates[key]);
+        newObj.AddComponent<PooledObjectInfo>().Initialize(key);
+        _activePooledObjects.Add(newObj);
+        return newObj;
     }
 
     public void Release(GameObject instance)
     {
         if (instance == null) return;
-        
-        Debug.Log($"[PoolManager] Release 요청: {instance.name} (ID: {instance.GetInstanceID()})");
 
-        // [추가] 오브젝트를 반납할 때, 활성 목록에서 제거합니다.
-        activePooledObjects.Remove(instance);
+        _activePooledObjects.Remove(instance);
 
         PooledObjectInfo pooledInfo = instance.GetComponent<PooledObjectInfo>();
-        if (pooledInfo == null || pooledInfo.originalPrefab == null)
+        if (pooledInfo == null || string.IsNullOrEmpty(pooledInfo.AssetKey))
         {
-            Debug.LogWarning($"[PoolManager] Release 실패: {instance.name} (ID: {instance.GetInstanceID()}) PooledObjectInfo 없음. 즉시 파괴.");
             Destroy(instance);
             return;
         }
 
-        GameObject originalPrefab = pooledInfo.originalPrefab;
-
-        if (!poolDictionary.ContainsKey(originalPrefab))
-        {
-            poolDictionary[originalPrefab] = new Queue<GameObject>();
-        }
+        string key = pooledInfo.AssetKey;
+        if (!_poolDictionary.ContainsKey(key)) _poolDictionary[key] = new Queue<GameObject>();
 
         instance.SetActive(false);
-        Debug.Log($"[PoolManager] {instance.name} (ID: {instance.GetInstanceID()}) 비활성화 완료.");
         instance.transform.SetParent(transform);
-        poolDictionary[originalPrefab].Enqueue(instance);
+        _poolDictionary[key].Enqueue(instance);
     }
 
-    // [추가] 활성화된 모든 풀링 오브젝트를 정리하는 새로운 함수
     public void ClearAllActiveObjects()
     {
-        Debug.Log($"[PoolManager] 활성화된 모든 풀 오브젝트 ({activePooledObjects.Count}개)를 정리합니다.");
-        
-        // HashSet을 직접 순회하면서 요소를 제거하면 오류가 발생하므로, 리스트로 복사한 뒤 순회합니다.
-        foreach (var obj in activePooledObjects.ToList())
+        foreach (var obj in _activePooledObjects.ToList())
         {
             Release(obj);
         }
-        
-        // 모든 객체가 Release를 통해 개별적으로 제거되지만, 만약을 위해 마지막에 Clear를 호출합니다.
-        activePooledObjects.Clear();
+        _activePooledObjects.Clear();
     }
 
-    /// <summary>
-    /// 모든 풀링된 오브젝트(활성 및 비활성)를 즉시 파괴하고 풀을 초기화합니다.
-    /// 씬 전환 등 풀의 모든 오브젝트를 강제로 정리해야 할 때 사용합니다.
-    /// </summary>
     public void DestroyAllPooledObjects()
     {
-        Debug.Log($"[PoolManager] 모든 풀링된 오브젝트를 파괴합니다. (활성: {activePooledObjects.Count}개, 비활성 풀: {poolDictionary.Sum(kv => kv.Value.Count)}개)");
+        var resourceManager = ServiceLocator.Get<ResourceManager>();
+        foreach (var obj in _activePooledObjects) { Destroy(obj); }
+        _activePooledObjects.Clear();
 
-        // 활성 오브젝트 먼저 파괴
-        foreach (var obj in activePooledObjects.ToList()) // ToList()로 복사하여 순회 중 수정 가능하게 함
+        foreach (var queue in _poolDictionary.Values)
         {
-            Destroy(obj);
+            foreach (var obj in queue) { Destroy(obj); }
         }
-        activePooledObjects.Clear();
+        _poolDictionary.Clear();
 
-        // 비활성 풀 오브젝트 파괴
-        foreach (var kvp in poolDictionary)
+        // 모든 템플릿 에셋의 참조 카운트도 해제
+        foreach (var key in _prefabTemplates.Keys)
         {
-            foreach (var obj in kvp.Value)
-            {
-                Destroy(obj);
-            }
+            resourceManager.Release(key);
         }
-        poolDictionary.Clear();
-        Debug.Log("[PoolManager] 모든 풀링된 오브젝트 파괴 완료.");
+        _prefabTemplates.Clear();
     }
 }
