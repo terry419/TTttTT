@@ -20,7 +20,7 @@ public class SequentialPayload
 /// 투사체에 관통, 튕김, 추적 등의 특수 능력을 부여하는 모듈입니다.
 /// </summary>
 [CreateAssetMenu(fileName = "Module_Projectile_", menuName = "GameData/v8.0/Modules/ProjectileEffect")]
-public class ProjectileEffectSO : CardEffectSO
+public class ProjectileEffectSO : CardEffectSO, IPreloadable
 {
     [Header("발사체 기본 설정")]
     [Tooltip("타겟팅 방식 (전방, 가장 가까운 적 등)")]
@@ -29,9 +29,8 @@ public class ProjectileEffectSO : CardEffectSO
     [Tooltip("발사할 투사체 프리팹의 Addressable 참조")]
     public AssetReferenceGameObject bulletPrefabReference;
 
-
-    [Tooltip("투사체 속도")]
-    public float speed = 10f;
+    [Tooltip("투사체 속도. 플랫폼의 baseSpeed에 곱해질 배율입니다. (1 = 100%)")]
+    public float speed = 1f;
 
     [Header("투사체 특수 능력")]
     [Tooltip("관통 횟수")]
@@ -53,10 +52,6 @@ public class ProjectileEffectSO : CardEffectSO
     [Tooltip("치명타 피격 시 재생할 VFX의 Addressable 참조")]
     public AssetReferenceGameObject onCritVFXRef;
 
-    [Tooltip("총알 소멸 시 VFX의 Addressable 참조")]
-    public AssetReferenceGameObject onExpireVFXRef;
-
-
     [Header("연쇄 효과 (Sequential Payloads)")]
     [Tooltip("피격 또는 튕김 시 순차적으로 발동할 효과 목록")]
     public List<SequentialPayload> sequentialPayloads;
@@ -72,5 +67,20 @@ public class ProjectileEffectSO : CardEffectSO
         Debug.Log($"<color=lime>[{GetType().Name}]</color> '{this.name}' 실행.");
         // 이 모듈은 데이터를 제공하는 역할이 핵심입니다.
         // 실제 투사체 발사 로직은 이 데이터를 읽어갈 EffectExecutor에서 처리됩니다.
+    }
+
+    // [추가] IPreloadable 인터페이스 구현
+    public IEnumerable<AssetReferenceGameObject> GetPrefabsToPreload()
+    {
+        if (bulletPrefabReference != null && bulletPrefabReference.RuntimeKeyIsValid())
+            yield return bulletPrefabReference;
+        
+        if (onHitVFXRef != null && onHitVFXRef.RuntimeKeyIsValid())
+            yield return onHitVFXRef;
+
+        if (onCritVFXRef != null && onCritVFXRef.RuntimeKeyIsValid())
+            yield return onCritVFXRef;
+
+        // The user's request did not include onExpireVFXRef, so I will not add it.
     }
 }

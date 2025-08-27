@@ -5,13 +5,17 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 
 /// <summary>
-/// 게임 시작 시 플레이어 오브젝트를 초기화하는 역할을 담당합니다. (최종 수정 버전)
+/// 게임 시작 시 플레이어 오브젝트를 초기화하는 역할을 담당합니다. (v8.0 호환)
 /// </summary>
 public class PlayerInitializer : MonoBehaviour
 {
     [Header("테스트용 시작 카드 목록")]
-    [Tooltip("캐릭터 데이터(SO)에 시작 카드가 설정되어 있으면, 이 목록은 무시됩니다.")]
+    [Tooltip("구버전 CardDataSO를 테스트할 때 사용합니다.")]
     [SerializeField] private List<CardDataSO> testStartingCards;
+
+    // [추가] v8.0 NewCardDataSO를 테스트하기 위한 새로운 리스트
+    [Header("v8.0 테스트용 시작 카드 목록")]
+    [SerializeField] private List<NewCardDataSO> testStartingNewCards;
 
     void Start()
     {
@@ -45,38 +49,36 @@ public class PlayerInitializer : MonoBehaviour
         {
             Debug.Log("<color=lime>[PlayerInitializer] 첫 라운드입니다. 시작 아이템과 영구 스탯을 적용합니다.</color>");
 
-            // 매니저들에게 새로운 플레이어 정보를 연결합니다.
             if (cardManager != null) cardManager.LinkToNewPlayer(playerStats);
             if (artifactManager != null) artifactManager.LinkToNewPlayer(playerStats);
 
-            // 첫 라운드에만 영구 스탯 적용 및 시작 아이템을 지급합니다.
             var progressionManager = ServiceLocator.Get<ProgressionManager>();
             CharacterPermanentStats permanentStats = progressionManager.GetPermanentStatsFor(characterToLoad.characterId);
             playerStats.ApplyPermanentStats(permanentStats);
             playerStats.ApplyAllocatedPoints(gameManager.AllocatedPoints, permanentStats);
+
+            // [수정] EquipStartingItems 호출
             EquipStartingItems(characterToLoad, cardManager, artifactManager);
 
             gameManager.isFirstRound = false;
         }
         else
         {
-            // ▼▼▼ [핵심 수정] 로그를 먼저 출력하고, 이후에 LinkToNewPlayer를 호출합니다. ▼▼▼
             Debug.Log("<color=yellow>[PlayerInitializer] 이후 라운드입니다. 기존 카드/유물 정보를 유지(재계산)합니다.</color>");
-
-            // 이후 라운드에서는 새 플레이어 정보만 연결해주면, LinkToNewPlayer가 알아서 기존 상태를 복원합니다.
             if (cardManager != null) cardManager.LinkToNewPlayer(playerStats);
             if (artifactManager != null) artifactManager.LinkToNewPlayer(playerStats);
         }
 
-        // 공통 마무리 (매 라운드 실행)
         playerStats.CalculateFinalStats();
         playerStats.currentHealth = playerStats.FinalHealth;
         if (cardManager != null) cardManager.StartCardSelectionLoop();
         if (playerController != null) playerController.StartAutoAttackLoop();
     }
 
+    // [수정] v8.0 신규 카드 장착 로직 추가
     private void EquipStartingItems(CharacterDataSO characterData, CardManager cardManager, ArtifactManager artifactManager)
     {
+        // 1. 구버전 카드 장착 로직 (기존과 동일)
         List<CardDataSO> cardsToEquip = new List<CardDataSO>();
         if (testStartingCards != null && testStartingCards.Count > 0)
         {
@@ -99,6 +101,20 @@ public class PlayerInitializer : MonoBehaviour
             }
         }
 
+        // 2. [추가] 신규 v8.0 카드 장착 로직
+        if (testStartingNewCards != null && testStartingNewCards.Count > 0 && cardManager != null)
+        {
+            foreach (var newCard in testStartingNewCards)
+            {
+                if (newCard != null)
+                {
+                    cardManager.AddCard(newCard); // CardManager에 새 오버로드된 함수 호출
+                    cardManager.Equip(newCard);   // CardManager에 새 오버로드된 함수 호출
+                }
+            }
+        }
+
+        // 3. 유물 장착 로직 (기존과 동일)
         if (characterData.startingArtifacts != null && characterData.startingArtifacts.Count > 0)
         {
             if (artifactManager != null)

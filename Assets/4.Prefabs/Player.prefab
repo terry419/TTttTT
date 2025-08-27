@@ -426,6 +426,8 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 11400000, guid: 48a2e52f9e04d65428b758da209d864e, type: 2}
+  testStartingNewCards:
+  - {fileID: 11400000, guid: 2d2eed0fc07052f488ecfa7796033564, type: 2}
 --- !u!58 &601887131027535560
 CircleCollider2D:
   m_ObjectHideFlags: 0

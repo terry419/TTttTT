@@ -1,49 +1,54 @@
-//Assets/1.Scripts/Data/CardEffects/AreaEffectSO.cs
-
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 
 /// <summary>
-/// ÆÄµ¿, ÀåÆÇ µî ±¤¿ª È¿°ú¸¦ »ı¼ºÇÏ´Â ¸ğµâÀÔ´Ï´Ù.
+/// íŒŒë™, ì¥íŒ ë“± ê´‘ì—­ íš¨ê³¼ë¥¼ ìƒì„±í•˜ëŠ” ëª¨ë“ˆì…ë‹ˆë‹¤.
 /// </summary>
 [CreateAssetMenu(fileName = "Module_Area_", menuName = "GameData/v8.0/Modules/AreaEffect")]
-public class AreaEffectSO : CardEffectSO
+public class AreaEffectSO : CardEffectSO, IPreloadable
 {
-    [Header("±¤¿ª È¿°ú ÇÁ¸®ÆÕ")]
-    [Tooltip("»ı¼ºÇÒ ÆÄµ¿ ¶Ç´Â ÀåÆÇ È¿°úÀÇ ÇÁ¸®ÆÕ (DamagingZone.cs Æ÷ÇÔ)")]
+    [Header("ê´‘ì—­ íš¨ê³¼ í”„ë¦¬íŒ¹")]
+    [Tooltip("ìƒì„±í•  íŒŒë™ ë˜ëŠ” ì¥íŒ íš¨ê³¼ì˜ í”„ë¦¬íŒ¹ (DamagingZone.cs í¬í•¨)")]
     public AssetReferenceGameObject effectPrefabRef;
 
-    [Header("¸ğµå ¼³Á¤")]
-    [Tooltip("Ã¼Å© ½Ã: ´ÜÀÏ ÇÇÇØ ÆÄµ¿ ¸ğµå / ÇØÁ¦ ½Ã: Áö¼Ó ÇÇÇØ ÀåÆÇ ¸ğµå")]
+    [Header("ëª¨ë“œ ì„¤ì •")]
+    [Tooltip("ì²´í¬ ì‹œ: ë‹¨ì¼ í”¼í•´ íŒŒë™ ëª¨ë“œ / í•´ì œ ì‹œ: ì§€ì† í”¼í•´ ì¥íŒ ëª¨ë“œ")]
     public bool isSingleHitWaveMode = true;
 
-    [Header("ÆÄµ¿/ÀåÆÇ È¿°ú ¼³Á¤")]
-    [Tooltip("ÆÄµ¿/ÀåÆÇÀÇ ÃÑ Áö¼Ó ½Ã°£ (ÃÊ)")]
+    [Header("íŒŒë™/ì¥íŒ íš¨ê³¼ ì„¤ì •")]
+    [Tooltip("íŒŒë™/ì¥íŒì˜ ì´ ì§€ì† ì‹œê°„ (ì´ˆ)")]
     public float effectDuration = 3f;
 
-    [Tooltip("ÆÄµ¿/ÀåÆÇÀÇ È®Àå ¼Óµµ (ÃÊ´ç)")]
+    [Tooltip("íŒŒë™/ì¥íŒì˜ í™•ì¥ ì†ë„ (ì´ˆë‹¹)")]
     public float effectExpansionSpeed = 1f;
 
-    [Tooltip("ÆÄµ¿/ÀåÆÇÀÌ È®ÀåÇÏ´Â ½Ã°£ (ÃÊ)")]
+    [Tooltip("íŒŒë™/ì¥íŒì´ í™•ì¥í•˜ëŠ” ì‹œê°„ (ì´ˆ)")]
     public float effectExpansionDuration = 3.1f;
 
-    [Header("ÆÄµ¿ ¸ğµå Àü¿ë")]
-    public float singleHitDamage = 100f; // ÀåÆÇÀÌ Ä¿Áú ¶§ ´ë¹ÌÁö
+    [Header("íŒŒë™ ëª¨ë“œ ì „ìš©")]
+    public float singleHitDamage = 100f; // íŒŒë™ ëŒ€ë¯¸ì§€
 
-    [Tooltip("ÀåÆÇ ¸ğµåÀÏ ¶§ Æ½ µ¥¹ÌÁö °£°İ (ÃÊ)")]
+    [Tooltip("ì¥íŒ ëª¨ë“œì¼ ë•Œ í‹± ë°ë¯¸ì§€ ê°„ê²© (ì´ˆ)")]
     public float effectTickInterval = 100.0f;
 
-    [Tooltip("ÀåÆÇ ¸ğµåÀÏ ¶§ Æ½ ´ç ÇÇÇØ·®. 0º¸´Ù Å©¸é ÀåÆÇ, 0ÀÌ¸é ´ÜÀÏ Å¸°İ ÆÄµ¿À¸·Î °£ÁÖµË´Ï´Ù.")]
+    [Tooltip("ì¥íŒ ëª¨ë“œì¼ ë•Œ í‹± ë‹¹ í”¼í•´ëŸ‰. 0ë³´ë‹¤ í¬ë©´ ì¥íŒ, 0ì´ë©´ ë‹¨ì¼ íƒ€ê²© íŒŒë™ìœ¼ë¡œ ê°„ì£¼ë©ë‹ˆë‹¤.")]
     public float damagePerTick = 0f;
 
     /// <summary>
-    /// AreaEffectÀÇ ·ÎÁ÷À» ½ÇÇàÇÏ¿© ÇÁ¸®ÆÕÀ» »ı¼ºÇÏ°í ÃÊ±âÈ­ÇÕ´Ï´Ù.
+    /// AreaEffectì˜ ë¡œì§ì„ ì‹¤í–‰í•˜ì—¬ í”„ë¦¬íŒ¹ì„ ìƒì„±í•˜ê³  ì´ˆê¸°í™”í•©ë‹ˆë‹¤.
     /// </summary>
     public override void Execute(EffectContext context)
     {
-        Debug.Log($"<color=lime>[{GetType().Name}]</color> '{this.name}' ½ÇÇà.");
+        Debug.Log($"<color=lime>[{GetType().Name}]</color> '{this.name}' ì‹¤í–‰.");
 
-        // ÀÌ ¸ğµâÀº ÇöÀç Execute ´Ü°è¿¡¼­ Á÷Á¢ ½ÇÇàÇÒ ·ÎÁ÷ÀÌ ¾ø½À´Ï´Ù.
-        // ÇÁ¸®ÆÕ »ı¼º ¹× ÃÊ±âÈ­´Â EffectExecutor°¡ ´ã´çÇÏ°Ô µË´Ï´Ù.
+        // ì´ ëª¨ë“ˆì€ í˜„ì¬ Execute ë‹¨ê³„ì—ì„œ ì§ì ‘ ì‹¤í–‰í•  ë¡œì§ì´ ì—†ìŠµë‹ˆë‹¤.
+        // í”„ë¦¬íŒ¹ ìƒì„± ë° ì´ˆê¸°í™”ëŠ” EffectExecutorê°€ ë‹´ë‹¹í•˜ê²Œ ë©ë‹ˆë‹¤.
+    }
+
+    public IEnumerable<AssetReferenceGameObject> GetPrefabsToPreload()
+    {
+        if (effectPrefabRef != null && effectPrefabRef.RuntimeKeyIsValid())
+            yield return effectPrefabRef;
     }
 }

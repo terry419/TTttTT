@@ -8,12 +8,17 @@ public class CardManager : MonoBehaviour
     public List<CardDataSO> ownedCards = new List<CardDataSO>();
     public List<CardDataSO> equippedCards = new List<CardDataSO>();
 
+    [Header("v8.0 카드 목록")]
+    public List<NewCardDataSO> ownedNewCards = new List<NewCardDataSO>();
+    public List<NewCardDataSO> equippedNewCards = new List<NewCardDataSO>();
+
     [Header("슬롯 설정")]
     public int maxOwnedSlots = 7;
     public int maxEquipSlots = 5;
 
     [Header("실시간 카드 상태")]
     public CardDataSO activeCard;
+    public NewCardDataSO activeNewCard; // [추가]
 
     private CharacterStats playerStats;
 
@@ -33,25 +38,33 @@ public class CardManager : MonoBehaviour
         }
     }
 
-    void OnEnable()
-    {
-        RoundManager.OnRoundEnded += HandleRoundEnd;
-    }
-
-    void OnDisable()
-    {
-        RoundManager.OnRoundEnded -= HandleRoundEnd;
-    }
-
-    private void HandleRoundEnd(bool success)
-    {
-        CancelInvoke(nameof(SelectActiveCard));
-    }
+    void OnEnable(){RoundManager.OnRoundEnded += HandleRoundEnd;}
+    void OnDisable() { RoundManager.OnRoundEnded -= HandleRoundEnd; }
+    private void HandleRoundEnd(bool success){CancelInvoke(nameof(SelectActiveCard));}
 
     public void LinkToNewPlayer(CharacterStats newPlayerStats)
     {
         playerStats = newPlayerStats;
         RecalculateCardStats();
+    }
+
+    public void AddCard(NewCardDataSO newCard)
+    {
+        if (ownedNewCards.Count >= maxOwnedSlots) return; // 간단히 처리
+        ownedNewCards.Add(newCard);
+        Debug.Log($"[CardManager v8.0] 신규 카드 추가: {newCard.basicInfo.cardName}");
+    }
+
+    public bool Equip(NewCardDataSO newCard)
+    {
+        if (equippedNewCards.Count >= maxEquipSlots || !ownedNewCards.Contains(newCard) || equippedNewCards.Contains(newCard))
+        {
+            return false;
+        }
+        equippedNewCards.Add(newCard);
+        // TODO: NewCardDataSO의 StatModifiers를 플레이어 스탯에 적용하는 로직 추가
+        Debug.Log($"[CardManager v8.0] 신규 카드 장착: {newCard.basicInfo.cardName}");
+        return true;
     }
 
     public void AcquireNewCard(CardDataSO newCard)
@@ -175,6 +188,28 @@ public class CardManager : MonoBehaviour
         SelectActiveCard();
     }
 
+    private void SelectActiveCard()
+    {
+        // 임시로 신규 카드를 우선적으로 선택하도록 로직 구성 (테스트 목적)
+        if (equippedNewCards.Count > 0)
+        {
+            activeCard = null; // 구버전 비활성화
+            activeNewCard = equippedNewCards[Random.Range(0, equippedNewCards.Count)];
+            Debug.Log($"[CardManager] <color=cyan>활성 카드 선택됨 (v8.0): {activeNewCard.basicInfo.cardName}</color>");
+        }
+        else if (equippedCards.Count > 0)
+        {
+            activeNewCard = null; // 신버전 비활성화
+            // 기존 가중치 선택 로직 ...
+        }
+        else
+        {
+            activeCard = null;
+            activeNewCard = null;
+        }
+    }
+
+    /*
     // ▼▼▼ [핵심 수정] SelectActiveCard 함수를 아래 내용으로 완전히 교체합니다. ▼▼▼
     private void SelectActiveCard()
     {
@@ -207,12 +242,13 @@ public class CardManager : MonoBehaviour
                 }
             }
         }
-
+    
         if (activeCard != null)
         {
             Debug.Log($"[CardManager] <color=cyan>활성 카드 선택됨: {activeCard.cardName}</color>");
         }
     }
+    */
 
     public bool HasSynthesizablePair(CardDataSO card)
     {

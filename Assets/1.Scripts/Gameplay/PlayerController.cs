@@ -88,6 +88,25 @@ public class PlayerController : MonoBehaviour
 
     private void PerformAttack()
     {
+        if (cardManager == null || effectExecutor == null) return;
+
+        // [수정] v8.0 카드를 우선적으로 확인하고, 해당하는 Execute 오버로드를 호출
+        if (cardManager.activeNewCard != null)
+        {
+            effectExecutor.Execute(cardManager.activeNewCard, stats, firePoint);
+        }
+        else if (cardManager.activeCard != null)
+        {
+            effectExecutor.Execute(cardManager.activeCard, stats, firePoint);
+        }
+    }
+
+
+
+
+    /*
+    private void PerformAttack()
+    {
         if (cardManager == null) return;
         if (cardManager.activeCard == null) return;
         if (effectExecutor == null) return;
@@ -95,6 +114,8 @@ public class PlayerController : MonoBehaviour
         // 자신의 정보(stats, firePoint)를 인자로 넘겨줌
         effectExecutor.Execute(cardManager.activeCard, stats, firePoint);
     }
+
+    */
 
     void FixedUpdate()
     {
