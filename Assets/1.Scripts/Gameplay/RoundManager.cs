@@ -189,14 +189,14 @@ public class RoundManager : MonoBehaviour
             var dataManager = ServiceLocator.Get<DataManager>();
             if (dataManager != null)
             {
-                List<CardDataSO> allCards = dataManager.GetAllCards();
-                List<CardDataSO> rewardChoices = new List<CardDataSO>();
+                List<NewCardDataSO> allCards = dataManager.GetAllNewCards();
+                List<NewCardDataSO> rewardChoices = new List<NewCardDataSO>();
                 
                 // 카드 데이터가 충분한지 확인
                 if (allCards.Count >= numberOfRewardChoices)
                 {
                     // 가중치에 따라 랜덤 카드 선택 (중복 없음)
-                    List<CardDataSO> selectableCards = new List<CardDataSO>(allCards);
+                    List<NewCardDataSO> selectableCards = new List<NewCardDataSO>(allCards);
                     for (int i = 0; i < numberOfRewardChoices; i++)
                     {
                         if (selectableCards.Count == 0) break;
@@ -216,7 +216,7 @@ public class RoundManager : MonoBehaviour
 
                         float randomPoint = Random.Range(0, totalWeight);
                         float currentWeight = 0f;
-                        CardDataSO selectedCard = null;
+                        NewCardDataSO selectedCard = null;
 
                         foreach (var card in selectableCards)
                         {

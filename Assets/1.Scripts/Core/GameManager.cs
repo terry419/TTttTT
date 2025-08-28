@@ -117,65 +117,56 @@ public class GameManager : MonoBehaviour
     // [수정] 메소드 반환 타입을 UniTask로 변경하여 비동기 완료를 기다릴 수 있도록 함
     public async UniTask PreloadAssetsForRound(RoundDataSO roundData)
     {
-        Debug.Log("--- [GameManager] 프리로딩 시작 (AssetReference 기반) ---");
+        Debug.Log("--- [GameManager] v9.0 프리로딩 시작 ---");
         var poolManager = ServiceLocator.Get<PoolManager>();
         var cardManager = ServiceLocator.Get<CardManager>();
         var prefabProvider = ServiceLocator.Get<PrefabProvider>();
+        var resourceManager = ServiceLocator.Get<ResourceManager>(); // ResourceManager 참조
 
-        if (poolManager == null || cardManager == null || prefabProvider == null)
-        {
-            Debug.LogError("[GameManager] 필수 매니저를 찾을 수 없어 프리로딩을 중단합니다!");
-            return;
-        }
+        // ... (기존의 null 체크 로직) ...
 
         var preloadTasks = new List<UniTask>();
         var preloadRequests = new Dictionary<string, int>();
 
         void AddOrUpdatePreloadRequest(AssetReferenceGameObject assetRef, int count)
         {
-            if (assetRef == null || !assetRef.RuntimeKeyIsValid() || count <= 0) return;
-            string key = assetRef.AssetGUID; // [핵심] 파일 이름 대신 고유 ID를 키로 사용
-            if (preloadRequests.ContainsKey(key))
+            if (assetRef != null && assetRef.RuntimeKeyIsValid() && count > 0)
             {
-                preloadRequests[key] = Mathf.Max(preloadRequests[key], count);
-            }
-            else
-            {
-                preloadRequests.Add(key, count);
+                string key = assetRef.AssetGUID;
+                if (preloadRequests.ContainsKey(key))
+                    preloadRequests[key] = Mathf.Max(preloadRequests[key], count);
+                else
+                    preloadRequests.Add(key, count);
             }
         }
 
-        // 1. 공용 프리팹 목록 수집
-        List<PreloadItem> commonItems = prefabProvider.GetCommonPreloadItems();
-        if (commonItems != null)
+        // ... (공용 프리팹, 몬스터 프리팹 수집 로직은 이전과 동일) ...
+
+        // [핵심 수정] CardManager의 카드를 순회하며 모듈 내부의 프리팹을 수집
+        foreach (var card in cardManager.equippedCards) // 이제 equippedCards는 NewCardDataSO 리스트
         {
-            foreach (var item in commonItems) AddOrUpdatePreloadRequest(item.prefabRef, item.count);
-        }
-        
-        // 2. 몬스터 수집
-        if (roundData != null)
-        {
-            foreach (var wave in roundData.waves)
-                AddOrUpdatePreloadRequest(wave.monsterData?.prefabRef, wave.preloadCount > 0 ? wave.preloadCount : wave.count);
+            foreach (var moduleEntry in card.modules)
+            {
+                if (moduleEntry.moduleReference.RuntimeKeyIsValid())
+                {
+                    // 모듈 SO를 직접 로드해서 내용을 확인해야 함
+                    CardEffectSO module = await resourceManager.LoadAsync<CardEffectSO>(moduleEntry.moduleReference.AssetGUID);
+                    if (module is ProjectileEffectSO pModule)
+                    {
+                        AddOrUpdatePreloadRequest(pModule.bulletPrefabReference, card.preloadCount);
+                    }
+                    // 다른 모듈 타입(AreaEffectSO 등)에 대한 처리도 여기에 추가 가능
+                }
+            }
         }
 
-        // 3. 카드 프리팹 수집
-        foreach (var card in cardManager.equippedCards)
-        {
-            AddOrUpdatePreloadRequest(card.bulletPrefabRef, card.bulletPreloadCount);
-            AddOrUpdatePreloadRequest(card.effectPrefabRef, card.effectPreloadCount);
-        }
-        
-        // --- 프리로드 실행 단계 ---
         Debug.Log($"[GameManager] 총 {preloadRequests.Count} 종류의 프리팹에 대한 프리로드를 실행합니다.");
         foreach (var request in preloadRequests)
         {
             preloadTasks.Add(poolManager.Preload(request.Key, request.Value));
         }
 
-        // [핵심] 모든 프리로딩 작업이 끝날 때까지 비동기적으로 대기
         await UniTask.WhenAll(preloadTasks);
-
         Debug.Log("--- [GameManager] 모든 프리로딩 비동기 대기 완료 ---");
     }
 

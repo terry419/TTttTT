@@ -1,5 +1,3 @@
-// 경로: ./TTttTT/Assets/1.Scripts/Gameplay/BulletController.cs
-
 using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
 using UnityEngine;
@@ -11,7 +9,7 @@ public class BulletController : MonoBehaviour
     public float damage;
     public string shotInstanceID;
     public float lifetime = 3f;
-    public CardDataSO SourceCard { get; private set; }
+    // public CardDataSO SourceCard { get; private set; } // 이 줄 삭제
     public ProjectileEffectSO SourceModule { get; private set; }
 
     public int _currentPierceCount;
@@ -24,8 +22,6 @@ public class BulletController : MonoBehaviour
     private float turnSpeed = 200f;
     private CharacterStats casterStats;
     private int _bounceCountForPayload = 0;
-
-    // [추가] 이 총알을 발사한 원본 카드(플랫폼) 정보
     private NewCardDataSO sourcePlatform;
 
     private void Awake()
@@ -33,41 +29,16 @@ public class BulletController : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
     }
 
-    // --- 구버전 Initialize ---
-    public void Initialize(Vector2 direction, float initialSpeed, float damage, string shotID, CardDataSO cardData, int pierceCount, CharacterStats caster)
-    {
-        this._direction = direction.normalized;
-        this.speed = initialSpeed;
-        this.damage = damage;
-        this.shotInstanceID = shotID;
-        this.SourceCard = cardData;
-        this.SourceModule = null;
-        this.sourcePlatform = null; // 구버전에서는 플랫폼 없음
-        this._currentPierceCount = pierceCount;
-        this._currentRicochetCount = 0;
-        this.isTracking = false;
-        this.trackingTarget = null;
-        this._hitMonsters.Clear();
-        this.casterStats = caster;
-        this._bounceCountForPayload = 0;
-
-        float angle = Mathf.Atan2(_direction.y, _direction.x) * Mathf.Rad2Deg;
-        transform.rotation = Quaternion.Euler(0, 0, angle);
-
-        CancelInvoke(nameof(Deactivate));
-        Invoke(nameof(Deactivate), lifetime);
-    }
-
-    // --- v8.0 Initialize (수정) ---
+    // [수정] NewCardDataSO를 사용하는 Initialize 메소드만 남깁니다.
     public void Initialize(Vector2 direction, float initialSpeed, float damage, string shotID, NewCardDataSO platform, ProjectileEffectSO module, CharacterStats caster)
     {
         this._direction = direction.normalized;
         this.speed = initialSpeed;
         this.damage = damage;
         this.shotInstanceID = shotID;
-        this.SourceCard = null;
+        // this.SourceCard = null; // 이 줄 삭제
         this.SourceModule = module;
-        this.sourcePlatform = platform; // [추가] 플랫폼 정보 저장
+        this.sourcePlatform = platform;
         this._currentPierceCount = module.pierceCount;
         this._currentRicochetCount = module.ricochetCount;
         this.isTracking = module.isTracking;
@@ -75,10 +46,8 @@ public class BulletController : MonoBehaviour
         this._hitMonsters.Clear();
         this.casterStats = caster;
         this._bounceCountForPayload = 0;
-
         float angle = Mathf.Atan2(_direction.y, _direction.x) * Mathf.Rad2Deg;
         transform.rotation = Quaternion.Euler(0, 0, angle);
-
         CancelInvoke(nameof(Deactivate));
         Invoke(nameof(Deactivate), lifetime);
     }
@@ -112,23 +81,20 @@ public class BulletController : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (!other.CompareTag(Tags.Monster)) return;
-        if (_hitMonsters.Contains(other.gameObject)) return;
+        if (!other.CompareTag(Tags.Monster) || _hitMonsters.Contains(other.gameObject)) return;
 
         if (other.TryGetComponent<MonsterController>(out var monster))
         {
-            if (SourceCard == null && SourceModule == null) return;
+            // [수정] SourceCard == null 조건 삭제
+            if (SourceModule == null) return;
+
             monster.TakeDamage(this.damage);
             _hitMonsters.Add(other.gameObject);
 
-            // [핵심 수정] async void 메소드로 연쇄 효과 처리
             _ = HandlePayloads_Async(monster.transform);
 
-            bool ricocheted = TryRicochet(monster.transform);
-            if (ricocheted) return;
-
-            bool pierced = TryPierce();
-            if (pierced) return;
+            if (TryRicochet(monster.transform)) return;
+            if (TryPierce()) return;
 
             Deactivate();
         }
@@ -139,45 +105,33 @@ public class BulletController : MonoBehaviour
         if (_currentRicochetCount <= 0) return false;
         _currentRicochetCount--;
         _bounceCountForPayload++;
-
         var exclusions = new HashSet<GameObject>(_hitMonsters);
         if (SourceModule != null && !SourceModule.canRicochetToSameTarget)
         {
             exclusions.Add(lastHitTransform.gameObject);
         }
-
         Transform nextTarget = TargetingSystem.FindTarget(TargetingType.Nearest, transform, exclusions);
         if (nextTarget != null)
         {
-            Debug.Log($"<color=yellow>[Ricochet]</color> {lastHitTransform.name} -> {nextTarget.name}");
             _direction = (nextTarget.position - transform.position).normalized;
-
-            if (isTracking)
-            {
-                trackingTarget = nextTarget;
-            }
+            if (isTracking) trackingTarget = nextTarget;
             return true;
         }
-
         return false;
     }
 
     private async UniTaskVoid HandlePayloads_Async(Transform hitTarget)
     {
-        if (SourceModule == null || SourceModule.sequentialPayloads == null) return;
-
-        // 이제 EffectExecutor 대신 ResourceManager를 직접 사용합니다.
+        if (SourceModule?.sequentialPayloads == null) return;
         var resourceManager = ServiceLocator.Get<ResourceManager>();
 
         foreach (var payload in SourceModule.sequentialPayloads)
         {
             if (payload.onBounceNumber == _bounceCountForPayload)
             {
-                // 1. 연쇄 효과 모듈(SO)을 안전하게 로드합니다.
                 CardEffectSO module = await resourceManager.LoadAsync<CardEffectSO>(payload.effectToTrigger.AssetGUID);
                 if (module == null) continue;
 
-                // 2. 연쇄 효과 실행에 필요한 정보(Context)를 생성합니다.
                 var context = new EffectContext
                 {
                     Caster = this.casterStats,
@@ -186,19 +140,15 @@ public class BulletController : MonoBehaviour
                     HitTarget = hitTarget.GetComponent<MonsterController>(),
                     HitPosition = hitTarget.position
                 };
-
-                // 3. 모듈의 Execute 메소드를 직접 실행합니다.
                 module.Execute(context);
-
-                // 데이터 에셋이므로 여기서 Release하지 않습니다. ResourceManager가 관리합니다.
             }
         }
     }
+
     private bool TryPierce()
     {
         if (_currentPierceCount <= 0) return false;
         _currentPierceCount--;
-        Debug.Log($"<color=lightblue>[Pierce]</color> 관통! 남은 횟수: {_currentPierceCount}");
         return true;
     }
 }

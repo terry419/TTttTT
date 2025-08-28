@@ -16,7 +16,7 @@ public class CharacterDataSO : ScriptableObject
     public BaseStats baseStats;
 
     [Header("시작 아이템")]
-    public CardDataSO startingCard;
+    public NewCardDataSO startingCard;
     public List<ArtifactDataSO> startingArtifacts; // [추가] 시작 유물 목록
 
     [Header("초기 포인트")]

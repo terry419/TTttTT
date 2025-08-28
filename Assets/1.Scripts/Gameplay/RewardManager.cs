@@ -29,7 +29,7 @@ public class RewardManager : MonoBehaviour
     /// <summary>
     /// 제시할 카드 보상 목록을 순서대로 저장하는 큐(Queue)입니다.
     /// </summary>
-    private Queue<List<CardDataSO>> cardRewardQueue = new Queue<List<CardDataSO>>();
+    private Queue<List<NewCardDataSO>> cardRewardQueue = new Queue<List<NewCardDataSO>>();
 
 
     // --- Events --- //
@@ -37,7 +37,7 @@ public class RewardManager : MonoBehaviour
     /// <summary>
     /// 처리할 새로운 카드 보상이 준비되었을 때 CardRewardUIManager에 알리는 static 이벤트입니다.
     /// </summary>
-    public static event System.Action<List<CardDataSO>> OnCardRewardReady;
+    public static event System.Action<List<NewCardDataSO>> OnCardRewardReady;
 
     /// <summary>
     /// 처리할 보상이 없어 즉시 맵 선택으로 건너뛰어야 할 때 UI에 알리는 static 이벤트입니다.
@@ -67,7 +67,7 @@ public class RewardManager : MonoBehaviour
     /// 새로운 카드 보상 목록을 큐의 맨 뒤에 추가합니다.
     /// </summary>
     /// <param name="cardChoices">플레이어에게 보여줄 카드 선택지 목록</param>
-    public void EnqueueReward(List<CardDataSO> cardChoices)
+    public void EnqueueReward(List<NewCardDataSO> cardChoices)
     {
         cardRewardQueue.Enqueue(cardChoices);
         Debug.Log($"[RewardManager] 새로운 카드 보상이 큐에 추가되었습니다. 현재 대기 중인 보상 수: {cardRewardQueue.Count}");
@@ -94,7 +94,7 @@ public class RewardManager : MonoBehaviour
             // 이 상태는 RouteSelectionController가 '보상 페이지로' 버튼을 활성화하는 데 사용됩니다.
             IsRewardSelectionComplete = false;
 
-            List<CardDataSO> nextReward = cardRewardQueue.Dequeue();
+            List<NewCardDataSO> nextReward = cardRewardQueue.Dequeue();
             Debug.Log($"[RewardManager] 다음 보상을 처리합니다. 남은 보상 수: {cardRewardQueue.Count}. 'IsRewardSelectionComplete' 상태를 [false]로 설정.");
 
             // UI가 이벤트를 구독하고 있다면, 카드 선택지를 전달하여 화면에 표시하도록 합니다.
