@@ -82,16 +82,21 @@ public class BulletController : MonoBehaviour
     private void OnTriggerEnter2D(Collider2D other)
     {
         if (!other.CompareTag(Tags.Monster) || _hitMonsters.Contains(other.gameObject)) return;
-
         if (other.TryGetComponent<MonsterController>(out var monster))
         {
-            // [수정] SourceCard == null 조건 삭제
-            if (SourceModule == null) return;
-
-            monster.TakeDamage(this.damage);
-            _hitMonsters.Add(other.gameObject);
-
-            _ = HandlePayloads_Async(monster.transform);
+            // [추가] 샷건 다중 히트 방지 로직
+            // ProjectileEffectSO에 제어 변수를 추가할 수 있지만, 지금은 기본적으로 1회만 히트하도록 합니다.
+            if (!monster.RegisterHitByShot(this.shotInstanceID, sourcePlatform.allowMultipleHits))
+            {
+                // 피해 없이 관통/튕김 로직만 처리
+            }
+            else
+            {
+                // 처음 맞는 경우에만 데미지를 줍니다.
+                monster.TakeDamage(this.damage);
+                _hitMonsters.Add(other.gameObject);
+                _ = HandlePayloads_Async(monster.transform);
+            }
 
             if (TryRicochet(monster.transform)) return;
             if (TryPierce()) return;

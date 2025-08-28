@@ -52,19 +52,14 @@ public class PlayerController : MonoBehaviour
         if (float.IsInfinity(interval) || interval <= 0) interval = 1f;
         InvokeRepeating(nameof(PerformAttack), 0f, interval);
     }
-
     private async void PerformAttack()
     {
-        if (cardManager?.activeCard == null)
-        {
-            // Debug.LogWarning("[PlayerController] 활성화된 카드가 없어 공격을 실행할 수 없습니다.");
-            return;
-        }
+        if (cardManager?.activeCard == null) return;
 
-        var card = cardManager.activeCard;
-        ICardAction action = card.CreateAction();
-        // [수정] CardActionContext에 NewCardDataSO 타입인 card를 전달합니다.
-        var context = new CardActionContext(card, stats, firePoint);
+        var cardInstance = cardManager.activeCard;
+        // [수정] Context에 CardInstance 자체를 전달
+        ICardAction action = cardInstance.CardData.CreateAction();
+        var context = new CardActionContext(cardInstance, stats, firePoint);
         await action.Execute(context);
     }
 

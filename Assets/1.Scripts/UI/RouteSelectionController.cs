@@ -110,6 +110,14 @@ public class RouteSelectionController : MonoBehaviour
     // ▼▼▼▼▼ OnNodeClicked 함수를 아래 내용으로 교체 ▼▼▼▼▼
     private void OnNodeClicked(MapNode node)
     {
+        var rewardManager = ServiceLocator.Get<RewardManager>();
+        // 보상 선택이 완료되지 않았다면 노드 클릭 무시
+        if (rewardManager != null && !rewardManager.IsRewardSelectionComplete)
+        {
+            Debug.Log($"[{GetType().Name}] 보상 선택이 완료되지 않아 노드 클릭을 무시합니다.");
+            return;
+        }
+
         // StartCoroutine을 제거하고 async 메소드를 직접 호출합니다.
         // UniTask의 결과를 기다리지 않고 다음으로 넘어가므로,
         // C# 7.0 이상에서는 아래와 같이 `_ = ` 를 붙여주는 것이 좋습니다. (의도적으로 결과를 무시한다는 의미)

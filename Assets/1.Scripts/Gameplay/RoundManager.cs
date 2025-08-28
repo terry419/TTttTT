@@ -186,71 +186,24 @@ public class RoundManager : MonoBehaviour
         if (wasKillGoalReached)
         {
             Debug.Log($"[{GetType().Name}] 라운드 승리! 카드 보상을 생성합니다.");
-            var dataManager = ServiceLocator.Get<DataManager>();
-            if (dataManager != null)
+            var rewardGenService = ServiceLocator.Get<RewardGenerationService>();
+            if (rewardGenService != null)
             {
-                List<NewCardDataSO> allCards = dataManager.GetAllNewCards();
-                List<NewCardDataSO> rewardChoices = new List<NewCardDataSO>();
-                
-                // 카드 데이터가 충분한지 확인
-                if (allCards.Count >= numberOfRewardChoices)
-                {
-                    // 가중치에 따라 랜덤 카드 선택 (중복 없음)
-                    List<NewCardDataSO> selectableCards = new List<NewCardDataSO>(allCards);
-                    for (int i = 0; i < numberOfRewardChoices; i++)
-                    {
-                        if (selectableCards.Count == 0) break;
+                List<NewCardDataSO> rewardChoices = rewardGenService.GenerateRewards(numberOfRewardChoices);
 
-                        float totalWeight = selectableCards.Sum(card => card.rewardAppearanceWeight);
-
-                        // ▼▼▼▼▼ [핵심 수정] 이 부분을 추가하세요 ▼▼▼▼▼
-                        // 만약 모든 카드의 가중치가 0이라면, 가중치 없이 완전 랜덤으로 하나를 고릅니다.
-                        if (totalWeight <= 0)
-                        {
-                            int randomIndex = Random.Range(0, selectableCards.Count);
-                            rewardChoices.Add(selectableCards[randomIndex]);
-                            selectableCards.RemoveAt(randomIndex);
-                            continue; // 다음 카드를 뽑기 위해 for문의 다음 루프로 넘어갑니다.
-                        }
-                        // ▲▲▲▲▲ [여기까지 추가] ▲▲▲▲▲
-
-                        float randomPoint = Random.Range(0, totalWeight);
-                        float currentWeight = 0f;
-                        NewCardDataSO selectedCard = null;
-
-                        foreach (var card in selectableCards)
-                        {
-                            currentWeight += card.rewardAppearanceWeight;
-                            if (randomPoint <= currentWeight)
-                            {
-                                selectedCard = card;
-                                break;
-                            }
-                        }
-
-                        // 만약 부동소수점 오류 등으로 선택이 안된 경우 마지막 카드를 선택
-                        if (selectedCard == null && selectableCards.Count > 0)
-                        {
-                            selectedCard = selectableCards.Last();
-                        }
-
-                        if (selectedCard != null)
-                        {
-                            rewardChoices.Add(selectedCard);
-                            selectableCards.Remove(selectedCard);
-                        }
-                    }
-                }
-
-                // 생성된 보상이 있으면 RewardManager의 대기열에 추가
-                if (rewardChoices.Count > 0)
+                if (rewardChoices != null && rewardChoices.Count > 0)
                 {
                     rewardManager.EnqueueReward(rewardChoices);
+                    Debug.Log($"[{GetType().Name}] {rewardChoices.Count}개의 카드 보상을 생성하여 RewardManager에 추가했습니다.");
                 }
                 else
                 {
-                    Debug.LogWarning($"[{GetType().Name}] 보상으로 제시할 카드를 생성하지 못했습니다. (카드 데이터 부족 가능성)");
+                    Debug.LogWarning($"[{GetType().Name}] 보상으로 제시할 카드를 생성하지 못했습니다.");
                 }
+            }
+            else
+            {
+                Debug.LogError($"[{GetType().Name}] CRITICAL: RewardGenerationService를 찾을 수 없어 보상을 생성할 수 없습니다!");
             }
         }
         else

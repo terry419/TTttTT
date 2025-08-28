@@ -1,15 +1,14 @@
 using UnityEngine;
 
-// [수정] NewCardDataSO를 받도록 변경
 public class CardActionContext
 {
-    public NewCardDataSO SourceCard { get; }
+    public CardInstance CardInstance { get; } // SO 대신 인스턴스 자체를 전달
     public CharacterStats Caster { get; }
     public Transform SpawnPoint { get; }
 
-    public CardActionContext(NewCardDataSO sourceCard, CharacterStats caster, Transform spawnPoint)
+    public CardActionContext(CardInstance cardInstance, CharacterStats caster, Transform spawnPoint)
     {
-        SourceCard = sourceCard;
+        CardInstance = cardInstance;
         Caster = caster;
         SpawnPoint = spawnPoint;
     }

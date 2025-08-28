@@ -113,7 +113,6 @@ public class MapView : MonoBehaviour
     /// </summary>
     public void SetupAllNodeNavigations(Button backButton)
     {
-        Debug.Log("[MapView] SetupAllNodeNavigations 시작."); // [추가됨] 디버그 로그
         foreach (var pair in nodeUiMap)
         {
             MapNode currentNodeData = pair.Key;
@@ -122,7 +121,7 @@ public class MapView : MonoBehaviour
 
             if (currentBtn == null)
             {
-                Debug.LogError($"[MapView] 노드 오브젝트 {currentNodeObj.name}에 Button 컴포넌트가 없습니다!"); // [추가됨] 디버그 로그
+                Debug.LogError($"[MapView] 노드 오브젝트 {currentNodeObj.name}에 Button 컴포넌트가 없습니다!");
                 continue;
             }
 
@@ -131,6 +130,7 @@ public class MapView : MonoBehaviour
                 mode = Navigation.Mode.Explicit
             };
 
+            // Up Navigation
             var upCandidates = nodeUiMap.Where(p => p.Key.Position.y == currentNodeData.Position.y + 1);
             if (upCandidates.Any()) 
             {
@@ -138,6 +138,7 @@ public class MapView : MonoBehaviour
                 nav.selectOnUp = targetUp.Value.GetComponent<Button>();
             }
 
+            // Down Navigation
             var downCandidates = nodeUiMap.Where(p => p.Key.Position.y == currentNodeData.Position.y - 1);
             if (downCandidates.Any())
             {
@@ -145,6 +146,7 @@ public class MapView : MonoBehaviour
                 nav.selectOnDown = targetDown.Value.GetComponent<Button>();
             }
 
+            // Left Navigation
             var leftCandidates = nodeUiMap.Where(p => p.Key.Position.y == currentNodeData.Position.y && p.Key.Position.x < currentNodeData.Position.x);
             if (leftCandidates.Any())
             {
@@ -168,7 +170,6 @@ public class MapView : MonoBehaviour
 
             currentBtn.navigation = nav;
         }
-        Debug.Log("[MapView] SetupAllNodeNavigations 완료."); // [추가됨] 디버그 로그
     }
 
     public void UpdateNodeInteractability(List<MapNode> reachableNodes)

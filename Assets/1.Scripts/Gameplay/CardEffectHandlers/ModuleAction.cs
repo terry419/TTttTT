@@ -1,33 +1,112 @@
 using Cysharp.Threading.Tasks;
+using UnityEngine;
+using System;
+using System.Linq;
 
-// NewCardDataSOÀÇ ¸ğµâ ¸ñ·ÏÀ» ½ÇÇàÇÏ´Â ÃÖÁ¾ Action Å¬·¡½º
 public class ModuleAction : ICardAction
 {
     public async UniTask Execute(CardActionContext context)
     {
-        var card = context.SourceCard;
-        var resourceManager = ServiceLocator.Get<ResourceManager>();
+        var card = context.CardInstance.CardData;
 
+        // [Ù½ ]  ModuleAction  ß»  Õ´Ï´.
+        // ProjectileEffectSO  Ã£Æ¼ ß»  É´Ï´.
+        ProjectileEffectSO pModule = null;
         foreach (var moduleEntry in card.modules)
-        {
-            if (!moduleEntry.moduleReference.RuntimeKeyIsValid()) continue;
-
-            // ¸ğµâ SO ¿¡¼ÂÀ» ResourceManager¸¦ ÅëÇØ ¾ÈÀüÇÏ°Ô ·Îµå
-            CardEffectSO module = await resourceManager.LoadAsync<CardEffectSO>(moduleEntry.moduleReference.AssetGUID);
-
-            if (module != null)
+        { 
+            if (moduleEntry.moduleReference.RuntimeKeyIsValid())
             {
-                // [ÇÙ½É] ½Å±Ô CardActionContext Á¤º¸¸¦ ±¸¹öÀü EffectContext·Î º¯È¯
-                var effectContextForModule = new EffectContext
+                var resourceManager = ServiceLocator.Get<ResourceManager>();
+                CardEffectSO module = await resourceManager.LoadAsync<CardEffectSO>(moduleEntry.moduleReference.AssetGUID);
+                if (module is ProjectileEffectSO foundPModule)
                 {
-                    Caster = context.Caster,
-                    SpawnPoint = context.SpawnPoint,
-                    Platform = context.SourceCard
-                };
-
-                // ¸ğµâÀÇ Execute ¸Ş¼Òµå¿¡ ¿Ã¹Ù¸¥ Å¸ÀÔÀÇ ÄÁÅØ½ºÆ®¸¦ Àü´ŞÇÏ¿© ½ÇÇà
-                module.Execute(effectContextForModule);
+                    pModule = foundPModule;
+                    break; // Ã¹ Â° ProjectileEffectSO  
+                }
             }
         }
+
+        if (pModule == null || !pModule.bulletPrefabReference.RuntimeKeyIsValid())
+        {
+            Debug.LogWarning($"[{card.name}] ß» ProjectileEffectSO  Ã£  Ï´.");
+            // Ã¼  Ù¸ OnFire â¸¸   Ç· â¼­ return Ê½Ï´.
+        }
+        else
+        {
+            // pModule Ã£, Ä« Ã· ß»  Ï¿ Ã¼ ß»Õ´Ï´.
+            await FireProjectiles(pModule, card, context);
+        }
+
+        // OnFire Å¸ Ù¸   ( )
+        foreach (var moduleEntry in card.modules)
+        {
+            if (moduleEntry.moduleReference.RuntimeKeyIsValid())
+            {
+                var resourceManager = ServiceLocator.Get<ResourceManager>();
+                CardEffectSO module = await resourceManager.LoadAsync<CardEffectSO>(moduleEntry.moduleReference.AssetGUID);
+                // Ã¼  Æ´Ï°, OnFire Æ®Å¸  â¸¸ 
+                if (module != null && !(module is ProjectileEffectSO) && module.trigger == CardEffectSO.EffectTrigger.OnFire)
+                {
+                    var effectContextForModule = new EffectContext
+                    {
+                        Caster = context.Caster,
+                        SpawnPoint = context.SpawnPoint,
+                        Platform = context.CardInstance.CardData
+                    };
+                    module.Execute(effectContextForModule);
+                }
+            }
+        }
+    }
+
+    private async UniTask FireProjectiles(ProjectileEffectSO pModule, NewCardDataSO platform, CardActionContext context)
+    {
+        var poolManager = ServiceLocator.Get<PoolManager>();
+    
+        float baseAngle = GetTargetingAngle(pModule.targetingType, context.Caster.transform, context.SpawnPoint);
+        float totalDamage = context.CardInstance.GetFinalDamage() * (1 + context.Caster.FinalDamageBonus / 100f);
+
+        int projectileCount = platform.projectileCount;
+        float[] angles = new float[projectileCount];
+
+        if (projectileCount > 0)
+        {
+            // [ìˆ˜ì •] ì‚¬ìš©ìì˜ ë¶„ì„ì´ ë§ì•˜ìŠµë‹ˆë‹¤. N-1ì´ ì•„ë‹Œ Nìœ¼ë¡œ ë‚˜ëˆ„ì–´ ê°ë„ ê°„ê²©ì„ ê³„ì‚°í•´ì•¼ í•©ë‹ˆë‹¤.
+            // ì´ë ‡ê²Œ í•˜ë©´ 360ë„ ë¶„í•  ì‹œ ì²« ë°œê³¼ ë§ˆì§€ë§‰ ë°œì´ ê²¹ì¹˜ëŠ” ë¬¸ì œê°€ í•´ê²°ë©ë‹ˆë‹¤.
+            float angleStep = platform.spreadAngle / projectileCount;
+            float startAngle = baseAngle - platform.spreadAngle * 0.5f + angleStep * 0.5f;
+
+            for (int i = 0; i < projectileCount; i++)
+            {
+                angles[i] = startAngle + (angleStep * i);
+            }
+        }
+
+        foreach (float angle in angles)
+        {
+            string shotID = Guid.NewGuid().ToString(); 
+            
+            Quaternion rotation = Quaternion.Euler(0, 0, angle);
+            Vector2 direction = rotation * Vector2.right;
+
+            GameObject bulletGO = await poolManager.GetAsync(pModule.bulletPrefabReference.AssetGUID);
+            if (bulletGO != null && bulletGO.TryGetComponent<BulletController>(out var bullet))
+            {
+                bullet.transform.position = context.SpawnPoint.position;
+                bullet.transform.rotation = rotation;
+                bullet.Initialize(direction, platform.baseSpeed * pModule.speed, totalDamage, shotID, platform, pModule, context.Caster);
+            }
+        }
+    }
+
+    private float GetTargetingAngle(TargetingType targetingType, Transform casterTransform, Transform spawnPoint)
+    {
+        Transform target = TargetingSystem.FindTarget(targetingType, casterTransform);
+        if (target != null)
+        { 
+            Vector2 directionToTarget = (target.position - spawnPoint.position).normalized;
+            return Mathf.Atan2(directionToTarget.y, directionToTarget.x) * Mathf.Rad2Deg;
+        }
+        return spawnPoint.eulerAngles.z;
     }
 }

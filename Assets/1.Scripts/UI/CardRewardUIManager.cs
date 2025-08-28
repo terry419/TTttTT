@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.EventSystems;
+using System.Linq;
 
 public class CardRewardUIManager : MonoBehaviour
 {
@@ -13,7 +14,7 @@ public class CardRewardUIManager : MonoBehaviour
     [SerializeField] private Button synthesizeButton;
     [SerializeField] private Button skipButton;
     [SerializeField] private Button mapButton;
-    [SerializeField] private SynthesisPopup synthesisPopup; // 이 줄은 삭제하거나 주석 처리
+    [SerializeField] private SynthesisPopup synthesisPopup;
 
     private CardDisplay selectedDisplay;
     private List<CardDisplay> spawnedCardDisplays = new List<CardDisplay>();
@@ -23,7 +24,7 @@ public class CardRewardUIManager : MonoBehaviour
     {
         ServiceLocator.Register<CardRewardUIManager>(this);
         acquireButton.onClick.AddListener(OnAcquireClicked);
-        // synthesizeButton.onClick.AddListener(OnSynthesizeClicked); // 합성 기능 삭제
+        synthesizeButton.onClick.AddListener(OnSynthesizeClicked);
         skipButton.onClick.AddListener(OnSkipClicked);
         if (mapButton != null) mapButton.onClick.AddListener(OnMapButtonClicked);
     }
@@ -50,7 +51,6 @@ public class CardRewardUIManager : MonoBehaviour
         TransitionToMap();
     }
 
-    // [수정] NewCardDataSO 리스트를 받도록 변경
     public void Initialize(List<NewCardDataSO> cardChoices)
     {
         foreach (Transform child in cardSlotsParent) Destroy(child.gameObject);
@@ -70,7 +70,7 @@ public class CardRewardUIManager : MonoBehaviour
 
         selectedDisplay = null;
         UpdateButtonsState();
-        StartCoroutine(SetFocusToCardCoroutine());
+        StartCoroutine(SetFocusToFirstCard());
     }
 
     private void HandleCardSelection(CardDisplay display)
@@ -85,7 +85,6 @@ public class CardRewardUIManager : MonoBehaviour
         UpdateButtonsState();
     }
 
-    // CardRewardUIManager.cs 내부
     private void OnAcquireClicked()
     {
         if (selectedDisplay == null) return;
@@ -94,16 +93,60 @@ public class CardRewardUIManager : MonoBehaviour
         var cardManager = ServiceLocator.Get<CardManager>();
         if (cardManager != null)
         {
-            // [수정] AcquireNewCard 대신 AddCard와 Equip을 순서대로 호출합니다.
-            cardManager.AddCard(selectedCardData);
-            cardManager.Equip(selectedCardData);
-
-            Debug.Log($"[CardRewardUIManager] 카드 획득 및 장착: {selectedCardData.basicInfo.cardName}");
+            CardInstance instanceToEquip = cardManager.AddCard(selectedCardData);
+            if (instanceToEquip != null)
+            {
+                cardManager.Equip(instanceToEquip);
+            }
         }
 
         ServiceLocator.Get<RewardManager>()?.CompleteRewardSelection();
         TransitionToMap();
     }
+
+    private void OnSynthesizeClicked()
+    {
+        if (selectedDisplay == null) return;
+
+        var baseCardData = selectedDisplay.CurrentCard;
+        var cardManager = ServiceLocator.Get<CardManager>();
+        if (cardManager == null || synthesisPopup == null) return;
+
+        // 재료 카드 필터링: 등급과 속성이 같고, 자기 자신은 아닌 카드
+        List<CardInstance> materialChoices = cardManager.ownedCards
+            .Where(card => card.CardData.basicInfo.rarity == baseCardData.basicInfo.rarity &&
+                           card.CardData.basicInfo.type == baseCardData.basicInfo.type)
+            .ToList();
+
+        if (materialChoices.Count == 0)
+        {
+            Debug.LogWarning("합성 재료로 사용할 수 있는 카드가 없습니다.");
+            // TODO: 사용자에게 알림을 주는 UI 로직 (예: 팝업 메시지)
+            return;
+        }
+
+        // 팝업 초기화 및 콜백 설정
+        synthesisPopup.Initialize(baseCardData, materialChoices, HandleSynthesisConfirm, HandleSynthesisCancel);
+    }
+
+    private void HandleSynthesisConfirm(CardInstance materialCard)
+    {
+        var cardManager = ServiceLocator.Get<CardManager>();
+        if (cardManager != null && selectedDisplay != null)
+        {
+            cardManager.SynthesizeCard(selectedDisplay.CurrentCard, materialCard);
+        }
+        
+        ServiceLocator.Get<RewardManager>()?.CompleteRewardSelection();
+        TransitionToMap();
+    }
+
+    private void HandleSynthesisCancel()
+    {
+        Debug.Log("합성 취소됨");
+        StartCoroutine(SetFocusToFirstCard());
+    }
+
     private void OnSkipClicked()
     {
         ServiceLocator.Get<RewardManager>()?.CompleteRewardSelection();
@@ -117,8 +160,21 @@ public class CardRewardUIManager : MonoBehaviour
 
     private void UpdateButtonsState()
     {
-        acquireButton.interactable = (selectedDisplay != null);
-        synthesizeButton.gameObject.SetActive(false); // 합성 버튼 숨기기
+        bool canAcquire = selectedDisplay != null;
+        acquireButton.interactable = canAcquire;
+
+        bool canSynthesize = false;
+        if (canAcquire)
+        {
+            var cardManager = ServiceLocator.Get<CardManager>();
+            if (cardManager != null)
+            {
+                canSynthesize = cardManager.ownedCards.Any(card => card.CardData.basicInfo.cardID == selectedDisplay.CurrentCard.basicInfo.cardID);
+            }
+        }
+        
+        synthesizeButton.gameObject.SetActive(true);
+        synthesizeButton.interactable = canSynthesize;
     }
 
     private void TransitionToMap()
@@ -127,20 +183,21 @@ public class CardRewardUIManager : MonoBehaviour
         Hide();
     }
 
-    private IEnumerator SetFocusToCardCoroutine()
+    private IEnumerator SetFocusToFirstCard()
     {
         yield return null;
+        EventSystem.current.SetSelectedGameObject(null);
         if (lastSelectedCardObject != null && lastSelectedCardObject.activeInHierarchy)
         {
             EventSystem.current.SetSelectedGameObject(lastSelectedCardObject);
         }
         else if (spawnedCardDisplays.Count > 0)
-        {
+        { 
             lastSelectedCardObject = spawnedCardDisplays[0].gameObject;
             EventSystem.current.SetSelectedGameObject(lastSelectedCardObject);
         }
     }
 
-    public void Show() { gameObject.SetActive(true); StartCoroutine(SetFocusToCardCoroutine()); }
+    public void Show() { gameObject.SetActive(true); StartCoroutine(SetFocusToFirstCard()); }
     public void Hide() { gameObject.SetActive(false); }
 }

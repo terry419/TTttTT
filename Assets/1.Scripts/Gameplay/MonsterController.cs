@@ -23,8 +23,8 @@ public class MonsterController : MonoBehaviour
     private float damageTimer = 0f;
     private bool isTouchingPlayer = false;
 
-    // [수정] shotID 관련 로직은 BulletController로 이전되므로 이 변수는 더 이상 필요 없습니다.
-    public HashSet<string> hitShotIDs = new HashSet<string>();
+    private HashSet<string> _hitShotIDsThisFrame = new HashSet<string>(); 
+    private int _lastHitFrame;
 
     private bool isDead = false;
 
@@ -101,12 +101,10 @@ public class MonsterController : MonoBehaviour
 
     void OnCollisionEnter2D(Collision2D collision)
     {
-        Debug.Log($"[DAMAGE-DEBUG 1A/4] OnCollisionEnter2D 충돌 감지! 대상: {collision.gameObject.name}");
         CheckForPlayer(collision.gameObject);
     }
     void OnTriggerEnter2D(Collider2D other)
     {
-        Debug.Log($"[DAMAGE-DEBUG 1B/4] OnTriggerEnter2D 충돌 감지! 대상: {other.gameObject.name}");
         CheckForPlayer(other.gameObject);
     }
     private void CheckForPlayer(GameObject target)
@@ -165,5 +163,36 @@ public class MonsterController : MonoBehaviour
         isInvulnerable = true;
         yield return new WaitForSeconds(duration);
         isInvulnerable = false;
+    }
+    void OnCollisionExit2D(Collision2D collision)
+    {
+        LeavePlayer(collision.gameObject);
+    }
+    void OnTriggerExit2D(Collider2D other)
+    {
+        LeavePlayer(other.gameObject);
+    }
+
+    public bool RegisterHitByShot(string shotID, bool allowMultipleHits)
+    {
+        // 다중 히트가 허용되면, 항상 true를 반환하여 피해를 입게 합니다.
+        if (allowMultipleHits)
+        {
+            return true;
+        }
+
+        if (_lastHitFrame != Time.frameCount)
+        {
+            _hitShotIDsThisFrame.Clear();
+            _lastHitFrame = Time.frameCount;
+        }
+
+        if (_hitShotIDsThisFrame.Contains(shotID))
+        {
+            return false;
+        }
+
+        _hitShotIDsThisFrame.Add(shotID);
+        return true;
     }
 }

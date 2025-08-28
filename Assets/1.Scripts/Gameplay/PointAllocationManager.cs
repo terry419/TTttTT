@@ -136,8 +136,11 @@ public class PointAllocationManager : MonoBehaviour
         // PlayerInitializer의 테스트 카드 로직을 참고하여 동일하게 구성합니다.
         if (characterData.startingCard != null)
         {
-            cardManager.AddCard(characterData.startingCard);
-            cardManager.Equip(characterData.startingCard);
+            CardInstance instanceToEquip = cardManager.AddCard(characterData.startingCard);
+            if (instanceToEquip != null)
+            {
+                cardManager.Equip(instanceToEquip);
+            }
         }
         if (characterData.startingArtifacts != null)
         {

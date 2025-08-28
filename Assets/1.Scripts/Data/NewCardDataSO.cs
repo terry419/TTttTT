@@ -18,6 +18,8 @@ public class NewCardDataSO : ScriptableObject
     public StatModifiers statModifiers;
 
     [Header("[3] 플랫폼 기본 발사 사양")]
+    [Tooltip("동일 공격(샷건 등)의 여러 발사체가 한 대상에게 모두 피해를 줄 수 있는지 여부입니다.")]
+    public bool allowMultipleHits = false; // [신규 추가]
     [Tooltip("한 번에 발사하는 투사체의 총 개수입니다.")]
     public int projectileCount = 1;
     [Tooltip("투사체가 퍼지는 총 각도입니다. 0이면 모든 투사체가 같은 방향으로 나갑니다.")]

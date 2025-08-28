@@ -6,7 +6,7 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
-using Cysharp.Threading.Tasks; // UniTask 사용을 위해 추가
+using Cysharp.Threading.Tasks; 
 using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
@@ -31,6 +31,14 @@ public class GameManager : MonoBehaviour
             ServiceLocator.Register<GameManager>(this);
             DontDestroyOnLoad(transform.root.gameObject);
             SceneManager.sceneLoaded += OnSceneLoaded;
+
+            // 보상 생성 서비스가 없다면 동적으로 생성
+            if (!ServiceLocator.IsRegistered<RewardGenerationService>())
+            {
+                GameObject serviceGO = new GameObject("RewardGenerationService");
+                serviceGO.AddComponent<RewardGenerationService>();
+                // DontDestroyOnLoad는 RewardGenerationService의 Awake에서 처리됩니다.
+            }
         }
         else
         {
@@ -114,7 +122,6 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // [수정] 메소드 반환 타입을 UniTask로 변경하여 비동기 완료를 기다릴 수 있도록 함
     public async UniTask PreloadAssetsForRound(RoundDataSO roundData)
     {
         Debug.Log("--- [GameManager] v9.0 프리로딩 시작 ---");
@@ -142,20 +149,19 @@ public class GameManager : MonoBehaviour
 
         // ... (공용 프리팹, 몬스터 프리팹 수집 로직은 이전과 동일) ...
 
-        // [핵심 수정] CardManager의 카드를 순회하며 모듈 내부의 프리팹을 수집
-        foreach (var card in cardManager.equippedCards) // 이제 equippedCards는 NewCardDataSO 리스트
+
+        foreach (var card in cardManager.equippedCards) // equippedCards는 이제 CardInstance 리스트입니다.
         {
-            foreach (var moduleEntry in card.modules)
+            foreach (var moduleEntry in card.CardData.modules) // card.CardData.modules로 접근
             {
                 if (moduleEntry.moduleReference.RuntimeKeyIsValid())
                 {
-                    // 모듈 SO를 직접 로드해서 내용을 확인해야 함
                     CardEffectSO module = await resourceManager.LoadAsync<CardEffectSO>(moduleEntry.moduleReference.AssetGUID);
                     if (module is ProjectileEffectSO pModule)
                     {
-                        AddOrUpdatePreloadRequest(pModule.bulletPrefabReference, card.preloadCount);
+                        // card.preloadCount -> card.CardData.preloadCount로 접근
+                        AddOrUpdatePreloadRequest(pModule.bulletPrefabReference, card.CardData.preloadCount);
                     }
-                    // 다른 모듈 타입(AreaEffectSO 등)에 대한 처리도 여기에 추가 가능
                 }
             }
         }
