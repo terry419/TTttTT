@@ -46,10 +46,35 @@ public class GameManager : MonoBehaviour
             Destroy(transform.root.gameObject);
         }
     }
+    private void Start()
+    {
+        Debug.Log($"[GameManager] Start() 호출됨. (ID: {GetInstanceID()}) - 다른 매니저 참조 시작");
+        sceneTransitionManager = ServiceLocator.Get<SceneTransitionManager>();
+        inputManager = ServiceLocator.Get<InputManager>();
+
+        if (inputManager != null)
+        {
+            inputManager.LinkToGameManager(this);
+        }
+
+        if (sceneTransitionManager == null)
+        {
+            Debug.LogError("[GameManager] Start()에서 SceneTransitionManager를 찾지 못했습니다!");
+        }
+        if (inputManager == null)
+        {
+            Debug.LogError("[GameManager] Start()에서 InputManager를 찾지 못했습니다!");
+        }
+    }
     private void OnDestroy()
     {
         Debug.Log($"[생명주기] GameManager (ID: {GetInstanceID()}) - OnDestroy() 호출됨.");
         SceneManager.sceneLoaded -= OnSceneLoaded;
+
+        if (inputManager != null)
+        {
+            inputManager.UnlinkFromGameManager(this);
+        }
     }
 
     private void OnEnable()
@@ -75,16 +100,12 @@ public class GameManager : MonoBehaviour
         isFirstRound = true;
     }
 
-
-
-
     public void ChangeState(GameState newState)
     {
         if (CurrentState == newState && CurrentState != GameState.Gameplay) return;
         Debug.Log($"[GameManager] 상태 변경: {CurrentState} -> {newState}");
         CurrentState = newState;
 
-        inputManager ??= ServiceLocator.Get<InputManager>();
         if (inputManager != null)
         {
             Debug.Log($"[INPUT TRACE] GameManager.ChangeState: InputManager에게 입력 모드 변경 알림 전송. (요청 모드: {(newState == GameState.Gameplay ? "Gameplay" : "UI")})");

@@ -45,7 +45,6 @@ public class MainMenuUI : MonoBehaviour
         GameObject currentSelected = EventSystem.current.currentSelectedGameObject;
         if (currentSelected != lastSelected)
         {
-            Debug.Log($"[INPUT TRACE] EventSystem 포커스 변경: '{(lastSelected != null ? lastSelected.name : "없음")}' -> '{(currentSelected != null ? currentSelected.name : "없음")}'");
             lastSelected = currentSelected;
         }
     }

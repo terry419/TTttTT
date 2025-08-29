@@ -19,21 +19,24 @@ public class InputManager : MonoBehaviour
         InputActions = new PlayerInputActions();
         Debug.Log("[INPUT TRACE] InputManager.Awake: PlayerInputActions 인스턴스 생성 완료.");
     }
-
-    void OnEnable()
+    /// <summary>
+    /// GameManager가 자신의 준비가 끝났을 때 이 함수를 호출하여 이벤트 구독을 시작시킵니다.
+    /// </summary>
+    public void LinkToGameManager(GameManager gameManager)
     {
-        var gameManager = ServiceLocator.Get<GameManager>();
         if (gameManager != null)
         {
             gameManager.OnGameStateChanged += HandleGameStateChanged;
-            HandleGameStateChanged(gameManager.CurrentState);
+            HandleGameStateChanged(gameManager.CurrentState); // 초기 상태 적용
+            Debug.Log("[INPUT TRACE] InputManager: GameManager의 상태 변경 이벤트 구독 완료.");
         }
-        Debug.Log("[INPUT TRACE] InputManager.OnEnable: GameManager의 상태 변경 이벤트 구독 완료.");
     }
 
-    void OnDisable()
+    /// <summary>
+    /// GameManager가 파괴될 때 호출하여 이벤트 구독을 안전하게 해제합니다.
+    /// </summary>
+    public void UnlinkFromGameManager(GameManager gameManager)
     {
-        var gameManager = ServiceLocator.Get<GameManager>();
         if (gameManager != null)
         {
             gameManager.OnGameStateChanged -= HandleGameStateChanged;
