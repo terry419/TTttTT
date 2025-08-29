@@ -2,29 +2,51 @@
 using UnityEngine;
 using System.Collections.Generic;
 
+[RequireComponent(typeof(CircleCollider2D))]
 public class DamageZoneController : MonoBehaviour
 {
     private float _duration;
-    private float _damagePerSecond;
-    private const float DAMAGE_TICK_INTERVAL = 0.5f; // 0.5초마다 피해
+    private float _damagePerTick;
+    private float _tickInterval;
+
     private float _lifeTimer;
     private float _damageTickTimer;
-    // 개선 방안 적용: GC 부담을 줄이기 위해 MonsterController를 직접 저장
+    private CircleCollider2D _collider;
+
     private HashSet<MonsterController> _monstersInZone;
+
+    // [개선 방안 적용] new Vector3() GC 압박 감소를 위해 멤버 변수로 캐싱
+    private Vector3 _scaleCache = Vector3.one;
 
     void Awake()
     {
         _monstersInZone = new HashSet<MonsterController>();
+        _collider = GetComponent<CircleCollider2D>();
+        _collider.isTrigger = true;
     }
 
-    public void Initialize(float duration, float damagePerSecond)
+    // [수정] radius와 tickInterval 파라미터를 추가로 받습니다.
+    public void Initialize(float duration, float radius, float damagePerTick, float tickInterval)
     {
         _duration = duration;
-        _damagePerSecond = damagePerSecond;
+        _damagePerTick = damagePerTick;
+        // [수정] 0으로 설정 시 오류 방지를 위한 최소값 보정
+        _tickInterval = Mathf.Max(0.1f, tickInterval);
+
         _lifeTimer = 0f;
         _damageTickTimer = 0f;
-        // 개선 방안 적용: 풀링된 오브젝트 재사용 시 반드시 초기화
         _monstersInZone.Clear();
+
+        // [수정] 전달받은 radius로 콜라이더와 시각적 크기를 설정합니다.
+        if (radius > 0)
+        {
+            _collider.radius = radius;
+            float scale = radius * 2f; // Scale은 지름 기준
+            _scaleCache.Set(scale, scale, 1f);
+            // 자식 오브젝트(Visuals)가 있다면 그 크기를 조절하는 것이 더 좋습니다.
+            // 여기서는 일단 부모의 스케일을 조절합니다.
+            transform.localScale = _scaleCache;
+        }
     }
 
     void Update()
@@ -35,19 +57,18 @@ public class DamageZoneController : MonoBehaviour
             ServiceLocator.Get<PoolManager>()?.Release(gameObject);
             return;
         }
-        // 개선 방안 적용: 내부에 몬스터가 없으면 불필요한 연산 스킵
+
         if (_monstersInZone.Count == 0) return;
 
         _damageTickTimer += Time.deltaTime;
-        if (_damageTickTimer >= DAMAGE_TICK_INTERVAL)
+        if (_damageTickTimer >= _tickInterval)
         {
-            float damageToDeal = _damagePerSecond * DAMAGE_TICK_INTERVAL;
             // 리스트를 복사하지 않고 직접 순회
             foreach (var monster in _monstersInZone)
             {
                 if (monster != null && monster.gameObject.activeInHierarchy)
                 {
-                    monster.TakeDamage(damageToDeal);
+                    monster.TakeDamage(_damagePerTick);
                 }
             }
             _damageTickTimer = 0f;
@@ -56,23 +77,17 @@ public class DamageZoneController : MonoBehaviour
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag(Tags.Monster))
+        if (other.CompareTag(Tags.Monster) && other.TryGetComponent<MonsterController>(out var monster))
         {
-            if (other.TryGetComponent<MonsterController>(out var monster))
-            {
-                _monstersInZone.Add(monster);
-            }
+            _monstersInZone.Add(monster);
         }
     }
 
     void OnTriggerExit2D(Collider2D other)
     {
-        if (other.CompareTag(Tags.Monster))
+        if (other.CompareTag(Tags.Monster) && other.TryGetComponent<MonsterController>(out var monster))
         {
-            if (other.TryGetComponent<MonsterController>(out var monster))
-            {
-                _monstersInZone.Remove(monster);
-            }
+            _monstersInZone.Remove(monster);
         }
     }
 }
