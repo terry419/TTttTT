@@ -1,5 +1,7 @@
-using UnityEngine;
 using Cysharp.Threading.Tasks;
+using System.Threading;
+using UnityEngine;
+using UnityEngine.InputSystem; // Input System 네임스페이스 사용
 
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerController : MonoBehaviour
@@ -9,6 +11,7 @@ public class PlayerController : MonoBehaviour
     private Vector2 moveInput;
     private CardManager cardManager;
     private InputManager inputManager;
+    private CancellationTokenSource _attackLoopCts;
 
     [Header("공격 시작 위치")]
     public Transform firePoint;
@@ -24,14 +27,26 @@ public class PlayerController : MonoBehaviour
 
     void OnEnable()
     {
-        if (inputManager != null) inputManager.OnMove.AddListener(OnMove);
+        if (inputManager != null)
+        {
+            Debug.Log("[INPUT TRACE] PlayerController.OnEnable: 'Move' 액션 이벤트 구독 시도.");
+            inputManager.InputActions.Gameplay.Move.performed += HandleMove;
+            inputManager.InputActions.Gameplay.Move.canceled += HandleMove;
+        }
         RoundManager.OnRoundEnded += HandleRoundEnd;
     }
 
     void OnDisable()
     {
-        if (inputManager != null) inputManager.OnMove.RemoveListener(OnMove);
+        if (inputManager != null)
+        {
+            inputManager.InputActions.Gameplay.Move.performed -= HandleMove;
+            inputManager.InputActions.Gameplay.Move.canceled -= HandleMove;
+        }
         RoundManager.OnRoundEnded -= HandleRoundEnd;
+        _attackLoopCts?.Cancel();
+        _attackLoopCts?.Dispose();
+        _attackLoopCts = null;
     }
 
     private void OnDestroy()
@@ -41,23 +56,45 @@ public class PlayerController : MonoBehaviour
 
     private void HandleRoundEnd(bool success)
     {
-        CancelInvoke(nameof(PerformAttack));
+        _attackLoopCts?.Cancel();
+        _attackLoopCts?.Dispose();
+        _attackLoopCts = null;
     }
 
     public void StartAutoAttackLoop()
     {
-        CancelInvoke(nameof(PerformAttack));
-        if (stats == null) return;
-        float interval = 1f / stats.FinalAttackSpeed;
-        if (float.IsInfinity(interval) || interval <= 0) interval = 1f;
-        InvokeRepeating(nameof(PerformAttack), 0f, interval);
+        if (_attackLoopCts != null && !_attackLoopCts.IsCancellationRequested) return;
+
+        _attackLoopCts = new CancellationTokenSource();
+        AutoAttackLoop(_attackLoopCts.Token).Forget();
     }
+
+    private async UniTask AutoAttackLoop(CancellationToken token)
+    {
+        PerformAttack();
+
+        try
+        {
+            while (!token.IsCancellationRequested)
+            {
+                if (stats == null) return;
+                float interval = 1f / stats.FinalAttackSpeed;
+                if (float.IsInfinity(interval) || interval <= 0) interval = 1f;
+
+                await UniTask.Delay(System.TimeSpan.FromSeconds(interval), delayTiming: PlayerLoopTiming.FixedUpdate, cancellationToken: token);
+                PerformAttack();
+            }
+        }
+        catch (System.OperationCanceledException)
+        {
+            Debug.Log("[PlayerController] AutoAttackLoop safely cancelled.");
+        }
+    }
+
     private async void PerformAttack()
     {
         if (cardManager?.activeCard == null) return;
-
         var cardInstance = cardManager.activeCard;
-        // [수정] Context에 CardInstance 자체를 전달
         ICardAction action = cardInstance.CardData.CreateAction();
         var context = new CardActionContext(cardInstance, stats, firePoint);
         await action.Execute(context);
@@ -65,12 +102,18 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
+        if (stats != null && moveInput != Vector2.zero)
+        {
+            Debug.Log($"[INPUT TRACE] PlayerController.FixedUpdate: moveInput({moveInput}) 값으로 속도 적용.");
+        }
         if (stats != null) rb.velocity = moveInput * stats.FinalMoveSpeed;
     }
 
-    private void OnMove(Vector2 input)
+    private void HandleMove(InputAction.CallbackContext context)
     {
-        moveInput = input;
+        moveInput = context.ReadValue<Vector2>();
+        Debug.Log($"[INPUT TRACE] PlayerController.HandleMove: 'Move' 액션 이벤트 수신! 입력값: {moveInput}");
+
     }
 
     public void Heal(float amount)

@@ -1,7 +1,8 @@
-using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
+using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
 public class MonsterController : MonoBehaviour
@@ -42,8 +43,13 @@ public class MonsterController : MonoBehaviour
             currentHealth = monsterData.maxHealth;
         }
         isInvulnerable = false;
-    }
 
+        var playerController = ServiceLocator.Get<PlayerController>();
+        if (playerController != null)
+        {
+            playerTransform = playerController.transform;
+        }
+    }
     void OnDisable()
     {
         if (ServiceLocator.IsRegistered<MonsterManager>())
@@ -77,28 +83,30 @@ public class MonsterController : MonoBehaviour
 
     void FixedUpdate()
     {
-        var playerController = ServiceLocator.Get<PlayerController>();
-        if (playerController != null)
+        if (playerTransform == null)
         {
-            playerTransform = playerController.transform;
-        }
-        else
-        {
-            this.enabled = false;
-            return;
+            var playerController = ServiceLocator.Get<PlayerController>();
+            if (playerController != null)
+            {
+                playerTransform = playerController.transform;
+            }
+            else
+            {
+                // 아직 플레이어를 찾을 수 없으면 아무것도 하지 않고 대기
+                rb.velocity = Vector2.zero;
+                return;
+            }
         }
 
-        if (isInvulnerable || playerTransform == null || isDead)
+        if (isInvulnerable || isDead)
         {
             rb.velocity = Vector2.zero;
             return;
         }
+
         Vector2 direction = (playerTransform.position - transform.position).normalized;
         rb.velocity = direction * moveSpeed;
     }
-
-    // [수정] OnTriggerEnter2D 삭제 -> BulletController가 처리
-
     void OnCollisionEnter2D(Collision2D collision)
     {
         CheckForPlayer(collision.gameObject);

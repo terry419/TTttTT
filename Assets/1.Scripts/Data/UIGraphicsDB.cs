@@ -6,23 +6,10 @@ using System.Linq;
 [CreateAssetMenu(fileName = "UIGraphicsDB", menuName = "GameData/UIGraphics Database")]
 public class UIGraphicsDB : ScriptableObject
 {
-    // --- ̱(Singleton)  ---
-    private static UIGraphicsDB _instance;
-    public static UIGraphicsDB Instance
-    {
-        get
-        {
-            if (_instance == null)
-            {
-                _instance = Resources.Load<UIGraphicsDB>("UIGraphicsDB");
-                if (_instance == null)
-                    Debug.LogError("UIGraphicsDB could not be loaded from Resources!");
-            }
-            return _instance;
-        }
-    }
+    [Tooltip("요청한 등급의 스프라이트를 찾지 못했을 때 반환할 기본 이미지입니다.")]
+    public Sprite defaultSprite;
 
-    // ---   ---
+
     [System.Serializable]
     public struct RaritySpriteEntry
     {
@@ -31,22 +18,21 @@ public class UIGraphicsDB : ScriptableObject
     }
 
     public List<RaritySpriteEntry> raritySprites;
-
-    // ---    Լ ---
     private Dictionary<CardRarity, Sprite> raritySpriteDict;
 
     private void OnEnable()
     {
-        // Ʈ ųʸ ȯϿ ˻ ӵ Դϴ.
         raritySpriteDict = raritySprites.ToDictionary(x => x.rarity, x => x.sprite);
     }
-
     public Sprite GetRaritySprite(CardRarity rarity)
     {
+        // 딕셔너리가 준비되었고, 요청한 키가 존재할 경우에만 정상 반환
         if (raritySpriteDict != null && raritySpriteDict.TryGetValue(rarity, out Sprite sprite))
         {
             return sprite;
         }
-        return null; // شϴ Ʈ  
+
+        // 그 외의 모든 실패 상황에서는 기본 스프라이트를 반환하여 오류 방지
+        return defaultSprite;
     }
 }

@@ -1,5 +1,7 @@
+using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using UnityEngine;
 
 public class CardManager : MonoBehaviour
@@ -16,6 +18,7 @@ public class CardManager : MonoBehaviour
     public CardInstance activeCard;
 
     private CharacterStats playerStats;
+    private CancellationTokenSource _cardSelectionCts;
 
     void Awake()
     {
@@ -31,9 +34,19 @@ public class CardManager : MonoBehaviour
     }
 
     void OnEnable() { RoundManager.OnRoundEnded += HandleRoundEnd; }
-    void OnDisable() { RoundManager.OnRoundEnded -= HandleRoundEnd; }
-    private void HandleRoundEnd(bool success) { CancelInvoke(nameof(SelectActiveCard)); }
-
+    void OnDisable()
+    {
+        RoundManager.OnRoundEnded -= HandleRoundEnd;
+        _cardSelectionCts?.Cancel();
+        _cardSelectionCts?.Dispose();
+        _cardSelectionCts = null;
+    }
+    private void HandleRoundEnd(bool success)
+    {
+        _cardSelectionCts?.Cancel();
+        _cardSelectionCts?.Dispose();
+        _cardSelectionCts = null;
+    }
     public void LinkToNewPlayer(CharacterStats newPlayerStats)
     {
         playerStats = newPlayerStats;
@@ -134,17 +147,36 @@ public class CardManager : MonoBehaviour
 
     public void StartCardSelectionLoop()
     {
-        CancelInvoke(nameof(SelectActiveCard));
-        float interval = (playerStats != null) ? playerStats.cardSelectionInterval : 10f;
-        InvokeRepeating(nameof(SelectActiveCard), 0f, interval);
+        if (_cardSelectionCts != null && !_cardSelectionCts.IsCancellationRequested) return;
+        _cardSelectionCts = new CancellationTokenSource();
+        SelectActiveCardLoop(_cardSelectionCts.Token).Forget();
+    }
+
+    private async UniTaskVoid SelectActiveCardLoop(CancellationToken token)
+    {
         SelectActiveCard();
+
+        try
+        {
+            while (!token.IsCancellationRequested)
+            {
+                float interval = (playerStats != null) ? playerStats.cardSelectionInterval : 10f;
+                await UniTask.Delay(System.TimeSpan.FromSeconds(interval), cancellationToken: token);
+
+                SelectActiveCard();
+            }
+        }
+        catch (System.OperationCanceledException)
+        {
+            Debug.Log("[CardManager] SelectActiveCardLoop safely cancelled.");
+        }
     }
 
     private void SelectActiveCard()
     {
         if (equippedCards.Count == 0)
         {
-            activeCard = null;
+            Debug.LogWarning("[CARD SELECT] 활성 카드를 선택하지 못했습니다. (장착된 카드가 없습니다)");
             return;
         }
 
@@ -173,12 +205,19 @@ public class CardManager : MonoBehaviour
 
         if (activeCard == null && selectableCards.Count > 0)
         {
-            // 부동 소수점 오류 등으로 선택되지 않았을 경우, 안전하게 마지막 카드를 선택
             activeCard = selectableCards.Last();
         }
 
+        // ▼▼▼ [수정] 기존 if문을 아래 블록으로 교체합니다 ▼▼▼
         if (activeCard != null)
-            Debug.Log($"[CardManager] 활성 카드 선택됨: {activeCard.CardData.basicInfo.cardName} ({activeCard.InstanceId})");
+        {
+            Debug.Log($"<color=cyan>[CARD SELECT]</color> 활성 카드 선택됨: {activeCard.CardData.basicInfo.cardName} (Lv.{activeCard.EnhancementLevel + 1})");
+        }
+        else
+        {
+            // 이 경우는 selectableCards는 있었으나 어떤 이유로 선택되지 않은 엣지 케이스입니다.
+            Debug.LogWarning("[CARD SELECT] 활성 카드를 선택하지 못했습니다. (선택 가능한 카드가 있었으나, 선택 로직에 실패했습니다)");
+        }
     }
 
     public void ClearAndResetDeck()

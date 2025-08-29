@@ -169,14 +169,16 @@ public class CardRewardUIManager : MonoBehaviour
             var cardManager = ServiceLocator.Get<CardManager>();
             if (cardManager != null)
             {
-                canSynthesize = cardManager.ownedCards.Any(card => card.CardData.basicInfo.cardID == selectedDisplay.CurrentCard.basicInfo.cardID);
+                var baseCardData = selectedDisplay.CurrentCard;
+                canSynthesize = cardManager.ownedCards.Any(card =>
+                    card.CardData.basicInfo.rarity == baseCardData.basicInfo.rarity &&
+                    card.CardData.basicInfo.type == baseCardData.basicInfo.type);
             }
         }
-        
+
         synthesizeButton.gameObject.SetActive(true);
         synthesizeButton.interactable = canSynthesize;
     }
-
     private void TransitionToMap()
     {
         ServiceLocator.Get<RouteSelectionController>()?.Show();

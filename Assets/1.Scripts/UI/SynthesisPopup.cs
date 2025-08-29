@@ -28,6 +28,12 @@ public class SynthesisPopup : MonoBehaviour
         gameObject.SetActive(false);
     }
 
+    void OnEnable()
+    {
+        // UI가 활성화된 후 포커스를 설정하도록 코루틴을 여기서 시작합니다.
+        StartCoroutine(SetInitialPopupFocus());
+    }
+
     public void Initialize(NewCardDataSO baseCard, List<CardInstance> materialChoices, Action<CardInstance> confirmCallback, Action cancelCallback)
     {
         gameObject.SetActive(true);
@@ -55,7 +61,6 @@ public class SynthesisPopup : MonoBehaviour
         }
 
         SetupNavigation();
-        StartCoroutine(SetInitialPopupFocus());
         UpdateConfirmButton();
     }
 

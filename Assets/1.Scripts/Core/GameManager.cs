@@ -21,7 +21,8 @@ public class GameManager : MonoBehaviour
     public event System.Action<GameState> OnGameStateChanged;
 
     private SceneTransitionManager sceneTransitionManager;
-    
+    private InputManager inputManager;
+
 
     private void Awake()
     {
@@ -66,18 +67,38 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private void Start()
+    public void SetupForTest(CharacterDataSO character, int allocatedPoints)
     {
-        sceneTransitionManager = ServiceLocator.Get<SceneTransitionManager>();
-        if (sceneTransitionManager == null) Debug.LogError("!!! GameManager: SceneTransitionManager를 찾을 수 없음!!!");
+        Debug.Log($"[GameManager] 테스트 모드 설정: Character={character.characterId}, Points={allocatedPoints}");
+        SelectedCharacter = character;
+        AllocatedPoints = allocatedPoints;
+        isFirstRound = true;
     }
+
+
+
 
     public void ChangeState(GameState newState)
     {
         if (CurrentState == newState && CurrentState != GameState.Gameplay) return;
-
         Debug.Log($"[GameManager] 상태 변경: {CurrentState} -> {newState}");
         CurrentState = newState;
+
+        inputManager ??= ServiceLocator.Get<InputManager>();
+        if (inputManager != null)
+        {
+            Debug.Log($"[INPUT TRACE] GameManager.ChangeState: InputManager에게 입력 모드 변경 알림 전송. (요청 모드: {(newState == GameState.Gameplay ? "Gameplay" : "UI")})");
+            if (newState == GameManager.GameState.Gameplay)
+            {
+                inputManager.EnableGameplayControls();
+            }
+            else
+            {
+                inputManager.EnableUIControls();
+                Debug.LogError("[INPUT TRACE] GameManager.ChangeState: InputManager를 찾을 수 없어 입력 모드를 변경할 수 없습니다!");
+            }
+        }
+
         OnGameStateChanged?.Invoke(newState);
 
         if (newState == GameState.Pause)
@@ -101,10 +122,11 @@ public class GameManager : MonoBehaviour
 
         if (!string.IsNullOrEmpty(sceneName))
         {
-            Debug.Log($"[GameManager] 씬 로드 요청: {sceneName}");
+            Debug.Log($"[INPUT TRACE] GameManager.ChangeState: SceneTransitionManager에게 '{sceneName}' 씬 로드 요청.");
             sceneTransitionManager.LoadScene(sceneName);
         }
     }
+
 
     private string GetSceneNameForState(GameState state)
     {
@@ -147,8 +169,6 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        // ... (공용 프리팹, 몬스터 프리팹 수집 로직은 이전과 동일) ...
-
 
         foreach (var card in cardManager.equippedCards) // equippedCards는 이제 CardInstance 리스트입니다.
         {
@@ -178,13 +198,11 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator GameOverRoutine()
     {
-        // ▼▼▼ [추가] 씬을 전환하기 전에 모든 풀링된 오브젝트를 파괴합니다. ▼▼▼
         var poolManager = ServiceLocator.Get<PoolManager>();
         if (poolManager != null)
         {
             poolManager.DestroyAllPooledObjects();
         }
-        // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
         var popupController = ServiceLocator.Get<PopupController>();
         if (popupController != null)
@@ -194,7 +212,6 @@ public class GameManager : MonoBehaviour
         yield return new WaitForSecondsRealtime(3f); // Use real-time seconds
         Time.timeScale = 1; // Resume game time before changing scene
 
-        // ▼▼▼ 메인 메뉴 씬으로 바꾸기 직전에 이 부분을 추가하세요! ▼▼▼
         var cardManager = ServiceLocator.Get<CardManager>();
         if (cardManager != null)
         {
@@ -219,33 +236,6 @@ public class GameManager : MonoBehaviour
 
         var mapManager = ServiceLocator.Get<MapManager>();
         var campaignManager = ServiceLocator.Get<CampaignManager>();
-
-#if UNITY_EDITOR
-        if (mapManager == null || !mapManager.IsMapInitialized)
-        {
-            Debug.LogWarning("[GameManager] 테스트 모드 감지: 필수 데이터 자동 설정 시작...");
-            MapGenerator mapGenerator = FindObjectOfType<MapGenerator>();
-            if (mapGenerator != null)
-            {
-                List<MapNode> mapData = mapGenerator.Generate();
-                mapManager.InitializeMap(mapData, mapGenerator.MapWidth, mapGenerator.MapHeight);
-                Debug.Log("[GameManager] 테스트용 맵 데이터 생성 및 초기화 완료.");
-            }
-            else
-            {
-                Debug.LogError("[GameManager] 테스트 모드 설정 실패: 씬에서 MapGenerator를 찾을 수 없습니다!");
-                yield break;
-            }
-
-            if (SelectedCharacter == null)
-            {
-                SelectedCharacter = ServiceLocator.Get<DataManager>().GetCharacter(CharacterIDs.Warrior);
-                Debug.Log("[GameManager] 테스트용 기본 캐릭터 'warrior' 설정 완료.");
-            }
-            AllocatedPoints = 0;
-            isFirstRound = true;
-        }
-#endif
         yield return null;
 
         float timeout = 5f;
@@ -299,4 +289,5 @@ public class GameManager : MonoBehaviour
         }
         Debug.Log("--- [GameManager] StartRoundAfterSceneLoad 코루틴 정상 종료 ---");
     }
+
 }

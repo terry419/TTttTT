@@ -49,6 +49,7 @@ public class SceneTransitionManager : MonoBehaviour
 
     public void LoadScene(string sceneName)
     {
+        Debug.Log($"[INPUT TRACE ⑩] SceneTransitionManager.LoadScene: '{sceneName}' 씬 로드를 위한 FadeOut 코루틴 시작.");
         StopAllCoroutines();
         StartCoroutine(FadeOutAndLoad(sceneName));
     }

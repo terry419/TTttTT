@@ -198,9 +198,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9f795391a3fad4b4da5d844bff892f75, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  OnMove:
-    m_PersistentCalls:
-      m_Calls: []
+  playerActionsAsset: {fileID: -944628639613478452, guid: 4e82ee408258fcb45be2830545c2f47a, type: 3}
 --- !u!114 &4369853337183567183
 MonoBehaviour:
   m_ObjectHideFlags: 0

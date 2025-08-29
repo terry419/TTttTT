@@ -1,8 +1,8 @@
 using System.Collections;
 using UnityEngine;
-using System.Collections.Generic; // [1] using 문 추가
-using System.Linq;                 // [2] using 문 추가
-
+using System.Collections.Generic; 
+using System.Linq;                 
+using System.Text; 
 /// <summary>
 /// 개별 전투 라운드의 시작, 진행, 종료를 관리하는 클래스입니다.
 /// 몬스터 스폰, 킬 카운트, 제한 시간 등 라운드와 관련된 모든 핵심 로직을 담당합니다.
@@ -78,10 +78,50 @@ public class RoundManager : MonoBehaviour
         currentRoundData = roundData;
         Debug.Log($"[{GetType().Name}] 새로운 라운드 시작: '{currentRoundData.name}' (목표 킬: {currentRoundData.killGoal}, 제한 시간: {currentRoundData.roundDuration}초)");
 
+        var cardManager = ServiceLocator.Get<CardManager>();
+        if (cardManager != null)
+        {
+            StringBuilder cardSb = new StringBuilder();
+            cardSb.AppendLine("--- 라운드 시작 카드 정보 ---");
+            cardSb.AppendLine($"소유 카드: {cardManager.ownedCards.Count}장 / {cardManager.maxOwnedSlots}슬롯");
+            cardSb.AppendLine($"장착 카드: {cardManager.equippedCards.Count}장 / {cardManager.maxEquipSlots}슬롯");
+
+            cardSb.AppendLine("--- 소유 카드 목록 ---");
+            if (cardManager.ownedCards.Count == 0)
+            {
+                cardSb.AppendLine("없음");
+            }
+            else
+            {
+                foreach (var card in cardManager.ownedCards)
+                {
+                    cardSb.AppendLine($"- {card.CardData.basicInfo.cardName} (Lv.{card.EnhancementLevel + 1})");
+                }
+            }
+
+            cardSb.AppendLine("--- 장착 카드 목록 ---");
+            if (cardManager.equippedCards.Count == 0)
+            {
+                cardSb.AppendLine("없음");
+            }
+            else
+            {
+                foreach (var card in cardManager.equippedCards)
+                {
+                    cardSb.AppendLine($"- {card.CardData.basicInfo.cardName} (Lv.{card.EnhancementLevel + 1})");
+                }
+            }
+            Debug.Log(cardSb.ToString());
+        }
+
+
+
         // --- 플레이어 스탯 로그 (라운드 시작) ---
         var playerController = ServiceLocator.Get<PlayerController>();
         if (playerController != null)
         {
+
+
             var playerStats = playerController.GetComponent<CharacterStats>();
             if (playerStats != null)
             {

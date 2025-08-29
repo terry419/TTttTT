@@ -30,6 +30,8 @@ public class DataManager : MonoBehaviour
     private readonly Dictionary<string, MonsterDataSO> monsterDataDict = new Dictionary<string, MonsterDataSO>();
     private readonly Dictionary<string, CardEffectSO> moduleDataDict = new Dictionary<string, CardEffectSO>();
 
+    private UIGraphicsDB uiGraphicsDB;
+
     public IEnumerator LoadAllDataAsync()
     {
         var resourceManager = ServiceLocator.Get<ResourceManager>();
@@ -41,6 +43,9 @@ public class DataManager : MonoBehaviour
         var characterHandle = resourceManager.LoadAllAsync<CharacterDataSO>("data_character");
         var monsterHandle = resourceManager.LoadAllAsync<MonsterDataSO>("data_monster");
         var moduleHandle = resourceManager.LoadAllAsync<CardEffectSO>("data_effect");
+
+        var uiDbHandle = resourceManager.LoadAllAsync<UIGraphicsDB>("data_ui");
+
 
         yield return newCardHandle;
         yield return artifactHandle;
@@ -63,6 +68,28 @@ public class DataManager : MonoBehaviour
 
         if (moduleHandle.Status == AsyncOperationStatus.Succeeded)
             foreach (var module in moduleHandle.Result) { if (!moduleDataDict.ContainsKey(module.name)) moduleDataDict.Add(module.name, module); }
+
+        if (uiDbHandle.Status == AsyncOperationStatus.Succeeded && uiDbHandle.Result.Count > 0)
+        {
+            uiGraphicsDB = uiDbHandle.Result[0];
+            ServiceLocator.Register<UIGraphicsDB>(uiGraphicsDB);
+            Debug.Log("[DataManager] UIGraphicsDB 로드 및 ServiceLocator 등록 완료 (Addressables).");
+        }
+        else
+        {
+            Debug.LogWarning("[DataManager] Addressables를 통해 UIGraphicsDB를 로드하는 데 실패했습니다. Resources 폴더에서 폴백 로드를 시도합니다.");
+            // 2차 시도: Resources.Load
+            uiGraphicsDB = Resources.Load<UIGraphicsDB>("UIGraphicsDB");
+            if (uiGraphicsDB != null)
+            {
+                ServiceLocator.Register<UIGraphicsDB>(uiGraphicsDB);
+                Debug.Log("[DataManager] UIGraphicsDB 로드 및 ServiceLocator 등록 완료 (Resources Fallback).");
+            }
+            else
+            {
+                Debug.LogError("[DataManager] CRITICAL: Addressables와 Resources 양쪽 모두에서 UIGraphicsDB를 로드할 수 없습니다!");
+            }
+        }
     }
 
     public NewCardDataSO GetNewCard(string id) => GetData(id, newCardDataDict);

@@ -26,7 +26,7 @@ public class CardDisplay : MonoBehaviour
         if (cardIconImage != null) cardIconImage.sprite = cardData.basicInfo.cardIcon;
         if (rarityImage != null)
         {
-            rarityImage.sprite = UIGraphicsDB.Instance.GetRaritySprite(cardData.basicInfo.rarity);
+            rarityImage.sprite = ServiceLocator.Get<UIGraphicsDB>().GetRaritySprite(cardData.basicInfo.rarity);
         }
         if (selectButton != null)
         {

@@ -24,7 +24,6 @@ public class LifestealEffectSO : CardEffectSO
     /// </summary>
     public override void Execute(EffectContext context)
     {
-        Debug.Log($"<color=lime>[{GetType().Name}]</color> '{this.name}' ½ÇÇà. ÈíÇ÷·ü: {lifestealPercentage}%.");
         if (context.Caster != null && context.DamageDealt > 0)
         {
             float healAmount = context.DamageDealt * (lifestealPercentage / 100f);
