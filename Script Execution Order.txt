@@ -3,8 +3,9 @@ DataManager -100
 PrefabProvider -99
 CampaignManager -98
 MapManager -97
+SceneTransitionManager -92
+InputManager -91
 GameManager -90
-InputManager -89
 EffectExecutor -88
 StatusEffectManager -87
 CardManager -86

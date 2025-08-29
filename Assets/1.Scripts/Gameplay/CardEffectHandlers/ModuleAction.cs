@@ -71,8 +71,6 @@ public class ModuleAction : ICardAction
 
         if (projectileCount > 0)
         {
-            // [수정] 사용자의 분석이 맞았습니다. N-1이 아닌 N으로 나누어 각도 간격을 계산해야 합니다.
-            // 이렇게 하면 360도 분할 시 첫 발과 마지막 발이 겹치는 문제가 해결됩니다.
             float angleStep = platform.spreadAngle / projectileCount;
             float startAngle = baseAngle - platform.spreadAngle * 0.5f + angleStep * 0.5f;
 
@@ -94,7 +92,7 @@ public class ModuleAction : ICardAction
             {
                 bullet.transform.position = context.SpawnPoint.position;
                 bullet.transform.rotation = rotation;
-                bullet.Initialize(direction, platform.baseSpeed * pModule.speed, totalDamage, shotID, platform, pModule, context.Caster);
+                bullet.Initialize(direction, platform.baseSpeed * pModule.speed, totalDamage, shotID, platform, pModule, context.Caster, context.CardInstance); // 마지막에 context.CardInstance 추가
             }
         }
     }

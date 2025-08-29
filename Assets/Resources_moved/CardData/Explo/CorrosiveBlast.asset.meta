@@ -1,9 +1,8 @@
 fileFormatVersion: 2
-guid: 2a043bfa240277e43b7834ad43063174
-labels:
-- Card
-PrefabImporter:
+guid: f356750672b9a1149a0479cf35ff9a5c
+NativeFormatImporter:
   externalObjects: {}
+  mainObjectFileID: 11400000
   userData: 
   assetBundleName: 
   assetBundleVariant: 

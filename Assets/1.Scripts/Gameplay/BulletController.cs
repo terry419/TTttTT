@@ -23,6 +23,7 @@ public class BulletController : MonoBehaviour
     private CharacterStats casterStats;
     private int _bounceCountForPayload = 0;
     private NewCardDataSO sourcePlatform;
+    private CardInstance sourceCardInstance;
 
     private void Awake()
     {
@@ -30,7 +31,7 @@ public class BulletController : MonoBehaviour
     }
 
     // [수정] NewCardDataSO를 사용하는 Initialize 메소드만 남깁니다.
-    public void Initialize(Vector2 direction, float initialSpeed, float damage, string shotID, NewCardDataSO platform, ProjectileEffectSO module, CharacterStats caster)
+    public void Initialize(Vector2 direction, float initialSpeed, float damage, string shotID, NewCardDataSO platform, ProjectileEffectSO module, CharacterStats caster, CardInstance instance)
     {
         this._direction = direction.normalized;
         this.speed = initialSpeed;
@@ -39,6 +40,7 @@ public class BulletController : MonoBehaviour
         // this.SourceCard = null; // 이 줄 삭제
         this.SourceModule = module;
         this.sourcePlatform = platform;
+        this.sourceCardInstance = instance;
         this._currentPierceCount = module.pierceCount;
         this._currentRicochetCount = module.ricochetCount;
         this.isTracking = module.isTracking;
@@ -142,9 +144,14 @@ public class BulletController : MonoBehaviour
                     Caster = this.casterStats,
                     SpawnPoint = hitTarget,
                     Platform = this.sourcePlatform,
+                    SourceCardInstance = this.sourceCardInstance,
                     HitTarget = hitTarget.GetComponent<MonsterController>(),
                     HitPosition = hitTarget.position
                 };
+                if (payload.overrideBaseDamage > 0 && payload.onBounceNumber > 0)
+                {
+                    context.BaseDamageOverride = payload.overrideBaseDamage;
+                }
                 module.Execute(context);
             }
         }

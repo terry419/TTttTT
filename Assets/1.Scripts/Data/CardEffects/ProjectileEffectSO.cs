@@ -12,11 +12,12 @@ public class SequentialPayload
 {
     [Tooltip("이 효과가 발동될 튕김 횟수입니다. (0 = 최초 피격 시)")]
     public int onBounceNumber = 0;
-
     [Tooltip("발동시킬 효과 모듈입니다.")]
     public AssetReferenceT<CardEffectSO> effectToTrigger;
-}
 
+    [Tooltip("여기에 0보다 큰 값을 입력하면, 카드의 기본 데미지를 무시하고 이 데미지를 기본값으로 사용합니다.")]
+    public float overrideBaseDamage = 0f;
+}
 /// <summary>
 /// 투사체에 관통, 튕김, 추적 등의 특수 능력을 부여하는 모듈입니다.
 /// </summary>
@@ -98,7 +99,7 @@ public class ProjectileEffectSO : CardEffectSO, IPreloadable
             Vector2 direction = context.Caster.transform.right;
 
             // 투사체 모듈의 자체 속성(속도, 관통 등)을 사용하여 초기화합니다.
-            bullet.Initialize(direction, activePlatform.baseSpeed * this.speed, totalDamage, shotID, activePlatform, this, context.Caster);
+            bullet.Initialize(direction, activePlatform.baseSpeed * this.speed, totalDamage, shotID, activePlatform, this, context.Caster, context.SourceCardInstance);
         }
     }
 

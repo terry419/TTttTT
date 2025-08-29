@@ -11,6 +11,9 @@ public class EffectContext
     public List<Vector2> FiringDirections;  // 계산된 최종 발사 방향 목록
     public NewCardDataSO Platform;          // [추가] 이 효과를 발동시킨 원본 카드(플랫폼)
 
+    public float BaseDamageOverride = 0f; // 덮어쓸 기본 데미지. 0이면 사용 안 함.
+    public CardInstance SourceCardInstance;
+
     // --- 실행 중 변경되는 데이터 (모듈이 채우거나 참조) ---
     public MonsterController HitTarget;     // 현재 피격된 대상
     public Vector3 HitPosition;             // 피격이 발생한 위치
@@ -29,6 +32,9 @@ public class EffectContext
         SpawnPoint = null;
         HitTarget = null;
         Platform = null; // [추가] 플랫폼 정보 초기화
+
+        BaseDamageOverride = 0f;
+        SourceCardInstance = null;
 
         if (FiringDirections != null) FiringDirections.Clear();
         else FiringDirections = new List<Vector2>();

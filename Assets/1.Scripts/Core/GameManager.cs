@@ -106,18 +106,11 @@ public class GameManager : MonoBehaviour
         Debug.Log($"[GameManager] 상태 변경: {CurrentState} -> {newState}");
         CurrentState = newState;
 
-        if (inputManager != null)
-        {
-            Debug.Log($"[INPUT TRACE] GameManager.ChangeState: InputManager에게 입력 모드 변경 알림 전송. (요청 모드: {(newState == GameState.Gameplay ? "Gameplay" : "UI")})");
-            if (newState == GameManager.GameState.Gameplay)
-            {
-                inputManager.EnableGameplayControls();
-            }
-            else
-            {
-                inputManager.EnableUIControls();
-                Debug.LogError("[INPUT TRACE] GameManager.ChangeState: InputManager를 찾을 수 없어 입력 모드를 변경할 수 없습니다!");
-            }
+        // InputManager의 상태 변경은 OnGameStateChanged 이벤트를 통해 처리됩니다.
+        // 직접 호출 로직을 제거하여 중복 호출 및 잘못된 오류 로그 문제를 해결합니다.
+        if (inputManager == null)
+        { 
+            Debug.LogWarning("[GameManager] InputManager가 아직 참조되지 않았습니다. 다음 프레임에 처리될 예정입니다.");
         }
 
         OnGameStateChanged?.Invoke(newState);

@@ -19,6 +19,20 @@ public class PlayerInitializer : MonoBehaviour
             Debug.LogError("[INIT-DEBUG] CRITICAL: 적용할 캐릭터 데이터를 찾을 수 없습니다! 여기서 중단됩니다.");
             return;
         }
+
+        // 캐릭터 외형(스프라이트) 변경 로직 추가
+        SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
+        if (spriteRenderer != null && characterToLoad.illustration != null)
+        {
+            spriteRenderer.sprite = characterToLoad.illustration;
+            Debug.Log($"[PlayerInitializer] 캐릭터 외형을 {characterToLoad.characterName}의 것으로 변경했습니다.");
+        }
+        else
+        {
+            if(spriteRenderer == null) Debug.LogWarning("[PlayerInitializer] SpriteRenderer 컴포넌트를 찾지 못해 외형을 변경할 수 없습니다.");
+            if(characterToLoad.illustration == null) Debug.LogWarning($"[PlayerInitializer] {characterToLoad.characterName}의 illustration(스프라이트)이 설정되지 않아 외형을 변경할 수 없습니다.");
+        }
+
         playerStats.stats = characterToLoad.baseStats;
 
         var cardManager = ServiceLocator.Get<CardManager>();

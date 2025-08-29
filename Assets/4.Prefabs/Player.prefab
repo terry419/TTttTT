@@ -421,13 +421,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 660cf034fba08a24ab21ed0a549c46e5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  testStartingCards:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 11400000, guid: 48a2e52f9e04d65428b758da209d864e, type: 2}
   testStartingNewCards:
-  - {fileID: 11400000, guid: 2d2eed0fc07052f488ecfa7796033564, type: 2}
+  - {fileID: 11400000, guid: 36061c8a8c99e4e4482d363102725d3f, type: 2}
 --- !u!58 &601887131027535560
 CircleCollider2D:
   m_ObjectHideFlags: 0
