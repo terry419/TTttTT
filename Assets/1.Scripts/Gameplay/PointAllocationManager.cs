@@ -134,12 +134,17 @@ public class PointAllocationManager : MonoBehaviour
 
         // 시작 카드와 유물을 장착'만' 해둡니다. (스탯 계산 X)
         // PlayerInitializer의 테스트 카드 로직을 참고하여 동일하게 구성합니다.
-        if (characterData.startingCard != null)
+        if (characterData.startingCards != null)
         {
-            CardInstance instanceToEquip = cardManager.AddCard(characterData.startingCard);
-            if (instanceToEquip != null)
+            foreach (var cardData in characterData.startingCards)
             {
-                cardManager.Equip(instanceToEquip);
+                if (cardData == null) continue;
+
+                CardInstance instanceToEquip = cardManager.AddCard(cardData);
+                if (instanceToEquip != null)
+                {
+                    cardManager.Equip(instanceToEquip);
+                }
             }
         }
         if (characterData.startingArtifacts != null)

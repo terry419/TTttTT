@@ -48,15 +48,17 @@ public class PlayerInitializer : MonoBehaviour
             playerStats.ApplyPermanentStats(permanentStats);
             playerStats.ApplyAllocatedPoints(gameManager.AllocatedPoints, permanentStats);
 
-            if (characterToLoad.startingCard != null && cardManager != null)
+            if (characterToLoad.startingCards != null && cardManager != null)
             {
-                CardInstance instanceToEquip = cardManager.AddCard(characterToLoad.startingCard);
-                if (instanceToEquip != null)
+                foreach (var cardData in characterToLoad.startingCards)
                 {
-                    cardManager.Equip(instanceToEquip);
+                    CardInstance instanceToEquip = cardManager.AddCard(cardData);
+                    if (instanceToEquip != null)
+                    {
+                        cardManager.Equip(instanceToEquip);
+                    }
                 }
             }
-
             if (characterToLoad.startingArtifacts != null && artifactManager != null)
             {
                 foreach (var artifact in characterToLoad.startingArtifacts)
