@@ -1,5 +1,33 @@
 using UnityEngine;
+using System; // [Serializable] 속성을 사용하기 위해 추가
 
+/// <summary>
+/// 지속 피해(DoT)의 유형과 값을 정의하는 클래스입니다.
+/// </summary>
+[Serializable]
+public class DamageOverTimeInfo
+{
+    /// <summary>
+    /// 지속 피해의 유형을 정의합니다.
+    /// </summary>
+    public enum DamageType
+    {
+        Fixed,              // 고정된 수치로 피해를 줍니다.
+        PercentOfMaxHealth  // 대상의 최대 체력에 비례한 피해를 줍니다.
+    }
+
+    public DamageType damageType = DamageType.Fixed;
+
+    [Tooltip("damageType이 Fixed일 때의 초당 피해량입니다.")]
+    public float damageAmount;
+
+    [Tooltip("damageType이 PercentOfMaxHealth일 때의 초당 최대 체력 비례(%) 피해량입니다.")]
+    public float percentOfMaxHealth;
+}
+
+/// <summary>
+/// 상태 효과의 모든 데이터를 정의하는 ScriptableObject입니다.
+/// </summary>
 [CreateAssetMenu(fileName = "StatusEffectData_", menuName = "GameData/StatusEffectData")]
 public class StatusEffectDataSO : ScriptableObject
 {
@@ -21,11 +49,15 @@ public class StatusEffectDataSO : ScriptableObject
     public float critDamageRatioBonus;
 
     [Header("지속 피해/회복 효과")]
-    public float damageOverTime;
+    public DamageOverTimeInfo damageOverTime;
     public float healOverTime;
 
+    [Header("시각 효과 (VFX)")]
+    [Tooltip("상태 이상이 지속되는 동안 대상에게 표시될 시각 효과 프리팹입니다.")]
+    public GameObject statusVFX;
+
     /// <summary>
-    /// [리팩토링] 대상 캐릭터에게 이 상태 효과의 능력치 보너스를 적용합니다.
+    /// 대상 캐릭터에게 이 상태 효과의 능력치 보너스를 적용합니다.
     /// </summary>
     public void ApplyEffect(CharacterStats targetStats)
     {
@@ -41,7 +73,7 @@ public class StatusEffectDataSO : ScriptableObject
     }
 
     /// <summary>
-    /// [리팩토링] 대상 캐릭터에게서 이 상태 효과의 능력치 보너스를 제거합니다.
+    /// 대상 캐릭터에게서 이 상태 효과의 능력치 보너스를 제거합니다.
     /// </summary>
     public void RemoveEffect(CharacterStats targetStats)
     {

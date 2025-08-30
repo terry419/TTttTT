@@ -1,54 +1,28 @@
-// 경로: ./TTttTT/Assets/1.Scripts/Gameplay/CharacterStats.cs
-
 using UnityEngine;
 using UnityEngine.Events;
 using System.Collections.Generic;
 using System.Linq;
 
+/// <summary>
+/// 플레이어 캐릭터의 능력치를 관리합니다. 범용 EntityStats 클래스를 상속받아 확장합니다.
+/// </summary>
 [RequireComponent(typeof(PlayerHealthBar))]
-public class CharacterStats : MonoBehaviour
+public class CharacterStats : EntityStats
 {
-    [Header("기본 능력치")]
-    public BaseStats stats;
-    [Header("현재 상태 (런타임)")]
-    public float currentHealth;
-    public bool isInvulnerable = false;
-    [Header("이벤트")]
-    public UnityEvent OnFinalStatsCalculated = new UnityEvent();
-
+    // 플레이어 전용 UI 및 변수
     private PlayerHealthBar playerHealthBar;
     public float cardSelectionInterval = 10f;
-    private readonly Dictionary<StatType, List<StatModifier>> statModifiers = new Dictionary<StatType, List<StatModifier>>();
 
-    // [리팩토링] 최종 스탯을 실시간으로 계산하는 프로퍼티 (올바른 StatType 사용)
-    // [수정] FinalDamage -> FinalDamageBonus로 변경하여 '추가 피해량 %'임을 명확히 함
-    public float FinalDamageBonus
+    /// <summary>
+    /// 컴포넌트 초기화 시, 부모 클래스의 초기화 로직을 호출하고 플레이어 전용 컴포넌트를 설정합니다.
+    /// </summary>
+    protected override void Awake()
     {
-        get
-        {
-            float totalBonusRatio = statModifiers[StatType.Attack].Sum(mod => mod.Value);
-            return stats.baseDamage + totalBonusRatio;
-        }
-    }
-    public float FinalAttackSpeed => Mathf.Max(0.1f, CalculateFinalValue(StatType.AttackSpeed, stats.baseAttackSpeed));
-    public float FinalMoveSpeed => Mathf.Max(0f, CalculateFinalValue(StatType.MoveSpeed, stats.baseMoveSpeed));
-    public float FinalHealth => Mathf.Max(1f, CalculateFinalValue(StatType.Health, stats.baseHealth));
-    public float FinalCritRate => Mathf.Clamp(CalculateFinalValue(StatType.CritRate, stats.baseCritRate), 0f, 100f);
-    public float FinalCritDamage => Mathf.Max(0f, CalculateFinalValue(StatType.CritMultiplier, stats.baseCritDamage));
-
-    // 이하 코드는 기존과 동일합니다...
-    // Awake(), OnDestroy(), AddModifier(), RemoveModifiersFromSource() 등은 변경 없음
-
-    void Awake()
-    {
+        base.Awake(); // 부모 클래스(EntityStats)의 Awake()를 호출하여 statModifiers를 초기화
         playerHealthBar = GetComponent<PlayerHealthBar>();
-        foreach (StatType type in System.Enum.GetValues(typeof(StatType)))
-        {
-            statModifiers[type] = new List<StatModifier>();
-        }
     }
 
-    void OnDestroy()
+    private void OnDestroy()
     {
         var debugManager = ServiceLocator.Get<DebugManager>();
         if (debugManager != null)
@@ -57,42 +31,19 @@ public class CharacterStats : MonoBehaviour
         }
     }
 
-    public void AddModifier(StatType type, StatModifier modifier)
+    /// <summary>
+    /// 플레이어가 피해를 입었을 때 호출됩니다. EntityStats의 기본 로직을 오버라이드합니다.
+    /// </summary>
+    public override void TakeDamage(float damage)
     {
-        statModifiers[type].Add(modifier);
-        CalculateFinalStats();
-    }
+        if (isInvulnerable) return;
 
-    public void RemoveModifiersFromSource(object source)
-    {
-        foreach (var key in statModifiers.Keys)
-        {
-            statModifiers[key].RemoveAll(mod => mod.Source == source);
-        }
-        CalculateFinalStats();
-    }
-
-    private float CalculateFinalValue(StatType type, float baseValue)
-    {
-        float totalBonusRatio = statModifiers[type].Sum(mod => mod.Value);
-        return baseValue * (1 + totalBonusRatio / 100f);
-    }
-
-    public void CalculateFinalStats()
-    {
-        OnFinalStatsCalculated?.Invoke();
-    }
-
-    public void TakeDamage(float damage)
-    {
-        Debug.Log($"[DAMAGE-DEBUG 4/4] TakeDamage 호출됨. 데미지: {damage}, 현재 체력: {currentHealth}");
-        if (isInvulnerable)
-        {
-            Debug.Log("[DAMAGE-DEBUG] 무적 상태이므로 데미지를 받지 않습니다.");
-            return;
-        }
         currentHealth -= damage;
+        Debug.Log($"[PlayerStats] 플레이어 피해 입음! 데미지: {damage}, 현재 체력: {currentHealth}");
+
+        // 플레이어 전용 체력 UI 업데이트
         playerHealthBar.UpdateHealth(currentHealth, FinalHealth);
+
         if (currentHealth <= 0)
         {
             currentHealth = 0;
@@ -100,13 +51,19 @@ public class CharacterStats : MonoBehaviour
         }
     }
 
-    private void Die()
+    /// <summary>
+    /// 플레이어가 사망했을 때 호출됩니다. EntityStats의 기본 로직을 오버라이드합니다.
+    /// </summary>
+    public override void Die()
     {
-        Debug.Log("[CharacterStats] 플레이어가 사망했습니다. 게임오버 상태로 전환합니다.");
+        Debug.Log("[PlayerStats] 플레이어 사망. 게임오버 상태로 전환합니다.");
         gameObject.SetActive(false);
         ServiceLocator.Get<GameManager>().ChangeState(GameManager.GameState.GameOver);
     }
 
+    /// <summary>
+    /// 플레이어의 체력을 회복시킵니다.
+    /// </summary>
     public void Heal(float amount)
     {
         currentHealth += amount;
@@ -114,6 +71,8 @@ public class CharacterStats : MonoBehaviour
         playerHealthBar.UpdateHealth(currentHealth, FinalHealth);
     }
 
+    #region 플레이어 전용 영구/포인트 스탯 적용 로직
+    // 아래 메소드들은 플레이어의 영구 스탯 및 포인트 분배와 관련된 고유 로직이므로 이 클래스에 유지됩니다.
     public void ApplyPermanentStats(CharacterPermanentStats permanentStats)
     {
         if (permanentStats == null) return;
@@ -141,13 +100,7 @@ public class CharacterStats : MonoBehaviour
 
     private float GetWeightForStat(StatType stat)
     {
-        return stat == StatType.Health ?
-            2f : 1f;
-    }
-
-    public float GetCurrentHealth()
-    {
-        return currentHealth;
+        return stat == StatType.Health ? 2f : 1f;
     }
 
     public static BaseStats CalculatePreviewStats(BaseStats baseStats, int allocatedPoints)
@@ -163,4 +116,5 @@ public class CharacterStats : MonoBehaviour
         previewStats.baseCritRate = baseStats.baseCritRate;
         return previewStats;
     }
+    #endregion
 }
