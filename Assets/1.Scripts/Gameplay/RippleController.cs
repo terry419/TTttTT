@@ -34,7 +34,7 @@ public class RippleController : MonoBehaviour
         // 개선 방안 적용: 풀링된 오브젝트 재사용 시 반드시 초기화
         _hitMonsterIDs.Clear();
         transform.localScale = Vector3.zero;
-        _collider.radius = 0;
+        _collider.radius = 0.2f;
     }
 
     void Update()
@@ -49,7 +49,7 @@ public class RippleController : MonoBehaviour
         _scaleCache.Set(scale, scale, 1f);
         transform.localScale = _scaleCache;
         // 개선 방안 적용: 시각 효과와 콜라이더 크기 동기화
-        _collider.radius = currentRadius;
+        //_collider.radius = currentRadius;
 
         if (_elapsedTime >= _expandDuration)
         {

@@ -102,10 +102,6 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (stats != null && moveInput != Vector2.zero)
-        {
-            Debug.Log($"[INPUT TRACE] PlayerController.FixedUpdate: moveInput({moveInput}) 값으로 속도 적용.");
-        }
         if (stats != null) rb.velocity = moveInput * stats.FinalMoveSpeed;
     }
 
