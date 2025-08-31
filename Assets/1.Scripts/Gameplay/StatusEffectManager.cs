@@ -1,196 +1,587 @@
+// 경로: ./TTttTT/Assets/1/Scripts/Gameplay/StatusEffectManager.cs
+
 using UnityEngine;
+
 using System.Collections.Generic;
+
 using System.Linq;
 
+
+
 /// <summary>
-/// 게임 내 모든 캐릭터(플레이어, 몬스터)의 상태 효과(버프, 디버프)를 관리하는 싱글톤 클래스입니다.
-/// 특정 대상에게 상태 효과를 적용하고, 지속 시간을 추적하며, 시간이 다 되면 자동으로 제거하는 역할을 합니다.
-/// 지속 데미지(DoT)나 지속 회복(HoT) 효과도 이 스크립트의 Update 메서드에서 처리됩니다.
+
+/// [v2.2] 게임 내 모든 캐릭터의 상태 효과를 관리하는 중앙 관리자입니다.
+
+/// SO기반의 정적 효과와, 카드 모듈로부터 실시간으로 생성되는 동적 효과를 모두 처리하며 하위 호환성을 보장합니다.
+
 /// </summary>
+
 public class StatusEffectManager : MonoBehaviour
+
 {
-    // [자주 사용되는 변수들]
-    // activeEffects: 현재 어떤 게임오브젝트(Key)에 어떤 상태 효과들이(Value) 걸려있는지 저장하는 목록입니다.
-    private readonly Dictionary<GameObject, List<StatusEffect>> activeEffects = new Dictionary<GameObject, List<StatusEffect>>();
 
-    // effectsToRemove: Update 루프 안에서 duration이 다 된 효과들을 임시로 담아두는 리스트입니다.
-    // (루프를 도는 중에 목록을 직접 수정하면 오류가 나기 때문에 임시 리스트를 사용합니다.)
-    private readonly List<StatusEffect> effectsToRemove = new List<StatusEffect>();
+    // 현재 활성화된 모든 효과를 타겟별로 그룹화하여 저장합니다.
 
-    // targetsToRemove: 효과가 하나도 남지 않은 게임오브젝트를 임시로 담아두는 리스트입니다.
+    private readonly Dictionary<GameObject, List<StatusEffectInstance>> activeEffects = new Dictionary<GameObject, List<StatusEffectInstance>>();
+
+
+
+    // 매 프레임 제거할 효과를 임시 저장하는 리스트 (GC 최적화)
+
+    private readonly List<StatusEffectInstance> effectsToRemove = new List<StatusEffectInstance>();
+
+
+
+    // 매 프레임 정리할 타겟을 임시 저장하는 리스트 (GC 최적화)
+
     private readonly List<GameObject> targetsToRemove = new List<GameObject>();
 
-    /// <summary>
-    /// 스크립트가 처음 깨어날 때 호출됩니다.
-    /// 자기 자신을 서비스 로케이터(안내 데스크)에 등록하여 다른 스크립트들이 찾아올 수 있게 합니다.
-    /// </summary>
+
+
     void Awake()
+
     {
-        Debug.Log($"[생명주기] {GetType().Name} (ID: {gameObject.GetInstanceID()}) - Awake() 시작. (프레임: {Time.frameCount})");
-        // 자기 자신을 ServiceLocator에 'StatusEffectManager' 타입으로 등록합니다.
-        ServiceLocator.Register<StatusEffectManager>(this);
-        Debug.Log("[StatusEffectManager] 서비스 로케이터에 성공적으로 등록되었습니다.");
+
+        // ServiceLocator에 자기 자신을 등록하여 다른 곳에서 쉽게 접근할 수 있도록 합니다.
+
+        ServiceLocator.Register<StatusEffectManager>(this);
+
     }
 
-    /// <summary>
-    /// 매 프레임마다 호출되며, 모든 상태 효과의 지속시간을 감소시키고 지속 데미지 등을 처리합니다.
-    /// </summary>
-    void Update()
+
+
+    /// <summary>
+
+    /// [호환성 보장] 기존 StatusEffectDataSO 기반의 효과를 적용합니다.
+
+    /// 내부적으로 SO를 새로운 StatusEffectInstance로 변환하여 신규 시스템에 전달합니다.
+
+    /// </summary>
+
+    public void ApplyStatusEffect(GameObject target, StatusEffectDataSO effectData)
+
     {
+
+        Debug.Log($"[StatusEffectManager] (Legacy) SO기반 효과 '{effectData.name}' 적용 요청. 신규 인스턴스로 변환합니다.");
+
+        var instance = new StatusEffectInstance(target, effectData);
+
+        ApplyStatusEffect(target, instance); // 최종적으로는 신규 메서드를 호출
+
+    }
+
+
+
+    /// <summary>
+
+    /// [핵심] 신규 카드 모듈에서 직접 생성한 동적 효과 인스턴스를 적용합니다.
+
+    /// </summary>
+
+    public void ApplyStatusEffect(GameObject target, StatusEffectInstance effectInstance)
+
+    {
+
+        if (target == null || effectInstance == null)
+
+        {
+
+            Debug.LogWarning($"[StatusEffectManager] Target 또는 EffectInstance가 null이므로 효과 적용을 중단합니다.");
+
+            return;
+
+        }
+
+
+
+        // 이 타겟에 처음 효과가 적용되는 경우, 리스트를 새로 생성합니다.
+
+        if (!activeEffects.ContainsKey(target))
+
+        {
+
+            activeEffects[target] = new List<StatusEffectInstance>();
+
+        }
+
+
+
+        // 동일한 ID의 효과가 이미 있는지 확인합니다.
+
+        var existingEffect = activeEffects[target].FirstOrDefault(e => e.EffectId == effectInstance.EffectId);
+
+        if (existingEffect != null)
+
+        {
+
+            // 중첩 정책에 따라 다르게 처리합니다.
+
+            switch (effectInstance.StackingBehavior)
+
+            {
+
+                case StackingBehavior.RefreshDuration:
+
+                    existingEffect.RefreshDuration();
+
+                    Debug.Log($"[StatusEffect] '{target.name}'의 '{effectInstance.EffectId}' 효과 지속시간을 갱신했습니다.");
+
+                    return; // 갱신만 하고 종료
+
+                case StackingBehavior.NoStack:
+
+                    Debug.Log($"[StatusEffect] '{target.name}'에 '{effectInstance.EffectId}' 효과가 이미 존재하며 중첩이 불가능하여 무시합니다.");
+
+                    return; // 적용하지 않고 종료
+
+                case StackingBehavior.StackEffect:
+
+                    // 그냥 아래로 넘어가서 새 효과를 추가합니다.
+
+                    break;
+
+            }
+
+        }
+
+
+
+        // 새 효과를 리스트에 추가하고 적용 로직을 실행합니다.
+
+        activeEffects[target].Add(effectInstance);
+
+        effectInstance.ApplyEffect();
+
+        Debug.Log($"<color=cyan>[StatusEffect]</color> '{target.name}'에게 '{effectInstance.EffectId}' 효과 적용 완료. 현재 효과 수: {activeEffects[target].Count}개");
+
+    }
+
+
+
+    /// <summary>
+
+    /// 매 프레임 모든 활성 효과를 업데이트하고, 만료된 효과나 사라진 타겟을 정리합니다.
+
+    /// </summary>
+
+    void Update()
+
+    {
+
         if (activeEffects.Count == 0) return;
 
-        effectsToRemove.Clear();
-        foreach (var entry in activeEffects)
+
+
+        // 루프 시작 전, 임시 리스트들을 비웁니다.
+
+        effectsToRemove.Clear();
+
+        targetsToRemove.Clear();
+
+
+
+        // 1. 모든 타겟과 그에 속한 효과들을 순회합니다.
+
+        foreach (var entry in activeEffects)
+
         {
+
             GameObject target = entry.Key;
-            List<StatusEffect> effectsOnTarget = entry.Value;
 
-            for (int i = effectsOnTarget.Count - 1; i >= 0; i--)
+
+
+            // 타겟이 파괴되었거나 비활성화된 경우, 정리 목록에 추가합니다.
+
+            if (target == null || !target.activeInHierarchy)
+
             {
-                StatusEffect effect = effectsOnTarget[i];
 
-                // [디버그 3-2] 특정 대상의 특정 효과를 검사하고 있음을 기록합니다.
-                // Debug.Log($"[디버그 3-2] 대상 '{target.name}'의 '{effect.effectData.name}' 효과 검사 중...");
+                targetsToRemove.Add(target);
 
-                if (effect.effectData.damageOverTime > 0)
+                continue;
+
+            }
+
+
+
+            var effectsOnTarget = entry.Value;
+
+            // 리스트를 역순으로 순회해야 중간에 아이템이 제거되어도 안전합니다.
+
+            for (int i = effectsOnTarget.Count - 1; i >= 0; i--)
+
+            {
+
+                var effect = effectsOnTarget[i];
+
+                effect.Tick(Time.deltaTime); // 효과의 시간 흐름 처리
+
+
+
+                // 효과가 만료되었다면, 제거 목록에 추가합니다.
+
+                if (effect.IsExpired)
+
                 {
-                    // [디버그 3-3] 이 효과가 지속 데미지 타입임을 확인했습니다.
-                    Debug.Log($"[디버그 3-3] '{effect.effectData.name}' 효과는 지속 데미지 타입임 (damageOverTime: {effect.effectData.damageOverTime})");
 
-                    if (target.CompareTag("Monster"))
-                    {
-                        // [디버그 3-4] 대상이 'Monster' 태그를 가지고 있음을 확인했습니다.
-                        Debug.Log("[디버그 3-4] 대상은 'Monster' 태그를 가지고 있음.");
-
-                        var monster = target.GetComponentInChildren<MonsterController>();
-                        if (monster != null)
-                        {
-                            // [디버그 3-5] 대상에게서 MonsterController를 성공적으로 찾았습니다.
-                            Debug.Log("[디버그 3-5] 대상에게서 MonsterController를 성공적으로 찾음.");
-
-                            float damageThisFrame = effect.effectData.damageOverTime * monster.maxHealth * Time.deltaTime;
-
-                            // [디버그 3-6] 최종 데미지 계산 결과를 기록합니다.
-                            Debug.Log($"[디버그 3-6] 지속 데미지 계산: {effect.effectData.damageOverTime}(비율) * {monster.maxHealth}(최대체력) * {Time.deltaTime}(deltaTime) = {damageThisFrame}");
-
-                            // [디버그 3-7] TakeDamage를 호출하기 직전임을 알립니다.
-                            Debug.Log("[디버그 3-7] TakeDamage 호출 직전.");
-                            monster.TakeDamage(damageThisFrame);
-                        }
-                        else
-                        {
-                            // [디버그 3-5 실패] 몬스터 컨트롤러를 찾지 못했습니다.
-                            Debug.LogError($"[디버그 3-5 실패] 대상 '{target.name}'은 'Monster' 태그가 있지만 MonsterController 컴포넌트가 없습니다!");
-                        }
-                    }
-                }
-
-                effect.duration -= Time.deltaTime;
-                if (effect.duration <= 0)
-                {
                     effectsToRemove.Add(effect);
+
                 }
+
             }
+
         }
 
-        if (effectsToRemove.Count > 0)
+
+
+        // 2. 만료된 것으로 표시된 모든 효과를 실제로 제거합니다.
+
+        foreach (var effect in effectsToRemove)
+
         {
-            foreach (StatusEffect effect in effectsToRemove) { RemoveStatusEffect(effect); }
+
+            Debug.Log($"<color=yellow>[StatusEffect]</color> '{effect.Target.name}'의 '{effect.EffectId}' 효과가 만료되어 제거합니다.");
+
+            RemoveStatusEffect(effect);
+
         }
 
-        // --- 이하 만료된 이펙트 제거 로직 (기존과 동일) ---
-        if (effectsToRemove.Count > 0)
+
+
+        // 3. 파괴되거나 비활성화된 타겟과 관련된 모든 데이터를 정리합니다.
+
+        foreach (var target in targetsToRemove)
+
         {
-            foreach (StatusEffect effect in effectsToRemove)
+
+            if (activeEffects.TryGetValue(target, out var effects))
+
             {
-                RemoveStatusEffect(effect);
+
+                Debug.LogWarning($"[StatusEffectManager] 타겟 '{target.name}'이 비활성화/파괴되어, 남은 효과 {effects.Count}개를 모두 정리합니다.");
+
+                // 타겟이 사라졌으므로, 각 효과의 제거 로직(스탯 복구 등)을 호출합니다.
+
+                foreach (var effect in effects.ToList()) // ToList()로 사본을 만들어 안전하게 순회
+
+                {
+
+                    effect.RemoveEffect();
+
+                }
+
+                // 최종적으로 딕셔너리에서 해당 타겟 항목을 삭제합니다.
+
+                activeEffects.Remove(target);
+
             }
+
         }
-        if (activeEffects.Count > 0)
-        {
-            targetsToRemove.Clear();
-            foreach (var entry in activeEffects) { if (entry.Value.Count == 0) targetsToRemove.Add(entry.Key); }
-            if (targetsToRemove.Count > 0) { foreach (GameObject t in targetsToRemove) activeEffects.Remove(t); }
-        }
+
     }
 
-    /// <summary>
-    /// 특정 대상에게 상태 효과를 적용합니다.
-    /// </summary>
-    public void ApplyStatusEffect(GameObject target, StatusEffectDataSO effectData)
+
+
+    /// <summary>
+
+    /// 특정 상태 효과 인스턴스를 대상의 목록에서 제거합니다.
+
+    /// </summary>
+
+    private void RemoveStatusEffect(StatusEffectInstance effect)
+
     {
-        // [디버그 2-1] 효과 적용 요청을 받았음을 기록합니다.
-        Debug.Log($"[디버그 2-1] ApplyStatusEffect 요청 받음. 대상: {target.name}, 효과: {effectData.name}");
 
-        if (target == null || effectData == null) return;
+        if (effect?.Target == null) return;
 
-        StatusEffect newEffect = new StatusEffect(target, effectData);
 
-        if (!activeEffects.ContainsKey(target))
+
+        if (activeEffects.TryGetValue(effect.Target, out var effectList))
+
         {
-            activeEffects[target] = new List<StatusEffect>();
+
+            effect.RemoveEffect(); // 스탯 복구 등 효과 제거 로직 실행
+
+            effectList.Remove(effect);
+
         }
 
-        activeEffects[target].Add(newEffect);
-        newEffect.ApplyEffect();
-
-        // [디버그 2-2] 상태 효과 목록에 정상적으로 추가되었음을 기록합니다.
-        Debug.Log($"[디버그 2-2] 상태 효과 목록에 '{effectData.name}' 추가 완료. 현재 대상의 효과 수: {activeEffects[target].Count}개");
-    }
-    /// <summary>
-    /// 특정 상태 효과 인스턴스를 제거합니다.
-    /// </summary>
-    private void RemoveStatusEffect(StatusEffect effect)
-    {
-        if (effect == null || effect.target == null) return;
-
-        if (activeEffects.TryGetValue(effect.target, out var effectList))
-        {
-            effect.RemoveEffect(); // 스탯 즉시 변경 효과 원상복구
-            effectList.Remove(effect);
-
-            // [디버그] 어떤 효과가 종료되었는지 콘솔에 출력합니다.
-            Debug.Log($"[상태 효과 종료] 대상: {effect.target.name}, 효과: {effect.effectData.name}");
-        }
     }
 
-    private void OnDestroy()
-    {
-        Debug.Log($"[생명주기] {GetType().Name} (ID: {gameObject.GetInstanceID()}) - OnDestroy() 시작. (프레임: {Time.frameCount})");
-    }
+
+
+    // --- Public API ---
+
+    public List<StatusEffectInstance> GetActiveEffectsOn(GameObject target) => activeEffects.TryGetValue(target, out var e) ? new List<StatusEffectInstance>(e) : new List<StatusEffectInstance>();
+
+    public bool HasStatusEffect(GameObject target, string effectId) => !string.IsNullOrEmpty(effectId) && activeEffects.TryGetValue(target, out var e) && e.Any(inst => inst.EffectId == effectId);
+
+    public void ConsumeEffects(List<StatusEffectInstance> effectsToConsume) => effectsToConsume.ForEach(RemoveStatusEffect);
+
 }
 
+
+
+
+
+// =====================================================================
+
+// == StatusEffectInstance 클래스 (v2.2)
+
+// =====================================================================
+
+
+
 /// <summary>
-/// 활성화된 개별 상태 효과의 인스턴스 정보를 담는 클래스입니다.
+
+/// 상태 효과의 중첩 방식을 정의하는 열거형.
+
 /// </summary>
-public class StatusEffect
+
+public enum StackingBehavior
+
 {
-    public GameObject target;           // 효과 대상
-    public StatusEffectDataSO effectData; // 효과 원본 데이터
-    public float duration;              // 남은 지속 시간
 
-    public StatusEffect(GameObject target, StatusEffectDataSO effectData)
+    [Tooltip("기존 효과의 지속시간만 초기화합니다.")]
+
+    RefreshDuration,
+
+    [Tooltip("별개의 효과로 새로 추가하여 중첩시킵니다.")]
+
+    StackEffect,
+
+    [Tooltip("이미 효과가 있다면 무시합니다.")]
+
+    NoStack
+
+}
+
+
+
+/// <summary>
+
+/// 활성화된 개별 상태 효과의 모든 데이터를 담는 인스턴스 클래스.
+
+/// ScriptableObject가 '설계도'라면, 이 클래스는 '실제품'에 해당합니다.
+
+/// </summary>
+
+public class StatusEffectInstance
+
+{
+
+    // --- 주요 속성 ---
+
+    public GameObject Target { get; }
+
+    public string EffectId { get; }
+
+    public StackingBehavior StackingBehavior { get; }
+
+
+
+    // --- 시간 관련 ---
+
+    private readonly float initialDuration;
+
+    private float duration;
+
+    public bool IsExpired => duration > 0 && duration <= Time.deltaTime; // 1프레임 오차 방지를 위해 <= 사용
+
+    public float RemainingDuration => duration;
+
+
+
+    // --- 효과 내용 ---
+
+    private readonly Dictionary<StatType, float> statBonuses;
+
+    public float DamagePerSecond { get; }
+
+    public float HealPerSecond { get; }
+
+
+
+    // --- 스케일링 관련 ---
+
+    private readonly bool scalesWithDmgBonus;
+
+    private readonly CharacterStats casterStats;
+
+
+
+    /// <summary>
+
+    /// [호환성] StatusEffectDataSO로부터 인스턴스를 생성하는 생성자.
+
+    /// </summary>
+
+    public StatusEffectInstance(GameObject target, StatusEffectDataSO data, CharacterStats caster = null)
+
     {
-        this.target = target;
-        this.effectData = effectData;
-        this.duration = effectData.duration;
+
+        Target = target;
+
+        casterStats = caster;
+
+        EffectId = data.effectId;
+
+        initialDuration = data.duration;
+
+        duration = data.duration;
+
+        DamagePerSecond = data.damageOverTime;
+
+        HealPerSecond = data.healOverTime;
+
+        StackingBehavior = StackingBehavior.RefreshDuration; // SO 기반 효과는 기본적으로 갱신만 지원
+
+        statBonuses = new Dictionary<StatType, float>();
+
+
+
+        // SO에 정의된 스탯 보너스들을 딕셔너리에 추가
+
+        if (data.damageRatioBonus != 0) statBonuses[StatType.Attack] = data.damageRatioBonus;
+
+        if (data.attackSpeedRatioBonus != 0) statBonuses[StatType.AttackSpeed] = data.attackSpeedRatioBonus;
+
+        if (data.moveSpeedRatioBonus != 0) statBonuses[StatType.MoveSpeed] = data.moveSpeedRatioBonus;
+
+        if (data.healthRatioBonus != 0) statBonuses[StatType.Health] = data.healthRatioBonus;
+
+        if (data.critRateRatioBonus != 0) statBonuses[StatType.CritRate] = data.critRateRatioBonus;
+
+        if (data.critDamageRatioBonus != 0) statBonuses[StatType.CritMultiplier] = data.critDamageRatioBonus;
+
     }
 
-    // 이 효과가 적용될 때 즉시 실행되는 로직 (주로 스탯 버프/디버프)
-    public void ApplyEffect()
+
+
+    /// <summary>
+
+    /// [핵심] 신규 카드 모듈로부터 동적으로 인스턴스를 생성하는 생성자.
+
+    /// </summary>
+
+    public StatusEffectInstance(GameObject target, string id, float duration, Dictionary<StatType, float> bonuses, float dot, float hot, StackingBehavior stacking, bool scales, CharacterStats caster)
+
     {
-        if (target.TryGetComponent<CharacterStats>(out var stats))
+
+        Target = target;
+
+        EffectId = id;
+
+        initialDuration = duration;
+
+        this.duration = duration;
+
+        statBonuses = bonuses ?? new Dictionary<StatType, float>();
+
+        DamagePerSecond = dot;
+
+        HealPerSecond = hot;
+
+        StackingBehavior = stacking;
+
+        scalesWithDmgBonus = scales;
+
+        casterStats = caster;
+
+    }
+
+
+
+    /// <summary>
+
+    /// 대상에게 스탯 변경 효과를 적용합니다.
+
+    /// </summary>
+
+    public void ApplyEffect()
+
+    {
+
+        if (Target.TryGetComponent<CharacterStats>(out var stats))
+
+            foreach (var bonus in statBonuses) stats.AddModifier(bonus.Key, new StatModifier(bonus.Value, this));
+
+    }
+
+
+
+    /// <summary>
+
+    /// 대상에게서 스탯 변경 효과를 제거합니다.
+
+    /// </summary>
+
+    public void RemoveEffect()
+
+    {
+
+        if (Target != null && Target.TryGetComponent<CharacterStats>(out var stats))
+
+            stats.RemoveModifiersFromSource(this);
+
+    }
+
+
+
+    /// <summary>
+
+    /// 매 프레임 호출되어 지속시간, DoT, HoT 등을 처리합니다.
+
+    /// </summary>
+
+    public void Tick(float deltaTime)
+
+    {
+
+        // 1. 지속시간 감소
+
+        if (duration > 0) duration -= deltaTime;
+
+
+
+        // 2. 지속 피해(DoT) 처리
+
+        if (DamagePerSecond > 0 && Target.TryGetComponent<MonsterController>(out var monster))
+
         {
-            effectData.ApplyEffect(stats);
+
+            float finalDot = DamagePerSecond;
+
+            // 시전자의 공격력 보너스에 영향을 받는 옵션이 켜져있다면, 최종 피해량을 다시 계산
+
+            if (scalesWithDmgBonus && casterStats != null) finalDot *= (1 + casterStats.FinalDamageBonus / 100f);
+
+            monster.TakeDamage(finalDot * deltaTime);
+
         }
+
+
+
+        // 3. 지속 회복(HoT) 처리
+
+        if (HealPerSecond > 0 && Target.TryGetComponent<CharacterStats>(out var character))
+
+        {
+
+            character.Heal(HealPerSecond * deltaTime);
+
+        }
+
     }
 
-    // 이 효과가 제거될 때 실행되는 로직 (스탯 원상복구)
-    public void RemoveEffect()
-    {
-        if (target.TryGetComponent<CharacterStats>(out var stats))
-        {
-            effectData.RemoveEffect(stats);
-        }
-    }
+
+
+    /// <summary>
+
+    /// 효과의 지속시간을 초기값으로 되돌립니다.
+
+    /// </summary>
+
+    public void RefreshDuration() => duration = initialDuration;
+
 }

@@ -1,0 +1,13 @@
+최종 설계도: DetonateEffectsModule.cs
+파일 이름: DetonateEffectsModule.cs
+
+상속: CardEffectSO
+
+설명: 적중된 대상(HitTarget)에게 걸려있는 특정 또는 모든 지속 피해(DoT) 효과의 남은 피해량을 계산하여, 그 총합의 N%만큼을 즉시 단일 피해로 입히고 기존 지속 피해 효과들을 제거(소모)하는 특수 모듈입니다.
+
+인스펙터 필드 명세
+필드명	타입	UI 형태	설명 및 확정된 목록 / 값
+Trigger	Enum	드롭다운	효과 발동 시점을 선택합니다. (아래 목록 외 다른 값 없음)<br>• OnHit: 투사체가 적에게 적중했을 때<br>• OnCrit: 투사체가 치명타로 적중했을 때<br>• OnKill: 해당 공격으로 적을 처치했을 때<br>• OnLastRicochetHit: 마지막 튕김 공격이 적중했을 때
+Damage Multiplier	float	숫자 입력	대상이 앞으로 받을 모든 지속 피해량 총합에 곱해질 배율.<br>• 단위: %<br>• 200 입력 시, 남은 피해량 총합의 2배 피해를 줍니다.<br>• 기본값: 100.0
+Consume Effects	bool	체크박스	체크 시, 즉시 피해를 입힌 후 대상에게 걸려있던 모든 지속 피해 효과를 제거합니다.<br>• 기본값: 체크
+Status Effect ID Filter	string	문자열 입력	즉시 발동시킬 대상 효과의 Status Effect ID를 지정합니다.<br>• 예: "독", "화상"<br>• 비워두면 모든 종류의 지속 피해 효
