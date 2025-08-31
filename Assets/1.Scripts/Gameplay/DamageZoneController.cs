@@ -8,11 +8,10 @@ using System.Collections.Generic;
 [RequireComponent(typeof(CircleCollider2D))]
 public class DamageZoneController : MonoBehaviour
 {
-    // ▼▼▼ 제어 대상을 ParticleSystem에서 Transform으로 변경 ▼▼▼
+    // ▼▼▼ 다시 Transform 참조로 변경합니다 ▼▼▼
     [Header("시각 효과 참조")]
-    [SerializeField] private Transform visualsTransform; // 파티클 대신 시각 효과 오브젝트의 Transform을 연결
+    [SerializeField] private Transform visualsTransform;
 
-    // 내부 상태 변수들
     private float _duration;
     private float _damagePerTick;
     private float _tickInterval;
@@ -28,12 +27,8 @@ public class DamageZoneController : MonoBehaviour
         _collider.isTrigger = true;
     }
 
-    /// <summary>
-    /// 외부에서 호출되어 이 장판의 모든 속성을 설정합니다.
-    /// </summary>
     public void Initialize(float duration, float radius, float damagePerTick, float tickInterval)
     {
-        // 전달받은 데이터들을 내부 변수에 저장
         _duration = duration;
         _damagePerTick = damagePerTick;
         _tickInterval = Mathf.Max(0.1f, tickInterval);
@@ -41,23 +36,35 @@ public class DamageZoneController : MonoBehaviour
         _damageTickTimer = 0f;
         _monstersInZone.Clear();
 
-        // 물리 콜라이더의 크기를 전달받은 radius로 설정
+        // 1. 물리 콜라이더의 반경을 데이터(radius)에 따라 설정합니다. (정확함)
         _collider.radius = radius;
 
-        // 이 오브젝트 자체의 스케일은 1로 고정
+        // 2. 이 오브젝트(부모)의 스케일은 1로 고정하여 기준점으로 삼습니다.
         transform.localScale = Vector3.one;
 
-        // ▼▼▼ 파티클 제어 로직을 Transform 스케일 제어로 변경 ▼▼▼
+        // ▼▼▼ 시각 효과(자식)의 스케일을 정확하게 계산하여 설정합니다 ▼▼▼
         if (visualsTransform != null)
         {
-            // 전달받은 radius를 기준으로 시각 효과의 지름(scale)을 설정합니다.
-            // (스프라이트의 기본 지름이 1 유닛일 때 기준)
-            float diameter = radius * 2f;
-            visualsTransform.localScale = new Vector3(diameter, diameter, 1f);
+            // 2-1. 자식의 SpriteRenderer 컴포넌트를 가져옵니다.
+            if (visualsTransform.TryGetComponent<SpriteRenderer>(out var spriteRenderer) && spriteRenderer.sprite != null)
+            {
+                // 2-2. 스프라이트의 원본 텍스처 크기(픽셀)와 Pixels Per Unit 값을 가져옵니다.
+                float textureWidth = spriteRenderer.sprite.texture.width;
+                float pixelsPerUnit = spriteRenderer.sprite.pixelsPerUnit;
+
+                // 2-3. 스프라이트의 기본 월드 유닛 크기를 계산합니다. (예: 128px / 100ppu = 1.28 유닛)
+                float baseSpriteDiameter = textureWidth / pixelsPerUnit;
+
+                // 2-4. 목표 지름(radius * 2)을 기본 크기로 나누어 정확한 스케일 배율을 계산합니다.
+                float targetDiameter = radius * 2f;
+                float requiredScale = targetDiameter / baseSpriteDiameter;
+
+                // 2-5. 계산된 스케일 값을 자식 Transform에 적용합니다.
+                visualsTransform.localScale = new Vector3(requiredScale, requiredScale, 1f);
+            }
         }
     }
 
-    // ... Update() 및 OnTrigger 관련 함수는 이전과 동일하게 유지 ...
     void Update()
     {
         _lifeTimer += Time.deltaTime;

@@ -81,7 +81,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4955fe88c7f33ac43942f39b82f06f9a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  zoneVfx: {fileID: 0}
+  visualsTransform: {fileID: 2460625932810063860}
 --- !u!1 &8551814102294171241
 GameObject:
   m_ObjectHideFlags: 0
