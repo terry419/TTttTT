@@ -108,7 +108,6 @@ public class PlayerController : MonoBehaviour
     private void HandleMove(InputAction.CallbackContext context)
     {
         moveInput = context.ReadValue<Vector2>();
-        Debug.Log($"[INPUT TRACE] PlayerController.HandleMove: 'Move' 액션 이벤트 수신! 입력값: {moveInput}");
 
     }
 
