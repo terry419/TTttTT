@@ -183,19 +183,24 @@ public class StatusEffectInstance
     /// </summary>
     public void RemoveEffect()
     {
-        // 1. 스탯 복구 (IStatHolder 인터페이스 사용)
-        if (Target != null && Target.TryGetComponent<IStatHolder>(out var statHolder))
-        {
-            statHolder.RemoveModifiersFromSource(this);
-        }
-
-        // 2. 루핑 VFX 중지 및 소멸 VFX 재생
+        // 루핑 VFX는 타겟이 사라져도 안전하게 제거할 수 있으므로 먼저 처리합니다.
         if (loopingVFXInstance != null)
         {
             ServiceLocator.Get<PoolManager>()?.Release(loopingVFXInstance);
             loopingVFXInstance = null;
         }
-        PlayVFX(onExpireVFXRef, Target.transform.position, false);
+
+        if (Target != null)
+        {
+            // 1. 스탯 복구 (IStatHolder 인터페이스 사용)
+            if (Target.TryGetComponent<IStatHolder>(out var statHolder))
+            {
+                statHolder.RemoveModifiersFromSource(this);
+            }
+
+            // 2. 소멸 VFX 재생 (이제 안전하게 위치를 가져올 수 있습니다)
+            PlayVFX(onExpireVFXRef, Target.transform.position, false);
+        }
     }
 
     /// <summary>

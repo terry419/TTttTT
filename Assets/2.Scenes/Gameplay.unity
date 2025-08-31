@@ -3628,6 +3628,7 @@ GameObject:
   - component: {fileID: 1237349107}
   - component: {fileID: 1237349106}
   - component: {fileID: 1237349109}
+  - component: {fileID: 1237349110}
   m_Layer: 0
   m_Name: _RoundSystems
   m_TagString: Untagged
@@ -3689,6 +3690,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 518bed37cf20cf0469a1c0bc8bc5f5e8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1237349110
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1237349105}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b15d3c2b853d36543a685b09e81c873e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  curseStatusEffectID: DeathMark
+  explosionRadius: 5
+  explosionDamageType: 0
+  explosionDamageAmount: 50
+  scalesWithCasterDamageBonus: 0
+  explosionVFX:
+    m_AssetGUID: 48e9d302241666b428afff798b8c3810
+    m_SubObjectName: 
+    m_SubObjectType: 
+    m_EditorAssetChanged: 0
 --- !u!1 &1259565395
 GameObject:
   m_ObjectHideFlags: 0
@@ -4090,6 +4113,18 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1327497584030169129, guid: 5cce4f9218475d841ac798ba161e79e5, type: 3}
+      propertyPath: testStartingNewCards.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1327497584030169129, guid: 5cce4f9218475d841ac798ba161e79e5, type: 3}
+      propertyPath: testStartingNewCards.Array.data[0]
+      value: 
+      objectReference: {fileID: 11400000, guid: 1c931ac983ca8094bbe20fe7bc5a9c7f, type: 2}
+    - target: {fileID: 1327497584030169129, guid: 5cce4f9218475d841ac798ba161e79e5, type: 3}
+      propertyPath: testStartingNewCards.Array.data[1]
+      value: 
+      objectReference: {fileID: 11400000, guid: c5a1dc58f7e62e141a6a0c4701ecf815, type: 2}
     - target: {fileID: 2280747930156799828, guid: 5cce4f9218475d841ac798ba161e79e5, type: 3}
       propertyPath: m_Camera
       value: 

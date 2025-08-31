@@ -70,64 +70,64 @@ public class StatusEffectManager : MonoBehaviour
         effectInstance.ApplyEffect();
         Debug.Log($"<color=cyan>[StatusEffect]</color> '{target.name}'에게 '{effectInstance.EffectId}' 효과 적용 완료. 현재 효과 수: {activeEffects[target].Count}개");
     }
-    /// <summary>
-    /// 매 프레임 모든 활성 효과를 업데이트하고, 만료된 효과나 사라진 타겟을 정리합니다.
-    /// </summary>
-    void Update()
+    /// <summary>
+        /// 매 프레임 모든 활성 효과를 업데이트하고, 만료된 효과나 사라진 타겟을 정리합니다.
+        /// </summary>
+    void Update()
     {
         if (activeEffects.Count == 0) return;
-        // 루프 시작 전, 임시 리스트들을 비웁니다.
-        effectsToRemove.Clear();
+
+        effectsToRemove.Clear();
         targetsToRemove.Clear();
-        // 1. 모든 타겟과 그에 속한 효과들을 순회합니다.
-        foreach (var entry in activeEffects)
+
+        foreach (var entry in activeEffects)
         {
             GameObject target = entry.Key;
-            // 타겟이 파괴되었거나 비활성화된 경우, 정리 목록에 추가합니다.
+
             if (target == null || !target.activeInHierarchy)
             {
-                targetsToRemove.Add(target);
+                // [✨ 핵심 수정] 이미 정리 목록에 있는지 확인하여 중복 추가를 방지합니다.
+                if (!targetsToRemove.Contains(target))
+                {
+                    targetsToRemove.Add(target);
+                }
                 continue;
             }
+
             var effectsOnTarget = entry.Value;
-            // 리스트를 역순으로 순회해야 중간에 아이템이 제거되어도 안전합니다.
-            for (int i = effectsOnTarget.Count - 1; i >= 0; i--)
+            for (int i = effectsOnTarget.Count - 1; i >= 0; i--)
             {
                 var effect = effectsOnTarget[i];
-                effect.Tick(Time.deltaTime); // 효과의 시간 흐름 처리
-                // 효과가 만료되었다면, 제거 목록에 추가합니다.
-                if (effect.IsExpired)
+                effect.Tick(Time.deltaTime);
+                if (effect.IsExpired)
                 {
                     effectsToRemove.Add(effect);
                 }
             }
         }
-        // 2. 만료된 것으로 표시된 모든 효과를 실제로 제거합니다.
+
         foreach (var effect in effectsToRemove)
         {
-            Debug.Log($"<color=yellow>[StatusEffect]</color> '{effect.Target.name}'의 '{effect.EffectId}' 효과가 만료되어 제거합니다.");
             RemoveStatusEffect(effect);
         }
-        // 3. 파괴되거나 비활성화된 타겟과 관련된 모든 데이터를 정리합니다.
-        foreach (var target in targetsToRemove)
+
+        foreach (var target in targetsToRemove)
         {
             if (activeEffects.TryGetValue(target, out var effects))
             {
-                Debug.LogWarning($"[StatusEffectManager] 타겟 '{target.name}'이 비활성화/파괴되어, 남은 효과 {effects.Count}개를 모두 정리합니다.");
-                // 타겟이 사라졌으므로, 각 효과의 제거 로직(스탯 복구 등)을 호출합니다.
-                foreach (var effect in effects.ToList()) // ToList()로 사본을 만들어 안전하게 순회
-                {
+                foreach (var effect in effects.ToList())
+                {
                     effect.RemoveEffect();
                 }
-                // 최종적으로 딕셔너리에서 해당 타겟 항목을 삭제합니다.
-                activeEffects.Remove(target);
+                activeEffects.Remove(target);
             }
         }
     }
-    /// <summary>
-    /// 특정 상태 효과 인스턴스를 대상의 목록에서 제거합니다.
-    /// </summary>
-    private void RemoveStatusEffect(StatusEffectInstance effect)
+
+    /// <summary>
+    /// 특정 상태 효과 인스턴스를 대상의 목록에서 제거합니다.
+    /// </summary>
+    private void RemoveStatusEffect(StatusEffectInstance effect)
     {
         if (effect?.Target == null) return;
         if (activeEffects.TryGetValue(effect.Target, out var effectList))
