@@ -36,7 +36,9 @@ public enum StatType
     MoveSpeed,
     Health,
     CritMultiplier,
-    CritRate
+    CritRate,
+    DamageTaken,
+    ContactDamage
 }
 
 public enum TargetingType

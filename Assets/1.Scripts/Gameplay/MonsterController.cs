@@ -1,47 +1,39 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody2D))]
+[RequireComponent(typeof(Rigidbody2D), typeof(MonsterStats))]
 public class MonsterController : MonoBehaviour
 {
-    public static event System.Action<float, Vector3> OnMonsterDamaged;
-    public static event System.Action<MonsterController> OnMonsterDied;
+    public static event Action<float, Vector3> OnMonsterDamaged;
+    public static event Action<MonsterController> OnMonsterDied;
 
-    [HideInInspector] public float moveSpeed;
-    [HideInInspector] public float contactDamage;
-    [HideInInspector] public float maxHealth;
-    public float currentHealth;
+    [HideInInspector] public float maxHealth; // MonsterStats에서 참조할 수 있도록 유지
 
-    private MonsterDataSO monsterData;
+    private MonsterStats monsterStats; 
     private Transform playerTransform;
-    private bool isInvulnerable = false;
     private Rigidbody2D rb;
+    private bool isInvulnerable = false;
+    private bool isDead = false;
 
     private const float DAMAGE_INTERVAL = 0.1f;
     private float damageTimer = 0f;
     private bool isTouchingPlayer = false;
-
-    private HashSet<string> _hitShotIDsThisFrame = new HashSet<string>(); 
+    private HashSet<string> _hitShotIDsThisFrame = new HashSet<string>();
     private int _lastHitFrame;
-
-    private bool isDead = false;
 
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+        monsterStats = GetComponent<MonsterStats>(); 
     }
-
     void OnEnable()
     {
         ServiceLocator.Get<MonsterManager>()?.RegisterMonster(this);
         isDead = false;
-        if (monsterData != null)
-        {
-            currentHealth = monsterData.maxHealth;
-        }
         isInvulnerable = false;
 
         var playerController = ServiceLocator.Get<PlayerController>();
@@ -50,6 +42,7 @@ public class MonsterController : MonoBehaviour
             playerTransform = playerController.transform;
         }
     }
+
     void OnDisable()
     {
         if (ServiceLocator.IsRegistered<MonsterManager>())
@@ -60,13 +53,11 @@ public class MonsterController : MonoBehaviour
 
     public void Initialize(MonsterDataSO data)
     {
-        monsterData = data;
-        maxHealth = data.maxHealth;
-        moveSpeed = data.moveSpeed;
-        contactDamage = data.contactDamage;
-        currentHealth = maxHealth;
+        monsterStats.Initialize(data); // [✨ 변경] MonsterStats 초기화
+        maxHealth = monsterStats.FinalMaxHealth; // 초기 maxHealth값 할당
         isDead = false;
     }
+
 
     void Update()
     {
@@ -86,16 +77,8 @@ public class MonsterController : MonoBehaviour
         if (playerTransform == null)
         {
             var playerController = ServiceLocator.Get<PlayerController>();
-            if (playerController != null)
-            {
-                playerTransform = playerController.transform;
-            }
-            else
-            {
-                // 아직 플레이어를 찾을 수 없으면 아무것도 하지 않고 대기
-                rb.velocity = Vector2.zero;
-                return;
-            }
+            if (playerController != null) playerTransform = playerController.transform;
+            else { rb.velocity = Vector2.zero; return; }
         }
 
         if (isInvulnerable || isDead)
@@ -105,7 +88,7 @@ public class MonsterController : MonoBehaviour
         }
 
         Vector2 direction = (playerTransform.position - transform.position).normalized;
-        rb.velocity = direction * moveSpeed;
+        rb.velocity = direction * monsterStats.FinalMoveSpeed;
     }
     void OnCollisionEnter2D(Collision2D collision)
     {
@@ -124,6 +107,7 @@ public class MonsterController : MonoBehaviour
             damageTimer = DAMAGE_INTERVAL; // 즉시 데미지를 주기 위해 타이머 초기화
         }
     }
+
     private void LeavePlayer(GameObject target)
     {
         if (target.CompareTag(Tags.Player))
@@ -135,22 +119,30 @@ public class MonsterController : MonoBehaviour
 
     private void ApplyContactDamage()
     {
-        Debug.Log("[DAMAGE-DEBUG 3/4] ApplyContactDamage 호출됨.");
         if (playerTransform != null && playerTransform.TryGetComponent<CharacterStats>(out var playerStats))
         {
-            playerStats.TakeDamage(contactDamage);
+            playerStats.TakeDamage(monsterStats.FinalContactDamage);
         }
     }
+
     public void TakeDamage(float damage)
     {
         if (isDead || isInvulnerable) return;
-        currentHealth -= damage;
-        OnMonsterDamaged?.Invoke(damage, transform.position);
 
-        if (currentHealth <= 0)
+        monsterStats.TakeDamage(damage); 
+
+        if (monsterStats.IsDead())
         {
             Die();
         }
+    }
+
+    /// <summary>
+    /// [ 신규 추가] MonsterStats로부터 피해를 받았음을 알림받고, 이벤트를 발생시키는 메서드입니다.
+    /// </summary>
+    public void NotifyDamageTaken(float finalDamage)
+    {
+        OnMonsterDamaged?.Invoke(finalDamage, transform.position);
     }
 
     private void Die()
@@ -159,6 +151,12 @@ public class MonsterController : MonoBehaviour
         isDead = true;
         OnMonsterDied?.Invoke(this);
         ServiceLocator.Get<PoolManager>().Release(gameObject);
+    }
+
+    // [ 신규 추가] 다른 스크립트에서 체력 정보를 안전하게 가져갈 수 있는 통로입니다.
+    public float GetCurrentHealth()
+    {
+        return monsterStats != null ? monsterStats.CurrentHealth : 0;
     }
 
     public void SetInvulnerable(float duration)

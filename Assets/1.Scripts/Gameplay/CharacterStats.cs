@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 [RequireComponent(typeof(PlayerHealthBar))]
-public class CharacterStats : MonoBehaviour
+public class CharacterStats : MonoBehaviour, IStatHolder
 {
     [Header("기본 능력치")]
     public BaseStats stats;

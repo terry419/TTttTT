@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections.Generic;
 
 
@@ -65,60 +65,35 @@ public class ApplyEffectToHitTargetModule : CardEffectSO
 
 
     public override void Execute(EffectContext context)
-
     {
+        if (context.HitTarget == null) return;
+        if (Random.Range(0f, 100f) > ApplicationChance) return;
 
-        // 1. 유효성 검사: 이 모듈은 피격 대상(HitTarget)이 있어야만 의미가 있습니다.
+        var statBonuses = new Dictionary<StatType, float>();
+        if (MoveSpeedBonus != 0) statBonuses.Add(StatType.MoveSpeed, MoveSpeedBonus);
+        if (DamageTakenBonus != 0) statBonuses.Add(StatType.DamageTaken, DamageTakenBonus);
+        if (ContactDamageBonus != 0) statBonuses.Add(StatType.ContactDamage, ContactDamageBonus);
 
-        if (context.HitTarget == null)
+        // [ 핵심 변경] 2단계 최종 버전에 맞는 StatusEffectInstance 생성자를 호출합니다.
+        var effectInstance = new StatusEffectInstance(
+            target: context.HitTarget.gameObject,
+            id: StatusEffectID,
+            duration: Duration,
+            bonuses: statBonuses,
+            dotAmount: DamageAmount,
+            dotType: DamageType, // DamageType, HealType 등 모든 파라미터 전달
+            scales: ScalesWithDmgBonus,
+            healAmount: HealAmount,
+            healDuration: HealDuration,
+            healType: HealType,
+            stacking: StackingBehavior,
+            caster: context.Caster,
+            onApplyVFX: OnApplyVFX,
+            loopingVFX: LoopingVFX,
+            onExpireVFX: OnExpireVFX
+        );
 
-        {
-
-            Debug.LogWarning($"<color=yellow>[{GetType().Name}]</color> '{this.name}' 실행 중단: HitTarget이 없어 효과를 적용할 대상이 없습니다.");
-
-            return;
-
-        }
-
-        Debug.Log($"<color=lime>[{GetType().Name}]</color> '{this.name}' 실행 시도. 대상: {context.HitTarget.name}");
-        // 2. 확률 체크: ApplicationChance에 따라 효과를 적용할지 결정합니다.
-
-        if (Random.Range(0f, 100f) > ApplicationChance)
-
-        {
-
-            Debug.Log($"<color=yellow>[{GetType().Name}]</color> 확률({ApplicationChance}%) 체크에 실패하여 효과가 적용되지 않았습니다.");
-
-            return;
-
-        }
-
-        // 3. 효과 데이터 구성: 인스펙터에 설정된 값들을 바탕으로 StatusEffectInstance에 전달할 데이터를 준비합니다.
-
-        var statBonuses = new Dictionary<StatType, float>();
-
-        if (MoveSpeedBonus != 0) statBonuses[StatType.MoveSpeed] = MoveSpeedBonus;
-
-        // TODO: 2단계에서 DamageTakenBonus, ContactDamageBonus 스탯이 구현되면 여기에 추가해야 합니다.
-
-        // 4. 효과 인스턴스 생성: 준비된 데이터를 사용하여 새로운 효과 인스턴스를 만듭니다.
-
-        var effectInstance = new StatusEffectInstance(
-      context.HitTarget.gameObject,
-      StatusEffectID,
-      Duration,
-      statBonuses,
-      DamageAmount,
-      HealAmount,
-      StackingBehavior,
-      ScalesWithDmgBonus,
-      context.Caster
-
-    );
-
-        // 5. 효과 적용 요청: StatusEffectManager에게 생성된 인스턴스를 전달하여 실제 효과 적용을 위임합니다.
-        ServiceLocator.Get<StatusEffectManager>()?.ApplyStatusEffect(context.HitTarget.gameObject, effectInstance);
-        Debug.Log($"<color=cyan>[{GetType().Name}]</color> '{context.HitTarget.name}'에게 '{StatusEffectID}' 효과 적용을 요청했습니다. (지속시간: {Duration}초, 초당피해: {DamageAmount})");
+        ServiceLocator.Get<StatusEffectManager>()?.ApplyStatusEffect(context.HitTarget.gameObject, effectInstance);
     }
 
 }

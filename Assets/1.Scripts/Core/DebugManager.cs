@@ -138,7 +138,8 @@ public class DebugManager : MonoBehaviour
         MonsterController[] monsters = FindObjectsOfType<MonsterController>();
         foreach (var monster in monsters)
         {
-            monster.TakeDamage(monster.currentHealth);
+            // [ 변경] GetCurrentHealth() 메서드를 사용합니다.
+            monster.TakeDamage(monster.GetCurrentHealth());
         }
         Debug.Log($"{monsters.Length}마리의 몬스터를 처치했습니다.");
     }

@@ -38,9 +38,11 @@ public static class TargetingSystem
             // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
             case TargetingType.HighestHealth:
-                return availableMonsters.OrderByDescending(m => m.currentHealth).FirstOrDefault()?.transform;
+                // [ 변경] GetCurrentHealth() 메서드를 사용합니다.
+                return availableMonsters.OrderByDescending(m => m.GetCurrentHealth()).FirstOrDefault()?.transform;
             case TargetingType.LowestHealth:
-                return availableMonsters.OrderBy(m => m.currentHealth).FirstOrDefault()?.transform;
+                // [ 변경] GetCurrentHealth() 메서드를 사용합니다.
+                return availableMonsters.OrderBy(m => m.GetCurrentHealth()).FirstOrDefault()?.transform;
             case TargetingType.Random:
                 return availableMonsters[Random.Range(0, availableMonsters.Count)].transform;
             case TargetingType.Forward:
