@@ -261,7 +261,7 @@ public class RoundManager : MonoBehaviour
         var poolManager = ServiceLocator.Get<PoolManager>();
         if (poolManager != null)
         {
-            poolManager.ClearAllActiveObjects();
+            poolManager.ReturnAllActiveObjectsToPool();
         }
 
         Debug.Log($"[{GetType().Name}] GameManager 상태 변경 요청: {GameManager.GameState.Reward}");
@@ -303,5 +303,12 @@ public class RoundManager : MonoBehaviour
             Debug.Log($"[{GetType().Name}] 목표 킬 수를 달성했습니다! 라운드를 승리로 종료합니다.");
             StartCoroutine(EndRoundCoroutine(true));
         }
+    }
+    private void OnDestroy()
+    {
+        OnRoundStarted = null;
+        OnKillCountChanged = null;
+        OnTimerChanged = null;
+        OnRoundEnded = null;
     }
 }

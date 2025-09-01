@@ -38,7 +38,8 @@ public class HUDController : MonoBehaviour
 
     private void HandleRoundStarted(RoundDataSO roundData)
     {
-        // [유령 추적 2] 어떤 HUD가 방송을 수신하는지 확인합니다.
+        Debug.Log($"[HUD DEBUG] HandleRoundStarted 호출됨. killCountText는 {(killCountText == null ? "NULL" : "VALID")}, timerText는 {(timerText == null ? "NULL" : "VALID")} 입니다.");
+
         UpdateKillCount(0, roundData.killGoal);
         UpdateTimer(roundData.roundDuration);
     }
@@ -68,6 +69,8 @@ public class HUDController : MonoBehaviour
 
     public void UpdateKillCount(int currentKills, int goalKills)
     {
+        Debug.Log($"[HUD DEBUG] UpdateKillCount 호출됨. killCountText는 {(killCountText == null ? "NULL" : "VALID")} 입니다. killCountText.text에 접근 직전입니다.");
+
         if (killCountText != null)
         {
             killCountText.text = $"Kills: {currentKills} / {goalKills}";

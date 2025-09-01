@@ -104,12 +104,23 @@ public class GameManager : MonoBehaviour
     {
         if (CurrentState == newState && CurrentState != GameState.Gameplay) return;
         Debug.Log($"[GameManager] 상태 변경: {CurrentState} -> {newState}");
+
+
+        // 현재 상태가 Gameplay였고, 다음 상태가 Gameplay가 아닐 때 풀을 정리합니다.
+        if (CurrentState == GameState.Gameplay && newState != GameState.Gameplay)
+        {
+            var poolManager = ServiceLocator.Get<PoolManager>();
+            if (poolManager != null)
+            {
+                Debug.Log($"[GameManager] Gameplay 씬을 떠나므로 모든 풀링된 오브젝트를 파괴합니다.");
+                poolManager.ClearAndDestroyEntirePool(); // 1단계에서 변경한 새 이름 사용
+            }
+        }
+
         CurrentState = newState;
 
-        // InputManager의 상태 변경은 OnGameStateChanged 이벤트를 통해 처리됩니다.
-        // 직접 호출 로직을 제거하여 중복 호출 및 잘못된 오류 로그 문제를 해결합니다.
         if (inputManager == null)
-        { 
+        {
             Debug.LogWarning("[GameManager] InputManager가 아직 참조되지 않았습니다. 다음 프레임에 처리될 예정입니다.");
         }
 
@@ -136,11 +147,9 @@ public class GameManager : MonoBehaviour
 
         if (!string.IsNullOrEmpty(sceneName))
         {
-            Debug.Log($"[INPUT TRACE] GameManager.ChangeState: SceneTransitionManager에게 '{sceneName}' 씬 로드 요청.");
             sceneTransitionManager.LoadScene(sceneName);
         }
     }
-
 
     private string GetSceneNameForState(GameState state)
     {
@@ -215,7 +224,7 @@ public class GameManager : MonoBehaviour
         var poolManager = ServiceLocator.Get<PoolManager>();
         if (poolManager != null)
         {
-            poolManager.DestroyAllPooledObjects();
+            poolManager.ClearAndDestroyEntirePool();
         }
 
         var popupController = ServiceLocator.Get<PopupController>();

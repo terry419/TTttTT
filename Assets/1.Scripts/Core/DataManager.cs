@@ -38,7 +38,7 @@ public class DataManager : MonoBehaviour
         if (resourceManager == null) yield break;
 
         // [수정] CardDataSO 로딩 핸들 삭제, NewCardDataSO 핸들 추가
-        var newCardHandle = resourceManager.LoadAllAsync<NewCardDataSO>("data_card_new"); // NewCardDataSO용 레이블
+        var newCardHandle = resourceManager.LoadAllAsync<NewCardDataSO>("data_card"); 
         var artifactHandle = resourceManager.LoadAllAsync<ArtifactDataSO>("data_artifact");
         var characterHandle = resourceManager.LoadAllAsync<CharacterDataSO>("data_character");
         var monsterHandle = resourceManager.LoadAllAsync<MonsterDataSO>("data_monster");

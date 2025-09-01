@@ -113,7 +113,7 @@ public class PoolManager : MonoBehaviour
         instance.transform.SetParent(transform);
         _poolDictionary[key].Enqueue(instance);
     }
-    public void ClearAllActiveObjects()
+    public void ReturnAllActiveObjectsToPool()
     {
         foreach (var obj in _activePooledObjects.ToList())
         {
@@ -122,7 +122,7 @@ public class PoolManager : MonoBehaviour
         _activePooledObjects.Clear();
     }
 
-    public void DestroyAllPooledObjects()
+    public void ClearAndDestroyEntirePool()
     {
         var resourceManager = ServiceLocator.Get<ResourceManager>();
         foreach (var obj in _activePooledObjects) { Destroy(obj); }
