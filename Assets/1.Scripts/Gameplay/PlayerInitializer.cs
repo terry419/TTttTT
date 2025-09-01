@@ -96,7 +96,5 @@ public class PlayerInitializer : MonoBehaviour
         playerStats.currentHealth = playerStats.FinalHealth;
 
         if (cardManager != null) cardManager.StartCardSelectionLoop();
-
-        if (playerController != null) playerController.StartAutoAttackLoop();
     }
 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PoolManager : MonoBehaviour
 {
@@ -24,7 +25,21 @@ public class PoolManager : MonoBehaviour
         }
     }
 
+    private void OnEnable()
+    {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
 
+    private void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    // 새 씬이 로드될 때 풀을 정리하여 MissingReferenceException을 방지합니다.
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        ClearAndDestroyEntirePool();
+    }
 
     public async UniTask<GameObject> GetAsync(string key)
     {
@@ -43,9 +58,18 @@ public class PoolManager : MonoBehaviour
             if (_poolDictionary.TryGetValue(key, out var queue) && queue.Count > 0)
             {
                 GameObject obj = queue.Dequeue();
-                obj.SetActive(true);
-                _activePooledObjects.Add(obj);
-                return obj;
+                
+                // OnSceneLoaded에서 풀이 정리되므로, 이 경우는 거의 발생하지 않지만 안전을 위해 유지합니다.
+                if (obj == null)
+                {
+                    // null이면 새 오브젝트를 생성하도록 로직을 이어갑니다.
+                }
+                else
+                {
+                    obj.SetActive(true);
+                    _activePooledObjects.Add(obj);
+                    return obj;
+                }
             }
 
             if (!_prefabTemplates.ContainsKey(key) || _prefabTemplates[key] == null)
@@ -125,12 +149,12 @@ public class PoolManager : MonoBehaviour
     public void ClearAndDestroyEntirePool()
     {
         var resourceManager = ServiceLocator.Get<ResourceManager>();
-        foreach (var obj in _activePooledObjects) { Destroy(obj); }
+        foreach (var obj in _activePooledObjects) { if(obj != null) Destroy(obj); }
         _activePooledObjects.Clear();
 
         foreach (var queue in _poolDictionary.Values)
         {
-            foreach (var obj in queue) { Destroy(obj); }
+            foreach (var obj in queue) { if(obj != null) Destroy(obj); }
         }
         _poolDictionary.Clear();
 
@@ -142,3 +166,4 @@ public class PoolManager : MonoBehaviour
         _prefabTemplates.Clear();
     }
 }
+

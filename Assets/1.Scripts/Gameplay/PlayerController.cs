@@ -33,6 +33,7 @@ public class PlayerController : MonoBehaviour
             inputManager.InputActions.Gameplay.Move.performed += HandleMove;
             inputManager.InputActions.Gameplay.Move.canceled += HandleMove;
         }
+        RoundManager.OnRoundStarted += HandleRoundStarted;
         RoundManager.OnRoundEnded += HandleRoundEnd;
     }
 
@@ -47,6 +48,11 @@ public class PlayerController : MonoBehaviour
         _attackLoopCts?.Cancel();
         _attackLoopCts?.Dispose();
         _attackLoopCts = null;
+    }
+    private void HandleRoundStarted(RoundDataSO roundData)
+    {
+        // 라운드가 공식적으로 시작되었을 때만 자동 공격을 시작합니다.
+        StartAutoAttackLoop();
     }
 
     private void OnDestroy()
@@ -93,11 +99,27 @@ public class PlayerController : MonoBehaviour
 
     private async void PerformAttack()
     {
-        if (cardManager?.activeCard == null) return;
-        var cardInstance = cardManager.activeCard;
-        ICardAction action = cardInstance.CardData.CreateAction();
-        var context = new CardActionContext(cardInstance, stats, firePoint);
-        await action.Execute(context);
+        try
+        {
+            if (cardManager?.activeCard == null) return;
+            var cardInstance = cardManager.activeCard;
+
+            // [FIX] 공격 실행 직전, 해당 카드 인스턴스가 여전히 장착 목록에 있는지 확인합니다.
+            // 이를 통해 합성 등으로 제거된 카드를 사용하려는 시도를 막습니다.
+            if (!cardManager.equippedCards.Contains(cardInstance))
+            {
+                return; // 카드가 더 이상 유효하지 않으므로 공격을 중단합니다.
+            }
+
+            ICardAction action = cardInstance.CardData.CreateAction();
+            var context = new CardActionContext(cardInstance, stats, firePoint);
+            await action.Execute(context);
+        }
+        catch (MissingReferenceException ex)
+        {
+            // [증거 확보] 만약 오류가 이 블록에서 발생했다면, 아래의 특수 로그가 출력됩니다.
+            Debug.LogError($"[!!! 100% 증거 확보 !!!] MissingReferenceException이 PlayerController.PerformAttack() 내부에서 발생했습니다. 이는 공격 실행 과정(카드 모듈 등)의 문제입니다. 원본 오류: {ex.Message}\n{ex.StackTrace}");
+        }
     }
 
     void FixedUpdate()
