@@ -54,6 +54,8 @@ public class CurseExplosionManager : MonoBehaviour
     /// </summary>
     private void HandleMonsterDied(MonsterController deadMonster)
     {
+        Debug.Log($"[DEBUG-CEM] HandleMonsterDied: '{deadMonster?.name ?? "NULL"}'의 죽음 처리 시작.");
+
         if (deadMonster == null || statusEffectManager == null || string.IsNullOrEmpty(curseStatusEffectID))
         {
             return;
@@ -63,7 +65,9 @@ public class CurseExplosionManager : MonoBehaviour
         {
             Debug.Log($"<color=magenta>[CurseExplosionManager]</color> 저주에 걸린 '{deadMonster.name}'의 죽음을 감지! 효과를 발동합니다.");
             // 비동기 작업이므로 UniTask의 'Forget'으로 처리
+            Debug.Log("[DEBUG-CEM] CreateExplosion 호출 시도...");
             CreateExplosion(deadMonster.transform.position).Forget();
+            Debug.Log("[DEBUG-CEM] FireCurseMissiles 호출 시도...");
             FireCurseMissiles(deadMonster.transform.position).Forget();
         }
     }
@@ -73,6 +77,7 @@ public class CurseExplosionManager : MonoBehaviour
     /// </summary>
     private async UniTaskVoid CreateExplosion(Vector3 position)
     {
+        Debug.Log("[DEBUG-CEM] CreateExplosion 내부 진입.");
         if (explosionPrefab == null || !explosionPrefab.RuntimeKeyIsValid()) return;
 
         var poolManager = ServiceLocator.Get<PoolManager>();
@@ -83,6 +88,7 @@ public class CurseExplosionManager : MonoBehaviour
         {
             ripple.transform.position = position;
             ripple.Initialize(playerStats, explosionRadius, explosionDuration, explosionDamage);
+            Debug.Log("[DEBUG-CEM] CreateExplosion 성공적으로 완료.");
         }
     }
 
@@ -91,6 +97,7 @@ public class CurseExplosionManager : MonoBehaviour
     /// </summary>
     private async UniTaskVoid FireCurseMissiles(Vector3 position)
     {
+        Debug.Log("[DEBUG-CEM] FireCurseMissiles 내부 진입.");
         if (curseMissileModuleRef == null || !curseMissileModuleRef.RuntimeKeyIsValid()) return;
 
         var resourceManager = ServiceLocator.Get<ResourceManager>();
@@ -117,9 +124,13 @@ public class CurseExplosionManager : MonoBehaviour
                 // 유도탄이 처음엔 랜덤한 방향으로 퍼져나가도록 설정
                 Vector2 randomDir = Random.insideUnitCircle.normalized;
 
+                Debug.Log($"[DEBUG-CEM] {i + 1}번째 유도탄 Initialize 호출 시도...");
+
+
                 // 유도탄 초기화. 피해량은 0으로 설정하여 '저주 전파' 역할만 하도록 함
                 bullet.Initialize(randomDir, missileModule.speed * 10f, 0, System.Guid.NewGuid().ToString(), null, missileModule, playerStats, null);
             }
         }
+        Debug.Log("[DEBUG-CEM] FireCurseMissiles 성공적으로 완료.");
     }
 }

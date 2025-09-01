@@ -89,9 +89,22 @@ public class BulletController : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
+        if (other == null || other.gameObject == null)
+        {
+            return;
+        }
         if (!other.CompareTag(Tags.Monster) || _hitMonsters.Contains(other.gameObject)) return;
         if (other.TryGetComponent<MonsterController>(out var monster))
         {
+            if (monster == null)
+            {
+                Debug.LogError("[BULLET DEBUG] Stage 1: monster 객체가 이 시점에서 null(파괴됨)입니다.");
+                return;
+            }
+
+            bool canHitMultiple = (sourcePlatform != null) ? sourcePlatform.allowMultipleHits : false;
+
+
             // [추가] 샷건 다중 히트 방지 로직
             // ProjectileEffectSO에 제어 변수를 추가할 수 있지만, 지금은 기본적으로 1회만 히트하도록 합니다.
             if (!monster.RegisterHitByShot(this.shotInstanceID, sourcePlatform.allowMultipleHits))
@@ -100,10 +113,21 @@ public class BulletController : MonoBehaviour
             }
             else
             {
-                // 처음 맞는 경우에만 데미지를 줍니다.
                 monster.TakeDamage(this.damage);
                 _hitMonsters.Add(other.gameObject);
+
+                // 2단계: monster.transform을 사용하기 직전에 확인합니다.
+                if (monster.transform == null)
+                {
+                    Debug.LogError("[BULLET DEBUG] Stage 2: monster.transform이 null입니다! HandlePayloads_Async 호출 직전 오류 발생.");
+                    return;
+                }
                 _ = HandlePayloads_Async(monster.transform);
+            }
+            if (monster.transform == null)
+            {
+                Debug.LogError("[BULLET DEBUG] Stage 3: monster.transform이 null입니다! TryRicochet 호출 직전 오류 발생.");
+                return;
             }
 
             if (TryRicochet(monster.transform)) return;
@@ -135,6 +159,8 @@ public class BulletController : MonoBehaviour
 
     private async UniTaskVoid HandlePayloads_Async(Transform hitTarget)
     {
+        Debug.Log($"[DEBUG-BULLET] HandlePayloads_Async 진입. 대상: {hitTarget?.name ?? "NULL"}");
+
         if (SourceModule?.sequentialPayloads == null) return;
         var resourceManager = ServiceLocator.Get<ResourceManager>();
 
@@ -142,6 +168,8 @@ public class BulletController : MonoBehaviour
         {
             if (payload.onBounceNumber == _bounceCountForPayload)
             {
+                Debug.Log($"[DEBUG-BULLET] Payload 효과 실행 시도. 모듈 GUID: {payload.effectToTrigger.AssetGUID}");
+
                 CardEffectSO module = await resourceManager.LoadAsync<CardEffectSO>(payload.effectToTrigger.AssetGUID);
                 if (module == null) continue;
 
@@ -159,6 +187,7 @@ public class BulletController : MonoBehaviour
                     context.BaseDamageOverride = payload.overrideBaseDamage;
                 }
                 module.Execute(context);
+                Debug.Log($"[DEBUG-BULLET] Payload 효과 '{module.name}' 실행 완료.");
             }
         }
     }
