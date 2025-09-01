@@ -13,6 +13,9 @@ public class CardDisplay : MonoBehaviour
     [SerializeField] private Image cardIconImage;
     [SerializeField] private Image rarityImage;
     [SerializeField] private Image highlightBorder;
+
+    public TextMeshProUGUI nameText;
+    public TextMeshProUGUI descriptionText;
     public Button selectButton;
     public CardSelectedEvent OnCardSelected;
 
@@ -56,6 +59,22 @@ public class CardDisplay : MonoBehaviour
         {
             // EnhancementLevel은 0부터 시작하므로, 사용자에게 보여줄 때는 +1을 해줍니다 (Lv.1, Lv.2...)
             nameText.text = $"{cardInstance.CardData.basicInfo.cardName} (Lv.{cardInstance.EnhancementLevel + 1})";
+        }
+    }
+
+    public void ConfigureFonts(float nameFontSize, float descriptionFontSize)
+    {
+        // 1. Auto Size 기능을 비활성화합니다.
+        if (nameText != null)
+        {
+            nameText.enableAutoSizing = false;
+            nameText.fontSize = nameFontSize;
+        }
+
+        if (descriptionText != null)
+        {
+            descriptionText.enableAutoSizing = false;
+            descriptionText.fontSize = descriptionFontSize;
         }
     }
 }
