@@ -127,7 +127,7 @@ public class StatusEffectManager : MonoBehaviour
     /// <summary>
     /// 특정 상태 효과 인스턴스를 대상의 목록에서 제거합니다.
     /// </summary>
-    private void RemoveStatusEffect(StatusEffectInstance effect)
+    public void RemoveStatusEffect(StatusEffectInstance effect)
     {
         if (effect?.Target == null) return;
         if (activeEffects.TryGetValue(effect.Target, out var effectList))

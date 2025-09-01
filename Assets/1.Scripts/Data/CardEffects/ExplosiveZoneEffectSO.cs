@@ -1,73 +1,30 @@
-// ÆÄÀÏ °æ·Î: Assets/1/Scripts/Data/CardEffects/ExplosiveZoneEffectSO.cs
+// ï¿½ï¿½ï¿½: ./TTttTT/Assets/1/Scripts/Data/CardEffects/ExplosiveZoneEffectSO.cs
 using Cysharp.Threading.Tasks;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 
 /// <summary>
-/// Áï¹ß ÇÇÇØ¿Í Áö¼Ó ÇÇÇØ ÀåÆÇÀ» ¸ğµÎ »ı¼ºÇÏ´Â Ä«µå È¿°ú(¸ğµâ)ÀÇ µ¥ÀÌÅÍ SOÀÔ´Ï´Ù.
+/// [ï¿½ï¿½ï¿½ï¿½ ï¿½Ğ¸ï¿½] ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ß¼ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½)ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½Ô´Ï´ï¿½.
 /// </summary>
 [CreateAssetMenu(fileName = "Module_ExplosiveZone_", menuName = "GameData/v8.0/Modules/ExplosiveZoneEffect")]
-public class ExplosiveZoneEffectSO : CardEffectSO, IPreloadable
+public class ExplosiveZoneEffectSO : CardEffectSO
 {
-    // ========================================================================
-    // ## Áï¹ß Æø¹ß È¿°ú ¼½¼Ç ##
-    // ========================================================================
-    [Header("Áï¹ß Æø¹ß È¿°ú")]
-
-    [Tooltip("ÃÖÃÊ Æø¹ßÀÇ ¹°¸®Àû ´ë¹ÌÁö ¹İ°æÀÔ´Ï´Ù.")]
+    [Header("ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½")]
+    [Tooltip("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ø¸ï¿½ ï¿½Ö´ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½).")]
     public float explosionRadius = 5f;
 
-    [Tooltip("ÃÖÃÊ Æø¹ß ½Ã°¢ È¿°ú ÇÁ¸®ÆÕÀÔ´Ï´Ù. (¿¹: VFX_Explosion_Converge)")]
+    [Tooltip("ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½ È¿ï¿½ï¿½(VFX)ï¿½ï¿½ ï¿½ï¿½å·¹ï¿½ï¿½ï¿½ï¿½ ï¿½Ö¼ï¿½.")]
     public AssetReferenceGameObject explosionVfxRef;
 
-    // ========================================================================
-    // ## Áö¼Ó ÇÇÇØ ÀåÆÇ È¿°ú ¼½¼Ç ##
-    // ========================================================================
-    [Header("Áö¼Ó ÇÇÇØ ÀåÆÇ È¿°ú")]
-
-    [Tooltip("Áö¼Ó ÇÇÇØ ÀåÆÇÀÇ ¹°¸®Àû/½Ã°¢Àû ¹İ°æÀÔ´Ï´Ù.")]
-    public float zoneRadius = 8f;
-
-    [Tooltip("Áö¼Ó ÇÇÇØ ÀåÆÇ ÇÁ¸®ÆÕ (¿¹: DamageZone_Cracks_Prefab)")]
-    public AssetReferenceGameObject dotZonePrefabRef;
-
-    [Tooltip("ÀåÆÇ Áö¼Ó ½Ã°£ (ÃÊ)")]
-    public float zoneDuration = 5f;
-
-    [Tooltip("ÀåÆÇÀÇ 1Æ½´ç ´ë¹ÌÁö")]
-    public float zoneDamagePerTick = 5f;
-
-    [Tooltip("´ë¹ÌÁö Æ½ °£°İ (ÃÊ). 0.5´Â 0.5ÃÊ¸¶´Ù 1Æ½")]
-    public float zoneTickInterval = 0.5f;
-
-    /// <summary>
-    /// »ı¼ºÀÚ: ÀÌ È¿°ú´Â ±âº»ÀûÀ¸·Î 'ÇÇ°İ ½Ã(OnHit)' ¹ßµ¿ÇÏµµ·Ï ¼³Á¤ÇÕ´Ï´Ù.
-    /// </summary>
-    public ExplosiveZoneEffectSO()
-    {
-        trigger = EffectTrigger.OnHit;
-    }
-
-    /// <summary>
-    /// ÀÌ Ä«µå È¿°ú°¡ ½ÇÁ¦·Î ½ÇÇàµÇ´Â ÁøÀÔÁ¡ÀÔ´Ï´Ù.
-    /// Áï¹ß Æø¹ß°ú Áö¼Ó ÀåÆÇ »ı¼ºÀ» ¼øÂ÷ÀûÀ¸·Î È£ÃâÇÕ´Ï´Ù.
-    /// </summary>
     public override void Execute(EffectContext context)
     {
-        HandleExplosion(context);   // 1. Áï¹ß Æø¹ß ½ÇÇà
-        HandleZoneCreation(context);  // 2. Áö¼Ó ÀåÆÇ »ı¼º ½ÇÇà
+        HandleExplosion(context);
     }
 
-    /// <summary>
-    /// Áï¹ß Æø¹ßÀÇ ¹°¸® ´ë¹ÌÁö¿Í ½Ã°¢ È¿°ú¸¦ Ã³¸®ÇÕ´Ï´Ù.
-    /// </summary>
     private void HandleExplosion(EffectContext context)
     {
-        // À¯È¿ÇÏÁö ¾ÊÀº °ªÀÌ¸é ½ÇÇàÇÏÁö ¾ÊÀ½
         if (explosionRadius <= 0) return;
 
-        // ÃÖÁ¾ ´ë¹ÌÁö °è»ê (Ä«µå ±âº» ÇÇÇØ·® * °­È­ ·¹º§ º¸³Ê½º * ½ÃÀüÀÚ ½ºÅÈ º¸³Ê½º)
         float finalExplosionDamage = 0;
         if (context.SourceCardInstance != null)
         {
@@ -77,61 +34,32 @@ public class ExplosiveZoneEffectSO : CardEffectSO, IPreloadable
             finalExplosionDamage = enhancedBaseDamage * (1 + context.Caster.FinalDamageBonus / 100f);
         }
 
-        // ÁöÁ¤µÈ explosionRadius Å©±âÀÇ ¿ø ¾È¿¡ ÀÖ´Â ¸ğµç Äİ¶óÀÌ´õ¸¦ °¨Áö
-        Collider2D[] hitColliders = new Collider2D[30]; // ÃÖ´ë 30°³±îÁö¸¸ °¨Áö
+        Collider2D[] hitColliders = new Collider2D[30];
         int numColliders = Physics2D.OverlapCircleNonAlloc(context.HitPosition, explosionRadius, hitColliders);
 
-        // °¨ÁöµÈ ¸ğµç Äİ¶óÀÌ´õ¸¦ ¼øÈ¸ÇÏ¸ç ¸ó½ºÅÍ¿¡°Ô ´ë¹ÌÁö¸¦ ÀÔÈû
         for (int i = 0; i < numColliders; i++)
         {
             if (hitColliders[i].TryGetComponent<MonsterController>(out var monster))
             {
+                // [ìˆ˜ì •] ì´ì•Œì— ì§ì ‘ ë§ì€ ëŒ€ìƒì€ í­ë°œ í”¼í•´ì—ì„œ ì œì™¸í•©ë‹ˆë‹¤.
+                if (monster == context.HitTarget)
+                {
+                    continue;
+                }
                 monster.TakeDamage(finalExplosionDamage);
             }
         }
 
-        // Addressable·Î ¿¬°áµÈ ½Ã°¢ È¿°ú(VFX) ÇÁ¸®ÆÕÀÌ À¯È¿ÇÑÁö È®ÀÎ
         if (explosionVfxRef.RuntimeKeyIsValid())
         {
-            // PoolManager¸¦ ÅëÇØ ºñµ¿±âÀûÀ¸·Î VFX ¿ÀºêÁ§Æ®¸¦ °¡Á®¿È
             ServiceLocator.Get<PoolManager>().GetAsync(explosionVfxRef.AssetGUID).ContinueWith(vfxGO => {
                 if (vfxGO != null)
                 {
-                    vfxGO.transform.position = context.HitPosition; // Æø¹ß À§Ä¡·Î ÀÌµ¿
-                    float scale = explosionRadius * 2f; // ¹°¸® ¹İ°æ¿¡ ¸ÂÃç ½Ã°¢ È¿°ú Å©±â Á¶Àı (¹İ°æ*2=Áö¸§)
+                    vfxGO.transform.position = context.HitPosition;
+                    float scale = explosionRadius * 2f;
                     vfxGO.transform.localScale = new Vector3(scale, scale, 1f);
                 }
             });
         }
-    }
-
-    /// <summary>
-    /// Áö¼Ó ÇÇÇØ ÀåÆÇ ¿ÀºêÁ§Æ®¸¦ »ı¼ºÇÏ°í ÃÊ±âÈ­ÇÕ´Ï´Ù.
-    /// </summary>
-    private void HandleZoneCreation(EffectContext context)
-    {
-        if (zoneRadius <= 0 || !dotZonePrefabRef.RuntimeKeyIsValid()) return;
-
-        // PoolManager¸¦ ÅëÇØ ÀåÆÇ ÇÁ¸®ÆÕÀ» °¡Á®¿È
-        ServiceLocator.Get<PoolManager>().GetAsync(dotZonePrefabRef.AssetGUID).ContinueWith(zoneGO => {
-            // °¡Á®¿Â ¿ÀºêÁ§Æ®¿¡ DamageZoneController ½ºÅ©¸³Æ®°¡ ÀÖ´ÂÁö È®ÀÎ
-            if (zoneGO != null && zoneGO.TryGetComponent<DamageZoneController>(out var zoneController))
-            {
-                zoneController.transform.position = context.HitPosition; // ÀåÆÇ À§Ä¡ ¼³Á¤
-                // DamageZoneController¸¦ ÃÊ±âÈ­ÇÏ¸é¼­ Áö¼Ó½Ã°£, ¹İ°æ, ´ë¹ÌÁö µî ÀÌ ½ºÅ©¸³Æ®ÀÇ µ¥ÀÌÅÍ¸¦ Àü´Ş
-                zoneController.Initialize(zoneDuration, zoneRadius, zoneDamagePerTick, zoneTickInterval);
-            }
-        });
-    }
-
-    /// <summary>
-    /// °ÔÀÓ ½ÃÀÛ Àü ·Îµù(Preloading) ½Ã ¹Ì¸® »ı¼ºÇØ µÑ ÇÁ¸®ÆÕ ¸ñ·ÏÀ» ¹İÈ¯ÇÕ´Ï´Ù.
-    /// </summary>
-    public IEnumerable<AssetReferenceGameObject> GetPrefabsToPreload()
-    {
-        if (explosionVfxRef != null && explosionVfxRef.RuntimeKeyIsValid())
-            yield return explosionVfxRef;
-        if (dotZonePrefabRef != null && dotZonePrefabRef.RuntimeKeyIsValid())
-            yield return dotZonePrefabRef;
     }
 }

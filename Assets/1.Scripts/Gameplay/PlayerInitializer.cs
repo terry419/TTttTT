@@ -10,6 +10,7 @@ public class PlayerInitializer : MonoBehaviour
     {
 
         var playerStats = GetComponent<CharacterStats>();
+        GetComponent<SpriteRenderer>().sortingOrder = 20; // [추가] 플레이어 렌더링 순서 설정
         var playerController = GetComponent<PlayerController>();
         var gameManager = ServiceLocator.Get<GameManager>();
 
@@ -40,7 +41,11 @@ public class PlayerInitializer : MonoBehaviour
 
         if (gameManager.isFirstRound)
         {
-            if (cardManager != null) cardManager.LinkToNewPlayer(playerStats);
+            if (cardManager != null)
+            {
+                cardManager.ClearAndResetDeck(); // [v9.0 수정] 새 게임 시작 시 카드 목록을 완전히 초기화
+                cardManager.LinkToNewPlayer(playerStats);
+            }
             if (artifactManager != null) artifactManager.LinkToNewPlayer(playerStats);
 
             var progressionManager = ServiceLocator.Get<ProgressionManager>();
@@ -48,29 +53,17 @@ public class PlayerInitializer : MonoBehaviour
             playerStats.ApplyPermanentStats(permanentStats);
             playerStats.ApplyAllocatedPoints(gameManager.AllocatedPoints, permanentStats);
 
-            if (characterToLoad.startingCards != null && cardManager != null)
+            // [v9.0 수정] 시작 카드 로직: CharacterDataSO 우선, 없으면 Initializer의 테스트 카드 사용
+            List<NewCardDataSO> cardsToEquip = characterToLoad.startingCards;
+            if (cardsToEquip == null || cardsToEquip.Count == 0)
             {
-                foreach (var cardData in characterToLoad.startingCards)
-                {
-                    CardInstance instanceToEquip = cardManager.AddCard(cardData);
-                    if (instanceToEquip != null)
-                    {
-                        cardManager.Equip(instanceToEquip);
-                    }
-                }
-            }
-            if (characterToLoad.startingArtifacts != null && artifactManager != null)
-            {
-                foreach (var artifact in characterToLoad.startingArtifacts)
-                {
-                    if (artifact != null) artifactManager.EquipArtifact(artifact);
-                }
+                Debug.Log("[PlayerInitializer] CharacterData에 시작 카드가 없어 테스트용 시작 카드를 사용합니다.");
+                cardsToEquip = testStartingNewCards;
             }
 
-            // v8.0 테스트용 시작 카드 목록을 추가하고 장착합니다.
-            if (testStartingNewCards != null && cardManager != null)
+            if (cardsToEquip != null && cardManager != null)
             {
-                foreach (var cardData in testStartingNewCards)
+                foreach (var cardData in cardsToEquip)
                 {
                     if (cardData != null)
                     {
@@ -80,6 +73,14 @@ public class PlayerInitializer : MonoBehaviour
                             cardManager.Equip(instance);
                         }
                     }
+                }
+            }
+
+            if (characterToLoad.startingArtifacts != null && artifactManager != null)
+            {
+                foreach (var artifact in characterToLoad.startingArtifacts)
+                {
+                    if (artifact != null) artifactManager.EquipArtifact(artifact);
                 }
             }
 

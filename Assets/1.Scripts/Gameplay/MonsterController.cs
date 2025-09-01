@@ -127,6 +127,9 @@ public class MonsterController : MonoBehaviour
 
     public void TakeDamage(float damage)
     {
+        // [추가] 실제로 들어오는 최종 피해량을 확인하기 위한 디버그 로그
+        Debug.Log($"<color=red>[Damage Calculation]</color> Monster '{gameObject.name}' is about to take {damage} damage.");
+
         if (isDead || isInvulnerable) return;
 
         monsterStats.TakeDamage(damage); 

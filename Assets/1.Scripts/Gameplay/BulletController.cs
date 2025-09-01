@@ -28,6 +28,12 @@ public class BulletController : MonoBehaviour
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+        // [추가] 총알 렌더링 순서 설정
+        var renderer = GetComponent<SpriteRenderer>();
+        if (renderer != null)
+        {
+            renderer.sortingOrder = 10;
+        }
     }
 
     // [수정] NewCardDataSO를 사용하는 Initialize 메소드만 남깁니다.

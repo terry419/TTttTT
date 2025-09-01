@@ -49,6 +49,12 @@ public class MonsterStats : MonoBehaviour, IStatHolder
         controller.NotifyDamageTaken(finalDamage);
     }
 
+    public void Heal(float amount)
+    {
+        if (amount <= 0) return;
+        CurrentHealth = Mathf.Min(CurrentHealth + amount, FinalMaxHealth);
+    }
+
     public bool IsDead() => CurrentHealth <= 0;
 
     private float CalculateFinalValue(StatType type, float baseValue)

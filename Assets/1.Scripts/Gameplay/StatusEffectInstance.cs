@@ -1,4 +1,4 @@
-﻿// 경로: ./TTttTT/Assets/1/Scripts/Gameplay/StatusEffectInstance.cs
+// 경로: ./TTttTT/Assets/1/Scripts/Gameplay/StatusEffectInstance.cs
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.AddressableAssets;
@@ -58,7 +58,6 @@ public class StatusEffectInstance
             if (Target == null) return 0f;
             float baseAmount = dotAmount;
 
-            // 최대 체력 비례 데미지 계산
             if (damageType == DamageType.MaxHealthPercentage)
             {
                 if (Target.TryGetComponent<MonsterStats>(out var monster))
@@ -67,7 +66,6 @@ public class StatusEffectInstance
                     baseAmount = player.FinalHealth * (dotAmount / 100f);
             }
 
-            // 시전자 공격력 비례 데미지 계산
             if (scalesWithDmgBonus && casterStats != null)
                 baseAmount *= (1 + casterStats.FinalDamageBonus / 100f);
 
@@ -84,6 +82,10 @@ public class StatusEffectInstance
     private readonly bool scalesWithDmgBonus;
     private readonly CharacterStats casterStats;
 
+    // --- [추가] 틱 기반 시스템을 위한 타이머 ---
+    private float dotTimer = 0f;
+    private float hotTimer = 0f;
+
     // --- VFX 정보 ---
     private readonly AssetReferenceGameObject onApplyVFXRef;
     private readonly AssetReferenceGameObject loopingVFXRef;
@@ -92,9 +94,6 @@ public class StatusEffectInstance
     #endregion
 
     #region 생성자
-    /// <summary>
-    /// [v2.2] 신규 카드 모듈로부터 동적으로 인스턴스를 생성하는 주 생성자.
-    /// </summary>
     public StatusEffectInstance(GameObject target, string id, float duration, Dictionary<StatType, float> bonuses,
         float dotAmount, DamageType dotType, bool scales,
         float healAmount, float healDuration, HealType healType,
@@ -123,9 +122,6 @@ public class StatusEffectInstance
         this.onExpireVFXRef = onExpireVFX;
     }
 
-    /// <summary>
-    /// [호환성] StatusEffectDataSO로부터 인스턴스를 생성하는 생성자.
-    /// </summary>
     public StatusEffectInstance(GameObject target, StatusEffectDataSO data, CharacterStats caster = null)
     {
         Target = target;
@@ -135,11 +131,11 @@ public class StatusEffectInstance
         duration = data.duration;
 
         dotAmount = data.damageOverTime;
-        damageType = DamageType.Flat; // 레거시는 Flat만 지원
+        damageType = DamageType.Flat;
 
-        totalHealAmount = data.healOverTime; // 레거시는 초당 회복이므로, 지속시간 곱셈 제거
-        healDuration = 1f; // 1초마다 회복하도록 설정
-        healType = HealType.Flat; // 레거시는 Flat만 지원
+        totalHealAmount = data.healOverTime;
+        healDuration = 1f;
+        healType = HealType.Flat;
 
         StackingBehavior = StackingBehavior.RefreshDuration;
         statBonuses = new Dictionary<StatType, float>();
@@ -153,12 +149,8 @@ public class StatusEffectInstance
     #endregion
 
     #region 핵심 로직 (적용, 제거, 틱)
-    /// <summary>
-    /// 대상에게 효과를 적용합니다. (스탯, 즉발회복, VFX)
-    /// </summary>
     public void ApplyEffect()
     {
-        // 1. 스탯 적용 (IStatHolder 인터페이스 사용)
         if (Target.TryGetComponent<IStatHolder>(out var statHolder))
         {
             foreach (var bonus in statBonuses)
@@ -167,23 +159,17 @@ public class StatusEffectInstance
             }
         }
 
-        // 2. 즉발 회복 처리 (지속시간이 0일 경우)
         if (totalHealAmount > 0 && healDuration <= 0)
         {
             ApplyHeal(totalHealAmount);
         }
 
-        // 3. VFX 재생
         PlayVFX(onApplyVFXRef, Target.transform.position, false);
         PlayVFX(loopingVFXRef, Target.transform.position, true, Target.transform);
     }
 
-    /// <summary>
-    /// 대상에게서 효과를 제거합니다. (스탯 복구, VFX 정리)
-    /// </summary>
     public void RemoveEffect()
     {
-        // 루핑 VFX는 타겟이 사라져도 안전하게 제거할 수 있으므로 먼저 처리합니다.
         if (loopingVFXInstance != null)
         {
             ServiceLocator.Get<PoolManager>()?.Release(loopingVFXInstance);
@@ -192,59 +178,72 @@ public class StatusEffectInstance
 
         if (Target != null)
         {
-            // 1. 스탯 복구 (IStatHolder 인터페이스 사용)
             if (Target.TryGetComponent<IStatHolder>(out var statHolder))
             {
                 statHolder.RemoveModifiersFromSource(this);
             }
-
-            // 2. 소멸 VFX 재생 (이제 안전하게 위치를 가져올 수 있습니다)
             PlayVFX(onExpireVFXRef, Target.transform.position, false);
         }
     }
 
-    /// <summary>
-    /// 매 프레임 호출되어 지속시간, DoT, HoT 등을 처리합니다.
-    /// </summary>
     public void Tick(float deltaTime)
     {
         if (duration > 0) duration -= deltaTime;
 
-        // 지속 피해 처리 (1초마다)
+        // [v7.0 수정] 1초마다 피해를 주는 틱 기반 로직으로 변경
         if (dotAmount > 0)
         {
-            // DoT는 MonsterController와 CharacterStats 양쪽 모두에 적용될 수 있음
-            Target.GetComponent<MonsterController>()?.TakeDamage(DamagePerSecond * deltaTime);
-            Target.GetComponent<CharacterStats>()?.TakeDamage(DamagePerSecond * deltaTime);
+            dotTimer += deltaTime;
+            if (dotTimer >= 1f)
+            {
+                Target.GetComponent<MonsterController>()?.TakeDamage(DamagePerSecond);
+                Target.GetComponent<CharacterStats>()?.TakeDamage(DamagePerSecond);
+                dotTimer -= 1f;
+            }
         }
 
-        // 지속 회복 처리
+        // [v7.0 수정] 1초마다 회복하는 틱 기반 로직으로 변경
         if (totalHealAmount > 0 && healDuration > 0)
         {
-            ApplyHeal(totalHealAmount * (deltaTime / healDuration));
+            hotTimer += deltaTime;
+            if (hotTimer >= 1f)
+            {
+                ApplyHeal(totalHealAmount);
+                hotTimer -= 1f;
+            }
         }
     }
     #endregion
 
     #region 헬퍼 메서드
-    /// <summary>
-    /// 효과의 지속시간을 초기값으로 되돌립니다.
-    /// </summary>
     public void RefreshDuration() => duration = initialDuration;
 
     private void ApplyHeal(float amount)
     {
-        if (Target == null) return;
+        if (Target == null || amount <= 0) return;
 
         float finalHeal = amount;
         if (healType == HealType.MaxHealthPercentage)
         {
-            if (Target.TryGetComponent<CharacterStats>(out var stats))
-                finalHeal = stats.FinalHealth * (amount / 100f);
-            // 몬스터 회복은 현재 기획에 없으므로 플레이어만 처리
+            if (Target.TryGetComponent<CharacterStats>(out var playerStats))
+            {
+                finalHeal = playerStats.FinalHealth * (amount / 100f);
+            }
+            else if (Target.TryGetComponent<MonsterStats>(out var monsterStats))
+            {
+                finalHeal = monsterStats.FinalMaxHealth * (amount / 100f);
+            }
         }
 
-        Target.GetComponent<CharacterStats>()?.Heal(finalHeal);
+        // 플레이어 또는 몬스터에게 힐 적용
+        if (Target.TryGetComponent<CharacterStats>(out var player))
+        {
+            player.Heal(finalHeal);
+        }
+        else if (Target.TryGetComponent<MonsterStats>(out var monster))
+        {
+            monster.Heal(finalHeal);
+        }
     }
 
     private async void PlayVFX(AssetReferenceGameObject vfxRef, Vector3 position, bool isLoop, Transform parent = null)
@@ -253,9 +252,16 @@ public class StatusEffectInstance
         var poolManager = ServiceLocator.Get<PoolManager>();
         if (poolManager == null) return;
 
-        GameObject vfxInstance = await poolManager.GetAsync(vfxRef.AssetGUID);
+                GameObject vfxInstance = await poolManager.GetAsync(vfxRef.AssetGUID);
         if (vfxInstance != null)
         {
+            // [추가] 상태이상 VFX 렌더링 순서 설정
+            var renderer = vfxInstance.GetComponent<SpriteRenderer>();
+            if (renderer != null)
+            {
+                renderer.sortingOrder = 30;
+            }
+
             vfxInstance.transform.position = position;
             if (parent != null) vfxInstance.transform.SetParent(parent, true);
 

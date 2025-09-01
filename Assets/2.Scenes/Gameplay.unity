@@ -3703,15 +3703,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   curseStatusEffectID: DeathMark
-  explosionRadius: 5
-  explosionDamageType: 0
-  explosionDamageAmount: 50
-  scalesWithCasterDamageBonus: 0
-  explosionVFX:
+  explosionPrefab:
     m_AssetGUID: 48e9d302241666b428afff798b8c3810
     m_SubObjectName: 
     m_SubObjectType: 
     m_EditorAssetChanged: 0
+  explosionRadius: 5
+  explosionDuration: 0.3
+  explosionDamage: 30
+  curseMissileModuleRef:
+    m_AssetGUID: 1333038a86b3c4c4f92461117a635c79
+    m_SubObjectName: 
+    m_SubObjectType: 
+    m_EditorAssetChanged: 0
+  missileCount: 6
 --- !u!1 &1259565395
 GameObject:
   m_ObjectHideFlags: 0
@@ -4113,18 +4118,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 1327497584030169129, guid: 5cce4f9218475d841ac798ba161e79e5, type: 3}
-      propertyPath: testStartingNewCards.Array.size
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 1327497584030169129, guid: 5cce4f9218475d841ac798ba161e79e5, type: 3}
-      propertyPath: testStartingNewCards.Array.data[0]
-      value: 
-      objectReference: {fileID: 11400000, guid: 1c931ac983ca8094bbe20fe7bc5a9c7f, type: 2}
-    - target: {fileID: 1327497584030169129, guid: 5cce4f9218475d841ac798ba161e79e5, type: 3}
-      propertyPath: testStartingNewCards.Array.data[1]
-      value: 
-      objectReference: {fileID: 11400000, guid: c5a1dc58f7e62e141a6a0c4701ecf815, type: 2}
     - target: {fileID: 2280747930156799828, guid: 5cce4f9218475d841ac798ba161e79e5, type: 3}
       propertyPath: m_Camera
       value: 

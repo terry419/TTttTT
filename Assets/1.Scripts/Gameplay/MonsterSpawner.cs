@@ -119,6 +119,13 @@ public class MonsterSpawner : MonoBehaviour
 
         if (monsterInstance == null) return;
 
+        // [추가] 몬스터 렌더링 순서 설정
+        var renderer = monsterInstance.GetComponent<SpriteRenderer>();
+        if (renderer != null)
+        {
+            renderer.sortingOrder = 20;
+        }
+
         monsterInstance.transform.position = spawnPosition;
 
         MonsterController mc = monsterInstance.GetComponent<MonsterController>();
