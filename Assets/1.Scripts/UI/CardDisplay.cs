@@ -42,4 +42,20 @@ public class CardDisplay : MonoBehaviour
             highlightBorder.gameObject.SetActive(isSelected);
         }
     }
+
+    /// <summary>
+    /// 카드 인스턴스 정보로 UI를 설정합니다. (이름에 레벨 표시 포함)
+    /// </summary>
+    public void Setup(CardInstance cardInstance)
+    {
+        // 기존 Setup 메서드를 먼저 호출하여 아이콘, 설명 등 공통 정보를 설정합니다.
+        Setup(cardInstance.CardData);
+
+        // 이름 텍스트만 레벨을 포함하여 덮어씁니다.
+        if (nameText != null)
+        {
+            // EnhancementLevel은 0부터 시작하므로, 사용자에게 보여줄 때는 +1을 해줍니다 (Lv.1, Lv.2...)
+            nameText.text = $"{cardInstance.CardData.basicInfo.cardName} (Lv.{cardInstance.EnhancementLevel + 1})";
+        }
+    }
 }

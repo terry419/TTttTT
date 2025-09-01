@@ -3708,9 +3708,9 @@ MonoBehaviour:
     m_SubObjectName: 
     m_SubObjectType: 
     m_EditorAssetChanged: 0
-  explosionRadius: 5
+  explosionRadius: 2
   explosionDuration: 0.3
-  explosionDamage: 30
+  explosionDamage: 10
   curseMissileModuleRef:
     m_AssetGUID: 1333038a86b3c4c4f92461117a635c79
     m_SubObjectName: 

@@ -107,7 +107,7 @@ public class BulletController : MonoBehaviour
 
             // [추가] 샷건 다중 히트 방지 로직
             // ProjectileEffectSO에 제어 변수를 추가할 수 있지만, 지금은 기본적으로 1회만 히트하도록 합니다.
-            if (!monster.RegisterHitByShot(this.shotInstanceID, sourcePlatform.allowMultipleHits))
+            if (!monster.RegisterHitByShot(this.shotInstanceID, canHitMultiple))
             {
                 // 피해 없이 관통/튕김 로직만 처리
             }
