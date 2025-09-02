@@ -13,9 +13,6 @@ public class CardDisplay : MonoBehaviour
     [SerializeField] private Image cardIconImage;
     [SerializeField] private Image rarityImage;
     [SerializeField] private Image highlightBorder;
-
-    public TextMeshProUGUI nameText;
-    public TextMeshProUGUI descriptionText;
     public Button selectButton;
     public CardSelectedEvent OnCardSelected;
 
@@ -62,19 +59,4 @@ public class CardDisplay : MonoBehaviour
         }
     }
 
-    public void ConfigureFonts(float nameFontSize, float descriptionFontSize)
-    {
-        // 1. Auto Size 기능을 비활성화합니다.
-        if (nameText != null)
-        {
-            nameText.enableAutoSizing = false;
-            nameText.fontSize = nameFontSize;
-        }
-
-        if (descriptionText != null)
-        {
-            descriptionText.enableAutoSizing = false;
-            descriptionText.fontSize = descriptionFontSize;
-        }
-    }
 }

@@ -1,0 +1,117 @@
+/* F:/unity/9th_/Assets/4.Prefabs/UI/CardDisplay/CardDisplay.uss */
+/* 
+    이 USS 파일은 카드의 '스타일'을 정의합니다. CSS와 매우 유사합니다.
+    UXML 파일에 정의된 클래스(class)를 기반으로 스타일을 적용합니다.
+*/
+
+/* 
+    카드의 전체 컨테이너 스타일입니다.
+    카드의 기본 크기를 여기서 제어합니다.
+*/
+.card-container {
+    /* ▼▼▼ [크기 조절] 이 값을 수정하면 카드의 기본 크기가 변경됩니다. ▼▼▼ */
+    width: 300px;
+    height: 420px;
+    /* ▲▲▲ [크기 조절] 이 값을 수정하면 카드의 기본 크기가 변경됩니다. ▲▲▲ */
+
+    border-radius: 12px;
+    overflow: hidden; /* 둥근 모서리를 적용하기 위해 필요 */
+    background-color: white;
+    
+    display: flex;
+    flex-direction: column;
+}
+
+/* 
+    카드를 작게 만들고 싶을 때 C# 스크립트에서 이 클래스를 적용/제거합니다.
+*/
+.card-container.card-small {
+    /* ▼▼▼ [크기 조절] scale 프로퍼티를 사용하여 축소 비율을 변경할 수 있습니다. (CSS의 transform: scale()과 동일) ▼▼▼ */
+    scale: 0.8 0.8;
+    /* ▲▲▲ [크기 조절] scale 프로퍼티를 사용하여 축소 비율을 변경할 수 있습니다. ▲▲▲ */
+}
+
+/* 카드의 배경 요소입니다. C#에서 등급에 따라 색상을 변경하게 됩니다. */
+.card-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* 실제 콘텐츠가 담길 영역입니다. */
+.card-content {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+/* 상단 헤더 (레벨, 이름, 속성) */
+.card-header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    -unity-font-style: bold; /* 'font-weight' 대신 '-unity-font-style'을 사용합니다. */
+    padding-bottom: 5px;
+}
+
+.card-level, .card-attribute {
+    flex-shrink: 0; 
+    background-color: rgb(51, 51, 51);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 8px;
+    -unity-text-align: middle-center;
+}
+
+.card-name-wrapper {
+    flex-grow: 1;
+    margin: 0 10px;
+    background-color: rgb(238, 238, 238);
+    border-radius: 8px;
+    justify-content: center;
+    align-items: center;
+    padding: 5px;
+    overflow: hidden;
+}
+
+.card-name {
+    font-size: 16px;
+    white-space: nowrap;
+}
+
+/* 일러스트 영역 */
+.card-illustration {
+    flex-grow: 1;
+    margin-top: 10px;
+    background-color: rgb(204, 204, 204);
+    border-radius: 8px;
+    justify-content: center;
+    align-items: center;
+    -unity-text-align: middle-center;
+    -unity-font-style: italic; /* 'font-style' 대신 '-unity-font-style'을 사용합니다. */
+    color: rgb(102, 102, 102);
+    font-size: 14px;
+}
+
+/* 설명 영역 */
+.card-description-wrapper {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: rgb(238, 238, 238);
+    border-radius: 8px;
+    height: 100px;
+    display: flex;
+    flex-direction: column;
+}
+
+.card-description {
+    flex-grow: 1;
+    overflow: hidden;
+    font-size: 12px;
+    white-space: normal;
+}

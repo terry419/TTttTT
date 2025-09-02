@@ -55,11 +55,45 @@ public class CardManager : MonoBehaviour
 
     public CardInstance AddCard(NewCardDataSO newCardData)
     {
-        if (ownedCards.Count >= maxOwnedSlots) return null;
-        CardInstance newInstance = new CardInstance(newCardData);
-        ownedCards.Add(newInstance);
-        Debug.Log($"[CardManager] 새 카드 인스턴스 추가: {newInstance.CardData.name} ({newInstance.InstanceId})");
-        return newInstance;
+        // 슬롯에 여유가 있을 경우, 기존 로직대로 카드를 추가합니다.
+        if (ownedCards.Count < maxOwnedSlots)
+        {
+            CardInstance newInstance = new CardInstance(newCardData);
+            ownedCards.Add(newInstance);
+            Debug.Log($"[CardManager] 새 카드 인스턴스 추가: {newInstance.CardData.name} ({newInstance.InstanceId})");
+            return newInstance;
+        }
+        // 슬롯이 가득 찼을 경우, 새로운 교체 로직을 실행합니다.
+        else
+        {
+            Debug.Log("[CardManager] 소유 카드 슬롯이 가득 찼습니다. 장착된 카드 중 하나를 랜덤으로 교체합니다.");
+
+            // 엣지 케이스: 장착된 카드가 하나도 없으면 교체할 수 없으므로, 기존처럼 null을 반환합니다.
+            if (equippedCards.Count == 0)
+            {
+                Debug.LogWarning("[CardManager] 소유 슬롯이 가득 찼지만, 장착된 카드가 없어 교체할 수 없습니다. 카드를 획득하지 못했습니다.");
+                return null;
+            }
+
+            // 1. 장착된 카드 목록에서 무작위로 하나를 선택합니다.
+            int randomIndex = Random.Range(0, equippedCards.Count);
+            CardInstance cardToRemove = equippedCards[randomIndex];
+            Debug.Log($"[CardManager] 제거할 카드로 '{cardToRemove.CardData.basicInfo.cardName}'(이)가 선택되었습니다 (인덱스: {randomIndex}).");
+
+            // 2. 선택된 카드를 장착 해제하고, 소유 목록에서도 제거합니다.
+            Unequip(cardToRemove);
+            ownedCards.Remove(cardToRemove);
+
+            // 3. 새로 획득한 카드를 생성하고 소유 목록에 추가합니다.
+            CardInstance newInstance = new CardInstance(newCardData);
+            ownedCards.Add(newInstance);
+
+            // 4. 새로 추가된 카드를 이전에 카드가 제거된 바로 그 위치에 장착합니다.
+            Equip(newInstance, randomIndex);
+            Debug.Log($"[CardManager] 새로운 카드 '{newInstance.CardData.basicInfo.cardName}'(을)를 추가하고 {randomIndex} 인덱스에 장착했습니다.");
+
+            return newInstance;
+        }
     }
 
     // [수정] 특정 위치에 카드를 장착할 수 있도록 index 파라미터 추가
