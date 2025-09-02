@@ -10,8 +10,9 @@ GameObject:
   m_Component:
   - component: {fileID: 701271180709684158}
   - component: {fileID: 6852924686386151785}
+  - component: {fileID: -2281131993402194636}
   m_Layer: 0
-  m_Name: GameObject
+  m_Name: UIToolkitCard
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -46,5 +47,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_PanelSettings: {fileID: 0}
   m_ParentUI: {fileID: 0}
-  sourceAsset: {fileID: 0}
+  sourceAsset: {fileID: 9197481963319205126, guid: e7d55d2ccd9a54e43b83180b261b07ac, type: 3}
   m_SortingOrder: 0
+--- !u!114 &-2281131993402194636
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6529263402119816295}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 75334127f3855cb4e8d499ae92cd5f81, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  OnCardSelected:
+    m_PersistentCalls:
+      m_Calls: []

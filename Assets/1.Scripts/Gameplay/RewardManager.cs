@@ -96,6 +96,7 @@ public class RewardManager : MonoBehaviour
 
             List<NewCardDataSO> nextReward = cardRewardQueue.Dequeue();
             Debug.Log($"[RewardManager] 다음 보상을 처리합니다. 남은 보상 수: {cardRewardQueue.Count}. 'IsRewardSelectionComplete' 상태를 [false]로 설정.");
+            Debug.Log($"[Debug Flow 2/6] RewardManager: Processing next reward. Choice count: {nextReward.Count}. Firing OnCardRewardReady event.");
 
             // UI가 이벤트를 구독하고 있다면, 카드 선택지를 전달하여 화면에 표시하도록 합니다.
             Debug.Log("[RewardManager] OnCardRewardReady 이벤트 발생 시도.");

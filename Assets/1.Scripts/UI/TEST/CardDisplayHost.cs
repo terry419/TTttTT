@@ -39,7 +39,24 @@ public class CardDisplayHost : MonoBehaviour
 
     public void Setup(NewCardDataSO cardData)
     {
+        if (cardData == null)
+        {
+            Debug.LogError("[Debug Flow 5/6] CardDisplayHost: Setup called with NULL cardData!");
+            return;
+        }
+
+        // [Debug Log] Setup이 호출되었고, 어떤 카드 데이터가 왔는지 확인합니다.
+        Debug.Log($"[Debug Flow 5/6] CardDisplayHost: Setup called for '{cardData.name}'.");
+
         CurrentCard = cardData;
+        if (cardController == null)
+        {
+            Debug.LogError("[Debug Flow 5/6] CardDisplayHost: cardController is NULL!");
+            return;
+        }
+
+        // [Debug Log] 내부 컨트롤러에 데이터를 전달하기 직전임을 알립니다.
+        Debug.Log($"[Debug Flow 6/6] CardDisplayHost: Passing data to CardDisplayController.");
         cardController.SetData(cardData);
     }
 

@@ -72,6 +72,8 @@ public class RewardGenerationService : MonoBehaviour
 
             if (selectedCard != null)
             {
+                Debug.Log($"[Debug Flow 1/6] RewardGenerationService: Selected reward card [{i + 1}/{count}]: {selectedCard.name}");
+
                 rewards.Add(selectedCard);
                 // 뽑힌 카드 횟수 업데이트
                 if (pickedCardCounts.ContainsKey(selectedCard))
@@ -84,6 +86,7 @@ public class RewardGenerationService : MonoBehaviour
                 }
             }
         }
+        Debug.Log($"[Debug Flow 1/6] RewardGenerationService: Total {rewards.Count} rewards generated.");
 
         return rewards;
     }

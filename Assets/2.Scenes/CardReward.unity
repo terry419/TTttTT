@@ -1190,7 +1190,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0553ba5204845764884ec386b2baea5b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cardDisplayPrefab: {fileID: 4454000153490038181, guid: 04f7479ba5acf0a4391a00c45b8eaba8, type: 3}
+  cardDisplayPrefab: {fileID: 6529263402119816295, guid: 78101a518cff87f4aa45fcbe3ea08913, type: 3}
   cardSlotsParent: {fileID: 73554953}
   cardRewardCanvasGroup: {fileID: 650833220}
   acquireButton: {fileID: 295128186}
