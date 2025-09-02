@@ -184,6 +184,11 @@ public class MonsterController : MonoBehaviour
 
     public bool RegisterHitByShot(string shotID, bool allowMultipleHits)
     {
+        if (string.IsNullOrEmpty(shotID))
+        {
+            // ID가 없는 특수 공격은 중복 체크를 하지 않고 항상 유효한 공격으로 처리합니다.
+            return true;
+        }
         // 다중 히트가 허용되면, 항상 true를 반환하여 피해를 입게 합니다.
         if (allowMultipleHits)
         {

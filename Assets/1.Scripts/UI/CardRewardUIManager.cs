@@ -62,7 +62,8 @@ public class CardRewardUIManager : MonoBehaviour
             CardDisplay cardDisplay = cardUI.GetComponent<CardDisplay>();
             if (cardDisplay != null)
             {
-                cardDisplay.Setup(cardData);
+                CardInstance tempInstance = new CardInstance(cardData);
+                cardDisplay.Setup(tempInstance);
                 cardDisplay.OnCardSelected.AddListener(HandleCardSelection);
                 spawnedCardDisplays.Add(cardDisplay);
             }

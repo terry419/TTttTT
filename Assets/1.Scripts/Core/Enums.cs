@@ -9,7 +9,8 @@ public enum CardRarity
     Common,
     Rare,
     Epic,
-    Legendary
+    Legendary,
+    Mythic
 }
 
 public enum TriggerType

@@ -42,8 +42,17 @@ public class BulletController : MonoBehaviour
         this._direction = direction.normalized;
         this.speed = initialSpeed;
         this.damage = damage;
+        if (string.IsNullOrEmpty(shotID))
+        {
+            this.shotInstanceID = System.Guid.NewGuid().ToString();
+            Debug.LogWarning($"[BulletController] Initialize에 유효하지 않은 shotID가 전달되어 새 ID를 생성했습니다: {this.shotInstanceID}");
+        }
+        else
+        {
+            this.shotInstanceID = shotID;
+        }
+
         this.shotInstanceID = shotID;
-        // this.SourceCard = null; // 이 줄 삭제
         this.SourceModule = module;
         this.sourcePlatform = platform;
         this.sourceCardInstance = instance;
@@ -53,6 +62,22 @@ public class BulletController : MonoBehaviour
         this.trackingTarget = null;
         this._hitMonsters.Clear();
         this.casterStats = caster;
+
+        if (module != null)
+        {
+            this._currentPierceCount = module.pierceCount;
+            this._currentRicochetCount = module.ricochetCount;
+            this.isTracking = module.isTracking;
+        }
+        else
+        {
+            // 모듈이 없으면 관통, 튕김, 추적 기능도 없습니다.
+            this._currentPierceCount = 0;
+            this._currentRicochetCount = 0;
+            this.isTracking = false;
+        }
+
+
         this._bounceCountForPayload = 0;
         float angle = Mathf.Atan2(_direction.y, _direction.x) * Mathf.Rad2Deg;
         transform.rotation = Quaternion.Euler(0, 0, angle);
@@ -94,49 +119,50 @@ public class BulletController : MonoBehaviour
             return;
         }
         if (!other.CompareTag(Tags.Monster) || _hitMonsters.Contains(other.gameObject)) return;
+
         if (other.TryGetComponent<MonsterController>(out var monster))
         {
-            if (monster == null)
-            {
-                Debug.LogError("[BULLET DEBUG] Stage 1: monster 객체가 이 시점에서 null(파괴됨)입니다.");
-                return;
-            }
-
             bool canHitMultiple = (sourcePlatform != null) ? sourcePlatform.allowMultipleHits : false;
 
-
-            // [추가] 샷건 다중 히트 방지 로직
-            // ProjectileEffectSO에 제어 변수를 추가할 수 있지만, 지금은 기본적으로 1회만 히트하도록 합니다.
-            if (!monster.RegisterHitByShot(this.shotInstanceID, sourcePlatform.allowMultipleHits))
+            if (!monster.RegisterHitByShot(this.shotInstanceID, canHitMultiple))
             {
-                // 피해 없이 관통/튕김 로직만 처리
+                // 이미 맞은 몬스터는 피해 없이 관통/튕김 로직만 처리
             }
             else
             {
                 monster.TakeDamage(this.damage);
                 _hitMonsters.Add(other.gameObject);
 
-                // 2단계: monster.transform을 사용하기 직전에 확인합니다.
-                if (monster.transform == null)
+                // 몬스터가 피해를 받고 즉시 죽은 경우
+                if (monster == null)
                 {
-                    Debug.LogError("[BULLET DEBUG] Stage 2: monster.transform이 null입니다! HandlePayloads_Async 호출 직전 오류 발생.");
+                    if (TryPierce()) return;
+                    Deactivate();
                     return;
                 }
+
+                // 몬스터가 살아있다면, 페이로드 효과를 실행합니다.
                 _ = HandlePayloads_Async(monster.transform);
             }
-            if (monster.transform == null)
+
+            // 페이로드 효과로 몬스터가 죽었을 수 있으므로 다시 한번 확인합니다.
+            if (monster == null)
             {
-                Debug.LogError("[BULLET DEBUG] Stage 3: monster.transform이 null입니다! TryRicochet 호출 직전 오류 발생.");
+                if (TryPierce()) return;
+                Deactivate();
                 return;
             }
 
+            // 몬스터가 살아있다면, 튕기기(Ricochet)를 시도합니다.
             if (TryRicochet(monster.transform)) return;
+
+            // 튕기지 않았다면, 관통(Pierce)을 시도합니다.
             if (TryPierce()) return;
 
+            // 모든 조건에 해당하지 않으면 총알은 소멸합니다.
             Deactivate();
         }
     }
-
     private bool TryRicochet(Transform lastHitTransform)
     {
         if (_currentRicochetCount <= 0) return false;
