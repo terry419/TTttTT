@@ -54,7 +54,7 @@ public class SynthesisPopup : MonoBehaviour
             CardDisplay cardDisplay = cardUI.GetComponent<CardDisplay>();
             if (cardDisplay != null)
             {
-                cardDisplay.Setup(cardInstance); 
+                cardDisplay.Setup(cardInstance.CardData); // CardInstance의 CardData 사용
                 cardDisplay.selectButton.onClick.AddListener(() => OnMaterialCardSelected(cardDisplay, cardInstance));
                 spawnedCardDisplays.Add(cardDisplay);
             }

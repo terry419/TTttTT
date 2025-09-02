@@ -1,31 +1,39 @@
-// F:/unity/9th_/Assets/1.Scripts/UI/TEST/CardDisplayHost.cs
+// 파일 경로: ./TTttTT/Assets/1.Scripts/UI/TEST/CardDisplayHost.cs
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.Events;
+// using UnityEngine.UI; // 전체 경로를 명시할 것이므로 이 줄은 없어도 괜찮습니다.
 
 [System.Serializable]
 public class CardDisplayHostSelectedEvent : UnityEvent<CardDisplayHost> { }
 
-/// <summary>
-/// UI Toolkit으로 만든 새로운 카드 프리펩에 붙는 MonoBehaviour입니다.
-/// 기존 UGUI 시스템(CardRewardUIManager 등)과 새로운 UI Toolkit 카드 사이의 '소통 창구' 역할을 합니다.
-/// </summary>
-[RequireComponent(typeof(UIDocument))]
+// [수정] typeof(Button) -> typeof(UnityEngine.UI.Button)으로 변경하여 UGUI의 버튼임을 명시
+[RequireComponent(typeof(UIDocument), typeof(UnityEngine.UI.Button), typeof(RectTransform))]
 public class CardDisplayHost : MonoBehaviour
 {
-    // --- Public API (기존 CardDisplay.cs와 동일하게 구성) ---
+    [Header("카드 크기 설정 (UGUI Layout용)")]
+    [Tooltip("UGUI의 Layout Group이 인식할 카드의 너비입니다.")]
+    [SerializeField] private float cardWidth = 300f;
+
+    [Tooltip("UGUI의 Layout Group이 인식할 카드의 높이입니다.")]
+    [SerializeField] private float cardHeight = 420f;
 
     public CardDisplayHostSelectedEvent OnCardSelected;
     public NewCardDataSO CurrentCard { get; private set; }
 
-    // --- 내부 참조 및 로직 ---
-
     private UIDocument uiDocument;
     private CardDisplayController cardController;
+    private UnityEngine.UI.Button uGuiButton; // [수정] Button -> UnityEngine.UI.Button으로 변경
+    private RectTransform rectTransform;
 
     void Awake()
     {
         uiDocument = GetComponent<UIDocument>();
+        uGuiButton = GetComponent<UnityEngine.UI.Button>(); // [수정] Button -> UnityEngine.UI.Button으로 변경
+        rectTransform = GetComponent<RectTransform>();
+
+        rectTransform.sizeDelta = new Vector2(cardWidth, cardHeight);
+
         if (uiDocument.rootVisualElement == null)
         {
             Debug.LogError("[CardDisplayHost] UIDocument의 rootVisualElement가 없습니다!");
@@ -34,37 +42,21 @@ public class CardDisplayHost : MonoBehaviour
 
         cardController = new CardDisplayController(uiDocument.rootVisualElement);
 
+        uGuiButton.onClick.AddListener(() => OnCardSelected.Invoke(this));
         uiDocument.rootVisualElement.RegisterCallback<ClickEvent>(evt => OnCardSelected.Invoke(this));
     }
 
     public void Setup(NewCardDataSO cardData)
     {
-        if (cardData == null)
-        {
-            Debug.LogError("[Debug Flow 5/6] CardDisplayHost: Setup called with NULL cardData!");
-            return;
-        }
-
-        // [Debug Log] Setup이 호출되었고, 어떤 카드 데이터가 왔는지 확인합니다.
-        Debug.Log($"[Debug Flow 5/6] CardDisplayHost: Setup called for '{cardData.name}'.");
-
+        if (cardData == null) { Debug.LogError("[CardDisplayHost] Setup에 전달된 cardData가 null입니다!"); return; }
         CurrentCard = cardData;
-        if (cardController == null)
-        {
-            Debug.LogError("[Debug Flow 5/6] CardDisplayHost: cardController is NULL!");
-            return;
-        }
-
-        // [Debug Log] 내부 컨트롤러에 데이터를 전달하기 직전임을 알립니다.
-        Debug.Log($"[Debug Flow 6/6] CardDisplayHost: Passing data to CardDisplayController.");
+        if (cardController == null) { Debug.LogError("[CardDisplayHost] cardController가 null입니다!"); return; }
         cardController.SetData(cardData);
     }
 
     public void Setup(CardInstance cardInstance)
     {
         Setup(cardInstance.CardData);
-        // Controller에 레벨 표시 로직을 추가할 수 있습니다.
-        // 예: cardController.SetEnhancementLevel(cardInstance.EnhancementLevel);
     }
 
     public void SetHighlight(bool isSelected)

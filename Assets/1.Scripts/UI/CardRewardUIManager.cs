@@ -1,4 +1,3 @@
-// 경로: ./TTttTT/Assets/1/Scripts/UI/CardRewardUIManager.cs
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
@@ -8,7 +7,7 @@ using System.Linq;
 
 public class CardRewardUIManager : MonoBehaviour
 {
-    [SerializeField] private GameObject cardDisplayPrefab; // 여기에 UIToolkitCard.prefab을 할당해야 합니다.
+    [SerializeField] private GameObject cardDisplayPrefab;
     [SerializeField] private Transform cardSlotsParent;
     [SerializeField] private CanvasGroup cardRewardCanvasGroup;
     [SerializeField] private Button acquireButton;
@@ -17,9 +16,8 @@ public class CardRewardUIManager : MonoBehaviour
     [SerializeField] private Button mapButton;
     [SerializeField] private SynthesisPopup synthesisPopup;
 
-    // --- 타입을 CardDisplayHost로 완전히 변경 ---
-    private CardDisplayHost selectedDisplay;
-    private List<CardDisplayHost> spawnedCardDisplays = new List<CardDisplayHost>();
+    private CardDisplay selectedDisplay;
+    private List<CardDisplay> spawnedCardDisplays = new List<CardDisplay>();
     private GameObject lastSelectedCardObject;
 
     void Awake()
@@ -45,7 +43,6 @@ public class CardRewardUIManager : MonoBehaviour
 
     void Start()
     {
-        // 씬 시작 시 다음 보상 처리 로직을 호출합니다.
         ServiceLocator.Get<RewardManager>()?.ProcessNextReward();
     }
 
@@ -56,33 +53,18 @@ public class CardRewardUIManager : MonoBehaviour
 
     public void Initialize(List<NewCardDataSO> cardChoices)
     {
-        Debug.Log($"[CardReward] Initialize with {cardChoices.Count} card choices.");
         foreach (Transform child in cardSlotsParent) Destroy(child.gameObject);
         spawnedCardDisplays.Clear();
 
         foreach (var cardData in cardChoices)
         {
-            if (cardData == null)
-            {
-                Debug.LogError("[CardReward] A null cardData was provided.");
-                continue;
-            }
-
             GameObject cardUI = Instantiate(cardDisplayPrefab, cardSlotsParent);
-
-            // --- GetComponent 대상을 CardDisplayHost로 명확히 함 ---
-            CardDisplayHost cardDisplayHost = cardUI.GetComponent<CardDisplayHost>();
-
-            if (cardDisplayHost != null)
+            CardDisplay cardDisplay = cardUI.GetComponent<CardDisplay>();
+            if (cardDisplay != null)
             {
-                cardDisplayHost.Setup(cardData);
-                cardDisplayHost.OnCardSelected.AddListener(HandleCardSelection);
-                spawnedCardDisplays.Add(cardDisplayHost);
-            }
-            else
-            {
-                // 이 오류가 발생하면 1단계(프리팹 교체)가 제대로 이루어지지 않은 것입니다.
-                Debug.LogError($"[CardReward] Critical Error: The instantiated prefab '{cardUI.name}' is missing the 'CardDisplayHost' component. Please ensure the correct prefab is assigned in the inspector.", cardUI);
+                cardDisplay.Setup(cardData);
+                cardDisplay.OnCardSelected.AddListener(HandleCardSelection);
+                spawnedCardDisplays.Add(cardDisplay);
             }
         }
 
@@ -91,13 +73,13 @@ public class CardRewardUIManager : MonoBehaviour
         StartCoroutine(SetFocusToFirstCard());
     }
 
-    private void HandleCardSelection(CardDisplayHost display) // 타입을 CardDisplayHost로 변경
+    private void HandleCardSelection(CardDisplay display)
     {
         selectedDisplay = display;
         foreach (var d in spawnedCardDisplays)
         {
             bool isSelected = (d == selectedDisplay);
-            d.SetHighlight(isSelected); // CardDisplayHost의 SetHighlight 호출
+            d.SetHighlight(isSelected);
             if (isSelected) lastSelectedCardObject = d.gameObject;
         }
         UpdateButtonsState();
@@ -106,15 +88,15 @@ public class CardRewardUIManager : MonoBehaviour
     private void OnAcquireClicked()
     {
         if (selectedDisplay == null) return;
+
         NewCardDataSO selectedCardData = selectedDisplay.CurrentCard;
         var cardManager = ServiceLocator.Get<CardManager>();
         if (cardManager != null)
         {
-            CardInstance newInstance = cardManager.AddCard(selectedCardData);
-            if (newInstance != null)
+            CardInstance instanceToEquip = cardManager.AddCard(selectedCardData);
+            if (instanceToEquip != null)
             {
-                // 기본적으로 새로 얻은 카드는 바로 장착합니다.
-                cardManager.Equip(newInstance);
+                cardManager.Equip(instanceToEquip);
             }
         }
 
@@ -125,10 +107,12 @@ public class CardRewardUIManager : MonoBehaviour
     private void OnSynthesizeClicked()
     {
         if (selectedDisplay == null) return;
+
         var baseCardData = selectedDisplay.CurrentCard;
         var cardManager = ServiceLocator.Get<CardManager>();
         if (cardManager == null || synthesisPopup == null) return;
 
+        // 재료 카드 필터링: 등급과 속성이 같고, 자기 자신은 아닌 카드
         List<CardInstance> materialChoices = cardManager.ownedCards
             .Where(card => card.CardData.basicInfo.rarity == baseCardData.basicInfo.rarity &&
                            card.CardData.basicInfo.type == baseCardData.basicInfo.type)
@@ -136,10 +120,12 @@ public class CardRewardUIManager : MonoBehaviour
 
         if (materialChoices.Count == 0)
         {
-            ServiceLocator.Get<PopupController>()?.ShowError("합성에 사용할 수 있는 동일 등급, 동일 속성의 카드가 없습니다.", 2f);
+            Debug.LogWarning("합성 재료로 사용할 수 있는 카드가 없습니다.");
+            // TODO: 사용자에게 알림을 주는 UI 로직 (예: 팝업 메시지)
             return;
         }
 
+        // 팝업 초기화 및 콜백 설정
         synthesisPopup.Initialize(baseCardData, materialChoices, HandleSynthesisConfirm, HandleSynthesisCancel);
     }
 
@@ -150,14 +136,14 @@ public class CardRewardUIManager : MonoBehaviour
         {
             cardManager.SynthesizeCard(selectedDisplay.CurrentCard, materialCard);
         }
-
+        
         ServiceLocator.Get<RewardManager>()?.CompleteRewardSelection();
         TransitionToMap();
     }
 
     private void HandleSynthesisCancel()
     {
-        Debug.Log("Synthesis canceled.");
+        Debug.Log("합성 취소됨");
         StartCoroutine(SetFocusToFirstCard());
     }
 
@@ -174,11 +160,11 @@ public class CardRewardUIManager : MonoBehaviour
 
     private void UpdateButtonsState()
     {
-        bool isCardSelected = selectedDisplay != null;
-        acquireButton.interactable = isCardSelected;
+        bool canAcquire = selectedDisplay != null;
+        acquireButton.interactable = canAcquire;
 
         bool canSynthesize = false;
-        if (isCardSelected)
+        if (canAcquire)
         {
             var cardManager = ServiceLocator.Get<CardManager>();
             if (cardManager != null)
@@ -190,39 +176,30 @@ public class CardRewardUIManager : MonoBehaviour
             }
         }
 
+        synthesizeButton.gameObject.SetActive(true);
         synthesizeButton.interactable = canSynthesize;
     }
-
     private void TransitionToMap()
     {
         ServiceLocator.Get<RouteSelectionController>()?.Show();
-        // Hide(); // Hide 로직은 RouteSelectionController.Show()에서 처리하는 것이 더 안정적일 수 있습니다.
-        gameObject.SetActive(false); // 임시로 비활성화
+        Hide();
     }
 
     private IEnumerator SetFocusToFirstCard()
     {
-        yield return null; // 한 프레임 대기
+        yield return null;
         EventSystem.current.SetSelectedGameObject(null);
         if (lastSelectedCardObject != null && lastSelectedCardObject.activeInHierarchy)
         {
             EventSystem.current.SetSelectedGameObject(lastSelectedCardObject);
         }
         else if (spawnedCardDisplays.Count > 0)
-        {
+        { 
             lastSelectedCardObject = spawnedCardDisplays[0].gameObject;
             EventSystem.current.SetSelectedGameObject(lastSelectedCardObject);
         }
     }
 
-    public void Show()
-    {
-        gameObject.SetActive(true);
-        StartCoroutine(SetFocusToFirstCard());
-    }
-
-    public void Hide()
-    {
-        gameObject.SetActive(false);
-    }
+    public void Show() { gameObject.SetActive(true); StartCoroutine(SetFocusToFirstCard()); }
+    public void Hide() { gameObject.SetActive(false); }
 }
