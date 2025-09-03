@@ -18,6 +18,9 @@ public class GameManager : MonoBehaviour
     public int AllocatedPoints { get; set; }
     public bool isFirstRound = true;
 
+    // 라운드 간 플레이어 체력을 보존하기 위한 변수
+    private float? lastPlayerHealth = null;
+
     public event System.Action<GameState> OnGameStateChanged;
 
     private SceneTransitionManager sceneTransitionManager;
@@ -105,7 +108,7 @@ public class GameManager : MonoBehaviour
         if (CurrentState == newState && CurrentState != GameState.Gameplay) return;
         Debug.Log($"[GameManager] 상태 변경: {CurrentState} -> {newState}");
 
-        // Gameplay 상태를 벗어날 때 카드 선택 루프 중지 및 풀 정리
+        // Gameplay 상태를 벗어날 때 루프 중지 및 풀 정리
         if (CurrentState == GameState.Gameplay && newState != GameState.Gameplay)
         {
             var cardManager = ServiceLocator.Get<CardManager>();
@@ -251,6 +254,7 @@ public class GameManager : MonoBehaviour
         // }
 
         isFirstRound = true; // '첫 라운드'라는 표시도 다시 true로!
+        ResetSavedHealth(); // 저장된 체력 정보 리셋
 
         ChangeState(GameState.MainMenu);
     }
@@ -315,4 +319,48 @@ public class GameManager : MonoBehaviour
         Debug.Log("--- [GameManager] StartRoundAfterSceneLoad 코루틴 정상 종료 ---");
     }
 
+    #region 체력 관리 메서드
+
+    /// <summary>
+    /// 다른 씬(이벤트, 상점 등)에서 플레이어의 현재 체력을 가져옵니다.
+    /// </summary>
+    public float? GetCurrentHealth()
+    {
+        return lastPlayerHealth;
+    }
+
+    /// <summary>
+    /// 다른 씬에서 플레이어의 체력을 특정 값으로 설정합니다.
+    /// </summary>
+    public void SetCurrentHealth(float health)
+    {
+        lastPlayerHealth = health;
+        Debug.Log($"[DEBUG-HEALTH] GameManager.SetCurrentHealth: 체력 저장 요청을 받았습니다. 저장된 체력: {lastPlayerHealth}");
+    }
+
+    /// <summary>
+    /// 다른 씬에서 플레이어의 체력을 회복하거나 감소시킵니다.
+    /// </summary>
+    public void ModifyHealth(float amount)
+    {
+        if (lastPlayerHealth.HasValue)
+        {
+            lastPlayerHealth += amount;
+            Debug.Log($"[GameManager] 외부에서 체력 변경: {amount}. 현재 저장된 체력: {lastPlayerHealth}");
+        }
+        else
+        {
+            Debug.LogWarning("[GameManager] 저장된 체력 정보가 없어 ModifyHealth를 수행할 수 없습니다.");
+        }
+    }
+
+    /// <summary>
+    /// 게임 오버 또는 새 게임 시작 시, 저장된 체력 정보를 리셋합니다.
+    /// </summary>
+    public void ResetSavedHealth()
+    {
+        lastPlayerHealth = null;
+    }
+
+    #endregion
 }

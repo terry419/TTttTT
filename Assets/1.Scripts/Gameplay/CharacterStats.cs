@@ -50,6 +50,13 @@ public class CharacterStats : MonoBehaviour, IStatHolder
 
     void OnDestroy()
     {
+        var gameManager = ServiceLocator.Get<GameManager>();
+        if (gameManager != null)
+        {
+            Debug.Log($"[DEBUG-HEALTH] CharacterStats.OnDestroy: GameManager에 체력 저장을 요청합니다. 저장할 체력: {currentHealth}");
+            gameManager.SetCurrentHealth(currentHealth);
+        }
+
         var debugManager = ServiceLocator.Get<DebugManager>();
         if (debugManager != null)
         {

@@ -93,7 +93,20 @@ public class PlayerInitializer : MonoBehaviour
         }
 
         playerStats.CalculateFinalStats();
-        playerStats.currentHealth = playerStats.FinalHealth;
+
+        // 저장된 체력 정보가 있는지 확인하고, 없으면(첫 라운드) 최대 체력으로 설정
+        float? savedHealth = gameManager.GetCurrentHealth();
+        Debug.Log($"[DEBUG-HEALTH] PlayerInitializer: GameManager로부터 저장된 체력을 가져옵니다. 가져온 값: {(savedHealth.HasValue ? savedHealth.Value.ToString() : "NULL")}");
+
+        if (savedHealth.HasValue)
+        {
+            playerStats.currentHealth = savedHealth.Value;
+        }
+        else
+        {
+            playerStats.currentHealth = playerStats.FinalHealth;
+        }
+        Debug.Log($"[DEBUG-HEALTH] PlayerInitializer: 플레이어 체력 설정 완료: {playerStats.currentHealth}/{playerStats.FinalHealth}");
 
         // 모든 카드 장착 및 스탯 계산이 끝난 후, 카드 선택 루프를 시작합니다.
         if (cardManager != null) 
