@@ -132,7 +132,11 @@ public class GravityPulseZoneController : MonoBehaviour
 
         foreach (var monsterRb in monstersInZone)
         {
-            if (monsterRb == null) continue;
+            if (monsterRb == null || !monsterRb.gameObject.activeInHierarchy)
+            {
+                monstersInZone.Remove(monsterRb);
+                continue;
+            }
 
             // Ͱ   ݰ  ִ Ȯ
             if (Vector2.Distance(transform.position, monsterRb.transform.position) <= currentDamageRadius)
