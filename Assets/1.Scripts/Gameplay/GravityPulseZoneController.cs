@@ -111,16 +111,30 @@ public class GravityPulseZoneController : MonoBehaviour
     {
         if (pullForce <= 0) return;
 
+        List<Rigidbody2D> monstersToRemove = null;
+
         // HashSet Ͽ ȸ    
-        foreach (var monsterRb in new HashSet<Rigidbody2D>(monstersInZone))
+        foreach (var monsterRb in monstersInZone)
         {
             if (monsterRb == null || !monsterRb.gameObject.activeInHierarchy)
             {
-                monstersInZone.Remove(monsterRb);
+                if (monstersToRemove == null)
+                {
+                    monstersToRemove = new List<Rigidbody2D>();
+                }
+                monstersToRemove.Add(monsterRb);
                 continue;
             }
             Vector2 directionToCenter = (transform.position - monsterRb.transform.position).normalized;
             monsterRb.AddForce(directionToCenter * pullForce);
+        }
+
+        if (monstersToRemove != null)
+        {
+            foreach (var monsterRb in monstersToRemove)
+            {
+                monstersInZone.Remove(monsterRb);
+            }
         }
     }
 
@@ -130,11 +144,17 @@ public class GravityPulseZoneController : MonoBehaviour
         float currentDamageRadius = (visualsTransform != null ? (visualsTransform.localScale.x * baseSpriteDiameter) / 2f : 0);
         if (damage <= 0 || currentDamageRadius <= 0) return;
 
+        List<Rigidbody2D> monstersToRemove = null;
+
         foreach (var monsterRb in monstersInZone)
         {
             if (monsterRb == null || !monsterRb.gameObject.activeInHierarchy)
             {
-                monstersInZone.Remove(monsterRb);
+                if (monstersToRemove == null)
+                {
+                    monstersToRemove = new List<Rigidbody2D>();
+                }
+                monstersToRemove.Add(monsterRb);
                 continue;
             }
 
@@ -145,6 +165,14 @@ public class GravityPulseZoneController : MonoBehaviour
                 {
                     monster.TakeDamage(damage);
                 }
+            }
+        }
+        
+        if (monstersToRemove != null)
+        {
+            foreach (var monsterRb in monstersToRemove)
+            {
+                monstersInZone.Remove(monsterRb);
             }
         }
     }
