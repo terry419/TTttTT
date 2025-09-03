@@ -45,6 +45,8 @@ public class MonsterController : MonoBehaviour
 
     void OnDisable()
     {
+        Debug.Log($"<color=red>[몬스터 사망 추적] 2/2: {gameObject.name}의 OnDisable()이 호출되었습니다. 이 시점에 장판의 OnTriggerExit2D가 호출될 수 있습니다.</color>");
+
         if (ServiceLocator.IsRegistered<MonsterManager>())
         {
             ServiceLocator.Get<MonsterManager>()?.UnregisterMonster(this);
@@ -152,6 +154,8 @@ public class MonsterController : MonoBehaviour
     {
         if (isDead) return;
         isDead = true;
+        Debug.Log($"<color=red>[몬스터 사망 추적] 1/2: {gameObject.name}의 Die() 메서드가 호출되었습니다. OnMonsterDied 이벤트를 호출하고 PoolManager에 반환을 요청합니다.</color>");
+
         OnMonsterDied?.Invoke(this);
         ServiceLocator.Get<PoolManager>().Release(gameObject);
     }

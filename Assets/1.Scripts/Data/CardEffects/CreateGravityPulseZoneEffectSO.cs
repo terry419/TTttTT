@@ -21,14 +21,19 @@ public class CreateGravityPulseZoneEffectSO : CardEffectSO
     public float PullForce = 150f;
 
     [Header("--- 맥동 피해 효과 ---")]
-    [Tooltip("커졌다 작아지는 속도입니다. 높을수록 빠릅니다.")]
-    public float PulseSpeed = 5f;
+    [Tooltip("이 장판이 가하는 맥동의 기본 피해량입니다.")]
+    public float pulseDamage = 15f;
+
+    [Tooltip("체크 시, 플레이어의 최종 공격력 보너스(%)가 이 장판의 피해량에 영향을 줍니다.")]
+    public bool scalesWithPlayerDamageBonus = true;
+
+    // ▼▼▼ [수정] 더 이상 사용하지 않는 PulseSpeed 변수를 삭제했습니다. ▼▼▼
 
     [Tooltip("최소 크기 비율입니다. (예: 0.2는 최대 반경의 20%까지 작아짐)")]
     [Range(0f, 1f)]
     public float MinPulseScaleRatio = 0.2f;
 
-    [Tooltip("피해를 주는 주기(초)입니다. (예: 0.5는 1초에 2번 피해)")]
+    [Tooltip("끌어당김과 피해가 발생하는 주기(초)입니다. (권장: 0.5)")]
     public float DamageTickInterval = 0.5f;
 
 
@@ -50,17 +55,16 @@ public class CreateGravityPulseZoneEffectSO : CardEffectSO
         GameObject zoneGO = await poolManager.GetAsync(ZonePrefabRef.AssetGUID);
         if (zoneGO != null && zoneGO.TryGetComponent<GravityPulseZoneController>(out var zoneController))
         {
-            // 착탄 위치에 생성
             Vector3 spawnPosition = context.HitPosition;
             zoneGO.transform.position = spawnPosition;
 
-            // 최종 피해량 계산 (카드 강화 레벨, 플레이어 스탯 보너스 적용)
-            float baseDamage = context.Platform.baseDamage;
-            int enhancementLevel = context.SourceCardInstance?.EnhancementLevel ?? 0;
-            float enhancedBaseDamage = baseDamage * (1f + enhancementLevel * 0.1f);
-            float finalDamage = enhancedBaseDamage * (1 + context.Caster.FinalDamageBonus / 100f);
+            float finalDamage = this.pulseDamage;
+            if (scalesWithPlayerDamageBonus)
+            {
+                finalDamage *= (1 + context.Caster.FinalDamageBonus / 100f);
+            }
 
-            zoneController.Initialize(ZoneDuration, PullRadius, PullForce, finalDamage, PulseSpeed, MinPulseScaleRatio, DamageTickInterval);
+            zoneController.Initialize(ZoneDuration, PullRadius, PullForce, finalDamage, MinPulseScaleRatio, DamageTickInterval);
         }
     }
 }
