@@ -422,7 +422,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   testStartingNewCards:
-  - {fileID: 11400000, guid: 1c931ac983ca8094bbe20fe7bc5a9c7f, type: 2}
+  - {fileID: 11400000, guid: fd9a694b21bb0c249a165b1af00e090c, type: 2}
 --- !u!58 &601887131027535560
 CircleCollider2D:
   m_ObjectHideFlags: 0
