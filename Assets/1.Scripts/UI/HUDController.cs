@@ -54,7 +54,6 @@ public class HUDController : MonoBehaviour
 
     private void OnDestroy()
     {
-        Debug.LogWarning($"[HUD 추적 ID: {instanceId}] {gameObject.name} - OnDestroy() 호출됨! (Frame: {Time.frameCount})");
     }
 
     // --- UI 업데이트 함수 (변경 없음) ---

@@ -22,11 +22,23 @@ public class CardRewardUIManager : MonoBehaviour
 
     void Awake()
     {
+        if (ServiceLocator.IsRegistered<CardRewardUIManager>())
+        {
+            Debug.LogWarning($"[{GetType().Name}] 중복 생성되어 파괴됩니다.", this.gameObject);
+            Destroy(gameObject);
+            return;
+        }
         ServiceLocator.Register<CardRewardUIManager>(this);
+
         acquireButton.onClick.AddListener(OnAcquireClicked);
         synthesizeButton.onClick.AddListener(OnSynthesizeClicked);
         skipButton.onClick.AddListener(OnSkipClicked);
         if (mapButton != null) mapButton.onClick.AddListener(OnMapButtonClicked);
+    }
+
+    private void OnDestroy()
+    {
+        ServiceLocator.Unregister<CardRewardUIManager>(this);
     }
 
     void OnEnable()

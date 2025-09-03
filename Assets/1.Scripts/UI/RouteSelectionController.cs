@@ -28,7 +28,18 @@ public class RouteSelectionController : MonoBehaviour
     // --- Unity Lifecycle Methods --- //
     void Awake()
     {
+        if (ServiceLocator.IsRegistered<RouteSelectionController>())
+        {
+            Debug.LogWarning($"[{GetType().Name}] 중복 생성되어 파괴됩니다.", this.gameObject);
+            Destroy(gameObject);
+            return;
+        }
         ServiceLocator.Register<RouteSelectionController>(this);
+    }
+
+    private void OnDestroy()
+    {
+        ServiceLocator.Unregister<RouteSelectionController>(this);
     }
 
     void Start()

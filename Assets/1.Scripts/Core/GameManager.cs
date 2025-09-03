@@ -105,26 +105,17 @@ public class GameManager : MonoBehaviour
         if (CurrentState == newState && CurrentState != GameState.Gameplay) return;
         Debug.Log($"[GameManager] 상태 변경: {CurrentState} -> {newState}");
 
-        var cardManager = ServiceLocator.Get<CardManager>();
-
-        // 상태 변경에 따른 카드 선택 루프 제어
-        if (newState == GameState.Gameplay)
-        {
-            cardManager?.StartCardSelectionLoop();
-        }
-        else if (CurrentState == GameState.Gameplay)
-        {
-            cardManager?.StopCardSelectionLoop();
-        }
-
-        // 현재 상태가 Gameplay였고, 다음 상태가 Gameplay가 아닐 때 풀을 정리합니다.
+        // Gameplay 상태를 벗어날 때 카드 선택 루프 중지 및 풀 정리
         if (CurrentState == GameState.Gameplay && newState != GameState.Gameplay)
         {
+            var cardManager = ServiceLocator.Get<CardManager>();
+            cardManager?.StopCardSelectionLoop();
+
             var poolManager = ServiceLocator.Get<PoolManager>();
             if (poolManager != null)
             {
                 Debug.Log($"[GameManager] Gameplay 씬을 떠나므로 모든 풀링된 오브젝트를 파괴합니다.");
-                poolManager.ClearAndDestroyEntirePool(); // 1단계에서 변경한 새 이름 사용
+                poolManager.ClearAndDestroyEntirePool();
             }
         }
 

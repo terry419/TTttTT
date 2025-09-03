@@ -94,5 +94,11 @@ public class PlayerInitializer : MonoBehaviour
 
         playerStats.CalculateFinalStats();
         playerStats.currentHealth = playerStats.FinalHealth;
+
+        // 모든 카드 장착 및 스탯 계산이 끝난 후, 카드 선택 루프를 시작합니다.
+        if (cardManager != null) 
+        {
+            cardManager.StartCardSelectionLoop();
+        }
     }
 }
