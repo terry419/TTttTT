@@ -12,8 +12,6 @@ public class BasicInfo
     public string cardID;
     [Tooltip("UI에 표시될 카드 이름")]
     public string cardName;
-    [Tooltip("UI에 표시될 작은 카드 아이콘")]
-    public Sprite cardIcon;
     [Tooltip("카드 중앙에 표시될 메인 일러스트")]
     public Sprite cardIllustration;
     [Tooltip("카드의 타입 (물리 또는 마법)")]

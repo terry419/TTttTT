@@ -105,6 +105,17 @@ public class GameManager : MonoBehaviour
         if (CurrentState == newState && CurrentState != GameState.Gameplay) return;
         Debug.Log($"[GameManager] 상태 변경: {CurrentState} -> {newState}");
 
+        var cardManager = ServiceLocator.Get<CardManager>();
+
+        // 상태 변경에 따른 카드 선택 루프 제어
+        if (newState == GameState.Gameplay)
+        {
+            cardManager?.StartCardSelectionLoop();
+        }
+        else if (CurrentState == GameState.Gameplay)
+        {
+            cardManager?.StopCardSelectionLoop();
+        }
 
         // 현재 상태가 Gameplay였고, 다음 상태가 Gameplay가 아닐 때 풀을 정리합니다.
         if (CurrentState == GameState.Gameplay && newState != GameState.Gameplay)

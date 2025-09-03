@@ -55,7 +55,29 @@ public class CardManager : MonoBehaviour
 
     public CardInstance AddCard(NewCardDataSO newCardData)
     {
-        if (ownedCards.Count >= maxOwnedSlots) return null;
+        if (ownedCards.Count >= maxOwnedSlots)
+        {
+            if (equippedCards.Count > 0)
+            {
+                // 1. 무작위로 장착된 카드 선택
+                int randomIndex = Random.Range(0, equippedCards.Count);
+                CardInstance cardToRemove = equippedCards[randomIndex];
+
+                Debug.Log($"[CardManager] 카드 슬롯이 가득 찼습니다. 장착된 카드 '{cardToRemove.CardData.basicInfo.cardName}'(을)를 제거합니다.");
+
+                // 2. 해당 카드 장착 해제 및 소유 목록에서 제거
+                Unequip(cardToRemove);
+                ownedCards.Remove(cardToRemove);
+            }
+            else
+            {
+                // 소유 슬롯은 가득 찼지만 장착된 카드가 없어 제거할 수 없는 경우
+                Debug.LogWarning("[CardManager] 카드 슬롯이 가득 찼지만, 장착된 카드가 없어 새 카드를 추가할 수 없습니다.");
+                return null;
+            }
+        }
+
+        // 새 카드 인스턴스 생성 및 추가
         CardInstance newInstance = new CardInstance(newCardData);
         ownedCards.Add(newInstance);
         Debug.Log($"[CardManager] 새 카드 인스턴스 추가: {newInstance.CardData.name} ({newInstance.InstanceId})");
@@ -150,6 +172,17 @@ public class CardManager : MonoBehaviour
         if (_cardSelectionCts != null && !_cardSelectionCts.IsCancellationRequested) return;
         _cardSelectionCts = new CancellationTokenSource();
         SelectActiveCardLoop(_cardSelectionCts.Token).Forget();
+    }
+
+    public void StopCardSelectionLoop()
+    {
+        if (_cardSelectionCts != null)
+        {
+            _cardSelectionCts.Cancel();
+            _cardSelectionCts.Dispose();
+            _cardSelectionCts = null;
+            Debug.Log("[CardManager] Card selection loop stopped.");
+        }
     }
 
     private async UniTaskVoid SelectActiveCardLoop(CancellationToken token)
