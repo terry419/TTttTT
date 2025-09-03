@@ -1,7 +1,8 @@
+// 파일 경로: Assets/1.Scripts/Gameplay/PlayerController.cs
 using Cysharp.Threading.Tasks;
 using System.Threading;
 using UnityEngine;
-using UnityEngine.InputSystem; // Input System 네임스페이스 사용
+using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerController : MonoBehaviour
@@ -29,7 +30,6 @@ public class PlayerController : MonoBehaviour
     {
         if (inputManager != null)
         {
-            Debug.Log("[INPUT TRACE] PlayerController.OnEnable: 'Move' 액션 이벤트 구독 시도.");
             inputManager.InputActions.Gameplay.Move.performed += HandleMove;
             inputManager.InputActions.Gameplay.Move.canceled += HandleMove;
         }
@@ -49,9 +49,9 @@ public class PlayerController : MonoBehaviour
         _attackLoopCts?.Dispose();
         _attackLoopCts = null;
     }
+
     private void HandleRoundStarted(RoundDataSO roundData)
     {
-        // 라운드가 공식적으로 시작되었을 때만 자동 공격을 시작합니다.
         StartAutoAttackLoop();
     }
 
@@ -70,25 +70,35 @@ public class PlayerController : MonoBehaviour
     public void StartAutoAttackLoop()
     {
         if (_attackLoopCts != null && !_attackLoopCts.IsCancellationRequested) return;
-
         _attackLoopCts = new CancellationTokenSource();
         AutoAttackLoop(_attackLoopCts.Token).Forget();
     }
 
+    // ▼▼▼ [핵심 수정] 공격 간격 계산 방식을 변경합니다. ▼▼▼
     private async UniTask AutoAttackLoop(CancellationToken token)
     {
-        PerformAttack();
-
         try
         {
             while (!token.IsCancellationRequested)
             {
+                // 1. 공격에 사용할 카드를 가져옵니다.
+                var cardToUse = cardManager.activeCard;
+                if (cardToUse == null)
+                {
+                    await UniTask.Yield(PlayerLoopTiming.FixedUpdate, token); // 사용할 카드가 없으면 한 프레임 대기
+                    continue;
+                }
+
+                // 2. 해당 카드로 공격을 실행합니다.
+                await PerformAttack(cardToUse);
+
+                // 3. 방금 사용한 카드의 고유 쿨타임을 기반으로 대기 시간을 계산합니다.
                 if (stats == null) return;
-                float interval = 1f / stats.FinalAttackSpeed;
+                float interval = cardToUse.CardData.attackInterval / stats.FinalAttackSpeed;
                 if (float.IsInfinity(interval) || interval <= 0) interval = 1f;
 
+                // 4. 계산된 시간만큼 대기합니다.
                 await UniTask.Delay(System.TimeSpan.FromSeconds(interval), delayTiming: PlayerLoopTiming.FixedUpdate, cancellationToken: token);
-                PerformAttack();
             }
         }
         catch (System.OperationCanceledException)
@@ -97,18 +107,16 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private async void PerformAttack()
+    private async UniTask PerformAttack(CardInstance cardInstance)
     {
         try
         {
-            if (cardManager?.activeCard == null) return;
-            var cardInstance = cardManager.activeCard;
+            if (cardInstance == null) return;
 
-            // [FIX] 공격 실행 직전, 해당 카드 인스턴스가 여전히 장착 목록에 있는지 확인합니다.
-            // 이를 통해 합성 등으로 제거된 카드를 사용하려는 시도를 막습니다.
+            // 카드가 여전히 장착 목록에 있는지 확인
             if (!cardManager.equippedCards.Contains(cardInstance))
             {
-                return; // 카드가 더 이상 유효하지 않으므로 공격을 중단합니다.
+                return;
             }
 
             ICardAction action = cardInstance.CardData.CreateAction();
@@ -117,10 +125,10 @@ public class PlayerController : MonoBehaviour
         }
         catch (MissingReferenceException ex)
         {
-            // [증거 확보] 만약 오류가 이 블록에서 발생했다면, 아래의 특수 로그가 출력됩니다.
-            Debug.LogError($"[!!! 100% 증거 확보 !!!] MissingReferenceException이 PlayerController.PerformAttack() 내부에서 발생했습니다. 이는 공격 실행 과정(카드 모듈 등)의 문제입니다. 원본 오류: {ex.Message}\n{ex.StackTrace}");
+            Debug.LogError($"[!!! MissingReferenceException !!!] PlayerController.PerformAttack() 내부에서 오류 발생. 원본 오류: {ex.Message}\n{ex.StackTrace}");
         }
     }
+    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
     void FixedUpdate()
     {
@@ -130,7 +138,6 @@ public class PlayerController : MonoBehaviour
     private void HandleMove(InputAction.CallbackContext context)
     {
         moveInput = context.ReadValue<Vector2>();
-
     }
 
     public void Heal(float amount)

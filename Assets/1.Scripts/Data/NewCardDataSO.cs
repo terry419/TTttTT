@@ -1,50 +1,53 @@
-// 추천 경로: Assets/1.Scripts/Data/NewCardDataSO.cs
+// 파일 경로: Assets/1.Scripts/Data/NewCardDataSO.cs
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using System.Collections.Generic;
 using System;
 
-/// <summary>
-/// v8.0 아키텍처의 핵심이 되는 '플랫폼' ScriptableObject입니다.
-/// 카드의 기본 발사 사양, 패시브 스탯, 그리고 조립될 기능 모듈(부품)들의 슬롯을 정의합니다.
-/// </summary>
 [CreateAssetMenu(fileName = "NewCard_", menuName = "GameData/v8.0/New Card Platform")]
 public class NewCardDataSO : ScriptableObject
 {
-    [Header("[1] 기본 정보 (UI 표시용)")]
+    [Header("[1] 기본 정보 (UI 표기용)")]
     public BasicInfo basicInfo;
 
-    [Header("[2] 패시브 능력치 (장착 시 적용)")]
+    [Header("[2] 스탯 보너스 (플레이어 강화)")]
     public StatModifiers statModifiers;
 
-    [Header("[3] 플랫폼 기본 발사 사양")]
-    [Tooltip("동일 공격(샷건 등)의 여러 발사체가 한 대상에게 모두 피해를 줄 수 있는지 여부입니다.")]
-    public bool allowMultipleHits = false; // [신규 추가]
-    [Tooltip("한 번에 발사하는 투사체의 총 개수입니다.")]
+    [Header("[3] 카드 고유 발사 스펙")]
+    [Tooltip("이 카드의 고유 공격 주기(초)입니다. 1.0은 1초에 한 번, 0.2는 1초에 5번을 의미합니다.")]
+    public float attackInterval = 1.0f; 
+
+    [Tooltip("체크 시, 동일 투사체가 한 몬스터를 여러 번 타격할 수 있습니다.")]
+    public bool allowMultipleHits = false;
+
+    [Tooltip("한 번에 발사하는 투사체의 개수입니다.")]
     public int projectileCount = 1;
-    [Tooltip("투사체가 퍼지는 총 각도입니다. 0이면 모든 투사체가 같은 방향으로 나갑니다.")]
+
+    [Tooltip("투사체가 퍼지는 각도입니다. 0이면 모든 투사체가 한 방향으로 나갑니다.")]
     public float spreadAngle = 0f;
-    [Tooltip("이 카드가 사용하는 모든 프리팹을 몇 개씩 미리 로드할지에 대한 권장 수량입니다.")]
+
+    [Tooltip("이 카드가 사용하는 투사체를 미리 몇 개 생성해둘지 정합니다.")]
     public int preloadCount = 10;
-    [Tooltip("이 카드가 발사하는 모든 효과의 기본 피해량입니다.")]
+
+    [Tooltip("카드가 발사하는 투사체의 기본 피해량입니다.")]
     public float baseDamage = 10f;
-    [Tooltip("이 카드가 발사하는 기본 투사체의 속도입니다.")]
+
+    [Tooltip("카드가 발사하는 투사체의 기본 속도입니다.")]
     public float baseSpeed = 10f;
 
-
-    [Header("[4] 모듈 조립 슬롯 (기능 부품)")]
-    [Tooltip("이 플랫폼에 장착할 기능 모듈(CardEffectSO)들을 여기에 등록합니다.")]
+    [Header("[4] 장착 효과 (모듈)")]
+    [Tooltip("이 카드에 장착할 특수 효과(CardEffectSO) 목록입니다.")]
     public List<ModuleEntry> modules;
 
-
-    [Header("[5] 메타 정보")]
-    [Tooltip("게임 플레이 중 룰렛 등에서 이 카드가 선택될 확률 가중치입니다.")]
+    [Header("[5] 기타 메타 정보")]
+    [Tooltip("카드 선택지에 이 카드가 등장할 확률 가중치입니다.")]
     public float selectionWeight = 1f;
-    [Tooltip("라운드 종료 후 보상으로 등장할 확률 가중치입니다.")]
+
+    [Tooltip("보상 목록에 이 카드가 등장할 확률 가중치입니다.")]
     public float rewardAppearanceWeight;
+
     [Tooltip("이 카드를 해금하기 위한 조건입니다. (미구현)")]
     public string unlockCondition;
-
 
     public ICardAction CreateAction()
     {
@@ -52,15 +55,12 @@ public class NewCardDataSO : ScriptableObject
     }
 }
 
-/// <summary>
-/// NewCardDataSO의 인스펙터에서 모듈을 쉽게 관리하기 위한 Serializable 클래스입니다.
-/// </summary>
 [Serializable]
 public class ModuleEntry
 {
-    [Tooltip("인스펙터에서 이 모듈의 역할을 쉽게 알아볼 수 있도록 설명을 기입하세요.")]
+    [Tooltip("이 모듈에 대한 설명입니다.")]
     public string description;
 
-    [Tooltip("실제 기능 로직을 담고 있는 CardEffectSO 에셋을 여기에 연결합니다.")]
+    [Tooltip("실행할 CardEffectSO 모듈을 여기에 연결합니다.")]
     public AssetReferenceT<CardEffectSO> moduleReference;
 }
