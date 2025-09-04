@@ -86,6 +86,14 @@ public class MonsterDataSOEditor : Editor
         EditorGUILayout.LabelField("프리팹", EditorStyles.boldLabel);
         EditorGUILayout.PropertyField(serializedObject.FindProperty("prefabRef"));
 
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("--- [신규] 모듈형 AI 설정 ---", EditorStyles.boldLabel);
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("useNewAI"));
+        if (data.useNewAI)
+        {
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("initialBehavior"));
+        }
+
         serializedObject.ApplyModifiedProperties();
     }
 }

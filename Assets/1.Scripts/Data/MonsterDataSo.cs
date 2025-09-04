@@ -44,7 +44,6 @@ public class MonsterDataSO : ScriptableObject
     [Range(0.1f, 1f)]
     public float patrolSpeedMultiplier = 0.5f;
 
-    // ▼▼▼ [수정] Flee를 '특수 능력' 섹션으로 옮겨 모듈화합니다. ▼▼▼
     [Header("특수 능력: 도망 (Flee)")]
     [Tooltip("체크 시, 이 몬스터는 특정 조건 하에 도망치는 능력을 가집니다.")]
     public bool canFlee;
