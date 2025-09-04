@@ -1,4 +1,4 @@
-// ϸ: UICursorManager.cs (丵 Ϸ)
+// 경로: Assets/1.Scripts/Core/UICursorManager.cs
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;

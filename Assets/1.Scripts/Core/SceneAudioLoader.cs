@@ -24,7 +24,7 @@ public class SceneAudioLoader : MonoBehaviour
 
         if (sceneAudioCollection != null)
         {
-            // []  audioManager  մϴ.
+            // 오디오 컬렉션을 AudioManager에 로드합니다.
             audioManager.LoadCollection(sceneAudioCollection);
             if (!string.IsNullOrEmpty(startingBgmName))
             {

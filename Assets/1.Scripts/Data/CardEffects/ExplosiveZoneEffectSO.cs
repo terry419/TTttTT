@@ -1,19 +1,19 @@
-// ���: ./TTttTT/Assets/1/Scripts/Data/CardEffects/ExplosiveZoneEffectSO.cs
+// 경로: Assets/1.Scripts/Data/CardEffects/ExplosiveZoneEffectSO.cs
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 
 /// <summary>
-/// [���� �и�] ���� ��߼� ���� ����(����)�� ����ϴ� ����Դϴ�.
+/// [카드 효과] 총알 명중 시, 폭발 효과(데미지)를 생성하는 모듈입니다.
 /// </summary>
 [CreateAssetMenu(fileName = "Module_ExplosiveZone_", menuName = "GameData/v8.0/Modules/ExplosiveZoneEffect")]
 public class ExplosiveZoneEffectSO : CardEffectSO
 {
-    [Header("���� ����")]
-    [Tooltip("������ ���ظ� �ִ� ���� (������).")]
+    [Header("폭발 설정")]
+    [Tooltip("폭발이 영향을 미치는 반경 (미터).")]
     public float explosionRadius = 5f;
 
-    [Tooltip("���� �ð� ȿ��(VFX)�� ��巹���� �ּ�.")]
+    [Tooltip("폭발 시각 효과(VFX)로 사용될 프리팹 주소.")]
     public AssetReferenceGameObject explosionVfxRef;
 
     public override void Execute(EffectContext context)

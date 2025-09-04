@@ -27,7 +27,6 @@ public class CreateGravityPulseZoneEffectSO : CardEffectSO
     [Tooltip("체크 시, 플레이어의 최종 공격력 보너스(%)가 이 장판의 피해량에 영향을 줍니다.")]
     public bool scalesWithPlayerDamageBonus = true;
 
-    // ▼▼▼ [수정] 더 이상 사용하지 않는 PulseSpeed 변수를 삭제했습니다. ▼▼▼
 
     [Tooltip("최소 크기 비율입니다. (예: 0.2는 최대 반경의 20%까지 작아짐)")]
     [Range(0f, 1f)]

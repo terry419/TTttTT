@@ -98,7 +98,6 @@ public class MonsterController : MonoBehaviour
         this.allyCheckRadius = data.allyCheckRadius;
         this.fleeWhenAlliesLessThan = data.fleeWhenAlliesLessThan;
         startPosition = transform.position;
-        // ▼▼▼ [수정] Flee는 더 이상 초기 상태가 아니므로 해당 로직을 제거하고, baseState를 설정합니다. ▼▼▼
         switch (monsterData.behaviorType)
         {
             case MonsterBehaviorType.Patrol:
@@ -183,7 +182,6 @@ public class MonsterController : MonoBehaviour
     {
         if (playerTransform == null) return;
         
-        // ▼▼▼ [수정] Flee 체크를 최우선으로 실행하여 다른 상태를 덮어쓰도록 합니다. ▼▼▼
         if (monsterData.canFlee)
         {
             bool shouldFlee = CheckFleeCondition();
@@ -310,9 +308,6 @@ public class MonsterController : MonoBehaviour
             Die().Forget();
         }
     }
-    /// <summary>
-    /// [ 신규 추가] MonsterStats로부터 피해를 받았음을 알림받고, 이벤트를 발생시키는 메서드입니다.
-    /// </summary>
     public void NotifyDamageTaken(float finalDamage)
     {
         OnMonsterDamaged?.Invoke(finalDamage, transform.position);
@@ -343,7 +338,6 @@ public class MonsterController : MonoBehaviour
 
         GameObject vfxGO = await poolManager.GetAsync(monsterData.explosionVfxRef.AssetGUID);
 
-        // [피드백 반영] VFX 스폰 후 Null 체크 강화
         if (vfxGO != null)
         {
             vfxGO.transform.position = deathPosition;
@@ -353,7 +347,6 @@ public class MonsterController : MonoBehaviour
             Debug.LogWarning($"[MonsterController] 자폭 VFX 프리팹({monsterData.explosionVfxRef.AssetGUID})을 스폰하지 못했습니다.");
         }
 
-        // [피드백 반영] sqrMagnitude를 사용한 성능 최적화
         float sqrDistanceToPlayer = (deathPosition - playerController.transform.position).sqrMagnitude;
         float explosionSqrRadius = monsterData.explosionRadius * monsterData.explosionRadius;
 

@@ -91,7 +91,6 @@ public class GravityPulseZoneController : MonoBehaviour
 
         foreach (var monsterRb in monstersInZone)
         {
-            // ▼▼▼ [수정] velocity를 직접 설정하는 대신, MonsterController의 SetVelocity 메서드를 호출합니다. ▼▼▼
             if (monsterRb.TryGetComponent<MonsterController>(out var monsterController))
             {
                 Vector2 directionToCenter = (transform.position - monsterRb.transform.position).normalized;
