@@ -1,4 +1,4 @@
-/* ∞Ê∑Œ: TTttTT/Assets/Editor/MonsterDataSOEditor.cs */
+/* Í≤ΩÎ°ú: TTttTT/Assets/Editor/MonsterDataSOEditor.cs */
 using UnityEngine;
 using UnityEditor;
 
@@ -8,60 +8,71 @@ public class MonsterDataSOEditor : Editor
     public override void OnInspectorGUI()
     {
         serializedObject.Update();
-
         MonsterDataSO data = (MonsterDataSO)target;
 
-        // --- «Ï¥ıøÕ ∞¯≈Î « µÂ∏¶ ºˆµø¿∏∑Œ ±◊∏≥¥œ¥Ÿ. ---
-        EditorGUILayout.LabelField("±‚∫ª ¡§∫∏", EditorStyles.boldLabel);
+        // --- Í∏∞Î≥∏ Ï†ïÎ≥¥, Îä•Î†•Ïπò ---
+        EditorGUILayout.LabelField("Í∏∞Î≥∏ Ï†ïÎ≥¥", EditorStyles.boldLabel);
         EditorGUILayout.PropertyField(serializedObject.FindProperty("monsterID"));
         EditorGUILayout.PropertyField(serializedObject.FindProperty("monsterName"));
 
         EditorGUILayout.Space();
-        EditorGUILayout.LabelField("¥…∑¬ƒ°", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField("Îä•Î†•Ïπò", EditorStyles.boldLabel);
         EditorGUILayout.PropertyField(serializedObject.FindProperty("maxHealth"));
         EditorGUILayout.PropertyField(serializedObject.FindProperty("moveSpeed"));
         EditorGUILayout.PropertyField(serializedObject.FindProperty("contactDamage"));
 
+        // --- ÌñâÎèô Ìå®ÌÑ¥ ---
         EditorGUILayout.Space();
-        EditorGUILayout.LabelField("«‡µø ∆–≈œ", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField("ÌñâÎèô Ìå®ÌÑ¥", EditorStyles.boldLabel);
         EditorGUILayout.PropertyField(serializedObject.FindProperty("behaviorType"));
 
+        // ‚ñº‚ñº‚ñº [ÏàòÏ†ï] Patrol UIÎ•º switch Î¨∏ ÏïàÏúºÎ°ú ÌÜµÌï©ÌïòÏó¨ Ï§ëÎ≥µÏùÑ Ï†úÍ±∞Ìï©ÎãàÎã§. ‚ñº‚ñº‚ñº
         switch (data.behaviorType)
         {
             case MonsterBehaviorType.Patrol:
-                // ... Patrol UI ...
-                break;
-
-            case MonsterBehaviorType.Flee:
                 EditorGUILayout.Space();
-                EditorGUILayout.LabelField("Flee ≈∏¿‘ ¿¸øÎ ∆ƒ∂ÛπÃ≈Õ", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField("Patrol ÌÉÄÏûÖ Ï†ÑÏö© ÌååÎùºÎØ∏ÌÑ∞", EditorStyles.boldLabel);
                 EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("fleeTriggerRadius"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("fleeSafeRadius"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("fleeSpeedMultiplier"));
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("playerDetectionRadius"));
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("loseSightRadius"));
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("patrolRadius"));
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("patrolSpeedMultiplier"));
                 EditorGUI.indentLevel--;
                 break;
         }
 
-        if (data.behaviorType == MonsterBehaviorType.Patrol)
+        // --- ÌäπÏàò Îä•Î†• ---
+        EditorGUILayout.Space(10);
+        EditorGUILayout.LabelField("--- ÌäπÏàò Îä•Î†• ---", EditorStyles.boldLabel);
+        
+        // ‚ñº‚ñº‚ñº [ÏàòÏ†ï] Flee Í∏∞Îä•ÏùÑ Ï≤¥ÌÅ¨Î∞ïÏä§ Í∏∞Î∞òÏùò Ï°∞Í±¥Î∂Ä UIÎ°ú Î≥ÄÍ≤ΩÌï©ÎãàÎã§. ‚ñº‚ñº‚ñº
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("canFlee"));
+        if (data.canFlee)
         {
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Patrol ≈∏¿‘ ¿¸øÎ ∆ƒ∂ÛπÃ≈Õ", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("playerDetectionRadius"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("loseSightRadius"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("patrolRadius"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("patrolSpeedMultiplier"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("fleeCondition"));
+            
+            // FleeCondition Í∞íÏóê Îî∞Îùº Îã§Î•∏ UIÎ•º Î≥¥Ïó¨Ï§çÎãàÎã§.
+            switch (data.fleeCondition)
+            {
+                case FleeCondition.PlayerProximity:
+                    EditorGUILayout.PropertyField(serializedObject.FindProperty("fleeTriggerRadius"));
+                    break;
+                case FleeCondition.LowHealth:
+                    EditorGUILayout.PropertyField(serializedObject.FindProperty("fleeOnHealthPercentage"));
+                    break;
+                case FleeCondition.Outnumbered:
+                    EditorGUILayout.PropertyField(serializedObject.FindProperty("allyCheckRadius"));
+                    EditorGUILayout.PropertyField(serializedObject.FindProperty("fleeWhenAlliesLessThan"));
+                    break;
+            }
+            
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("fleeSafeRadius"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("fleeSpeedMultiplier"));
             EditorGUI.indentLevel--;
         }
 
-        EditorGUILayout.Space(10);
-
-        EditorGUILayout.LabelField("∆Øºˆ ¥…∑¬", EditorStyles.boldLabel);
-
-
         EditorGUILayout.PropertyField(serializedObject.FindProperty("canExplodeOnDeath"));
-
         if (data.canExplodeOnDeath)
         {
             EditorGUI.indentLevel++;
@@ -72,8 +83,9 @@ public class MonsterDataSOEditor : Editor
             EditorGUI.indentLevel--;
         }
 
+        // ... ÌîÑÎ¶¨Ìåπ Î∞è ÎßàÎ¨¥Î¶¨ ...
         EditorGUILayout.Space();
-        EditorGUILayout.LabelField("«¡∏Æ∆’", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField("ÌîÑÎ¶¨Ìåπ", EditorStyles.boldLabel);
         EditorGUILayout.PropertyField(serializedObject.FindProperty("prefabRef"));
 
         serializedObject.ApplyModifiedProperties();

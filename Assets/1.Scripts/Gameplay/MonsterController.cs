@@ -12,6 +12,7 @@ public class MonsterController : MonoBehaviour
     // --- 상태 머신 관련 ---
     private enum State { Spawning, Chasing, Patrolling, Fleeing }
     private State currentState = State.Spawning;
+    private State baseState; // 도망치기 전의 원래 상태를 저장할 변수
     private MonsterDataSO monsterData;
     private float playerDetectionRadius;
     private float loseSightRadius;
@@ -21,6 +22,11 @@ public class MonsterController : MonoBehaviour
     private float fleeTriggerRadius;
     private float fleeSafeRadius;
     private float fleeSpeedMultiplier;
+
+    private FleeCondition fleeCondition;
+    private float fleeOnHealthPercentage;
+    private float allyCheckRadius;
+    private int fleeWhenAlliesLessThan;
 
     // --- AI 성능 최적화용 변수 ---
     private const float STATE_CHECK_INTERVAL = 0.2f; // AI가 상태를 체크하는 주기 (0.2초)
@@ -86,19 +92,26 @@ public class MonsterController : MonoBehaviour
         this.fleeTriggerRadius = data.fleeTriggerRadius;
         this.fleeSafeRadius = data.fleeSafeRadius;
         this.fleeSpeedMultiplier = data.fleeSpeedMultiplier;
+        // Flee 파라미터 읽어오기
+        this.fleeCondition = data.fleeCondition;
+        this.fleeOnHealthPercentage = data.fleeOnHealthPercentage;
+        this.allyCheckRadius = data.allyCheckRadius;
+        this.fleeWhenAlliesLessThan = data.fleeWhenAlliesLessThan;
         startPosition = transform.position;
+        // ▼▼▼ [수정] Flee는 더 이상 초기 상태가 아니므로 해당 로직을 제거하고, baseState를 설정합니다. ▼▼▼
         switch (monsterData.behaviorType)
         {
-            case MonsterBehaviorType.Flee:
             case MonsterBehaviorType.Patrol:
+                baseState = State.Patrolling;
                 currentState = State.Patrolling;
                 UpdatePatrolTarget();
                 break;
             default: // Chase
+                baseState = State.Chasing;
                 currentState = State.Chasing;
                 break;
         }
-        Debug.Log($"<color=cyan>[FSM-Init]</color> '{monsterData.monsterName}' spawned. Behavior={monsterData.behaviorType}, InitialState={currentState}");
+        Debug.Log($"<color=cyan>[FSM-Init]</color> '{monsterData.monsterName}' spawned. BaseBehavior={baseState}");
     }
     void Update()
     {
@@ -124,22 +137,17 @@ public class MonsterController : MonoBehaviour
     {
         if (isVelocityOverridden)
         {
-            isVelocityOverridden = false; // 플래그를 바로 초기화하여 다음 프레임부터는 다시 움직일 수 있도록 함
+            isVelocityOverridden = false;
             return;
         }
-        if (playerTransform == null)
+
+        if (playerTransform == null) 
         {
             var playerController = ServiceLocator.Get<PlayerController>();
             if (playerController != null) playerTransform = playerController.transform;
             else { rb.velocity = Vector2.zero; return; }
         }
-        if (isInvulnerable || isDead)
-        {
-            rb.velocity = Vector2.zero;
-            return;
-        }
-        Vector2 direction = (playerTransform.position - transform.position).normalized;
-        rb.velocity = direction * monsterStats.FinalMoveSpeed;
+        if (isInvulnerable || isDead) { rb.velocity = Vector2.zero; return; }
 
         switch (currentState)
         {
@@ -149,9 +157,11 @@ public class MonsterController : MonoBehaviour
             case State.Chasing:
                 ExecuteChaseMovement();
                 break;
-            // ▼▼▼ [4-5] Fleeing 상태일 때의 움직임 처리를 추가합니다. ▼▼▼
             case State.Fleeing:
                 ExecuteFleeMovement();
+                break;
+            default:
+                rb.velocity = Vector2.zero;
                 break;
         }
     }
@@ -172,37 +182,57 @@ public class MonsterController : MonoBehaviour
     private void UpdateStateTransitions()
     {
         if (playerTransform == null) return;
-        // [사용자 피드백 반영] sqrMagnitude를 사용하여 불필요한 제곱근 연산 제거
-        float sqrDistanceToPlayer = (playerTransform.position - transform.position).sqrMagnitude;
-
-        if (monsterData.behaviorType == MonsterBehaviorType.Flee)
+        
+        // ▼▼▼ [수정] Flee 체크를 최우선으로 실행하여 다른 상태를 덮어쓰도록 합니다. ▼▼▼
+        if (monsterData.canFlee)
         {
-            if (currentState != State.Fleeing && sqrDistanceToPlayer < fleeTriggerRadius * fleeTriggerRadius)
+            bool shouldFlee = CheckFleeCondition();
+            
+            // 현재 도망 상태가 아닌데, 도망쳐야 할 상황이라면
+            if (currentState != State.Fleeing && shouldFlee)
             {
                 ChangeState(State.Fleeing);
+                return; // 도망 상태로 전환했으면 다른 로직은 체크할 필요 없음
             }
-            else if (currentState == State.Fleeing && sqrDistanceToPlayer > fleeSafeRadius * fleeSafeRadius)
+            // 현재 도망 상태인데, 더 이상 도망칠 필요가 없다면
+            else if (currentState == State.Fleeing && !shouldFlee)
             {
-                ChangeState(State.Patrolling);
+                ChangeState(baseState); // 원래의 기본 상태로 복귀
+                return;
             }
-            return; // Flee 타입은 아래의 다른 전환 로직을 무시합니다.
         }
 
-        switch (currentState)
+        // Flee 상태가 아닐 때만 기존의 Patrol <-> Chase 전환 로직을 실행
+        if (currentState == State.Patrolling || currentState == State.Chasing)
         {
-            case State.Patrolling:
-                if (sqrDistanceToPlayer < playerDetectionRadius * playerDetectionRadius)
-                {
-                    ChangeState(State.Chasing);
-                }
-                break;
-            case State.Chasing:
-                if (monsterData.behaviorType == MonsterBehaviorType.Patrol && sqrDistanceToPlayer > loseSightRadius * loseSightRadius)
-                {
-                    ChangeState(State.Patrolling);
-                }
-                break;
+             float sqrDistanceToPlayer = (playerTransform.position - transform.position).sqrMagnitude;
+             if (currentState == State.Patrolling && sqrDistanceToPlayer < playerDetectionRadius * playerDetectionRadius)
+             {
+                 ChangeState(State.Chasing);
+             }
+             else if (currentState == State.Chasing && monsterData.behaviorType == MonsterBehaviorType.Patrol && sqrDistanceToPlayer > loseSightRadius * loseSightRadius)
+             {
+                 ChangeState(State.Patrolling);
+             }
         }
+    }
+
+    // 도망 조건을 확인하는 로직을 별도 함수로 분리
+    private bool CheckFleeCondition()
+    {
+        switch (fleeCondition)
+        {
+            case FleeCondition.PlayerProximity:
+                return (playerTransform.position - transform.position).sqrMagnitude < fleeTriggerRadius * fleeTriggerRadius;
+            
+            case FleeCondition.LowHealth:
+                return monsterStats.CurrentHealth / monsterStats.FinalMaxHealth <= fleeOnHealthPercentage;
+            
+            case FleeCondition.Outnumbered:
+                Collider2D[] allies = Physics2D.OverlapCircleAll(transform.position, allyCheckRadius, LayerMask.GetMask("Monster"));
+                return allies.Length < fleeWhenAlliesLessThan + 1;
+        }
+        return false;
     }
     private void ExecutePatrolMovement()
     {

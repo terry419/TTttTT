@@ -5,8 +5,7 @@ using UnityEngine.AddressableAssets;
 public enum MonsterBehaviorType
 {
     Chase, // 추격
-    Patrol, // 순찰
-    Flee   // 도망 (향후 구현)
+    Patrol // 순찰
 }
 
 public enum FleeCondition
@@ -27,10 +26,11 @@ public class MonsterDataSO : ScriptableObject
     public float moveSpeed = 3f;
     public float contactDamage = 10f;
 
+    [Header("행동 패턴")]
+    [Tooltip("이 몬스터의 기본 행동 패턴입니다. 도망 조건이 아닐 때 이 패턴으로 행동합니다.")]
     public MonsterBehaviorType behaviorType = MonsterBehaviorType.Chase;
-
-    // Patrol 타입 전용 파라미터들
-    [Header("AI 행동 파라미터")]
+    
+    [Header("AI 행동 파라미터 (Patrol 타입 전용)")]
     [Tooltip("Patrol 타입: 플레이어를 감지하고 추격을 시작하는 반경입니다.")]
     public float playerDetectionRadius = 8f;
 
@@ -44,19 +44,34 @@ public class MonsterDataSO : ScriptableObject
     [Range(0.1f, 1f)]
     public float patrolSpeedMultiplier = 0.5f;
 
-    [Header("도망 파라미터 (Flee 타입 전용)")]
-    [Tooltip("플레이어가 이 반경 안으로 들어오면 도망치기 시작합니다.")]
-    public float fleeTriggerRadius = 6f;
+    // ▼▼▼ [수정] Flee를 '특수 능력' 섹션으로 옮겨 모듈화합니다. ▼▼▼
+    [Header("특수 능력: 도망 (Flee)")]
+    [Tooltip("체크 시, 이 몬스터는 특정 조건 하에 도망치는 능력을 가집니다.")]
+    public bool canFlee;
+    
+    [Tooltip("몬스터가 도망을 시작하는 조건을 선택합니다.")]
+    public FleeCondition fleeCondition = FleeCondition.PlayerProximity;
 
+    // --- 이하 Flee 관련 모든 파라미터는 그대로 유지 ---
+    [Tooltip("조건(PlayerProximity): 플레이어가 이 반경 안으로 들어오면 도망칩니다.")]
+    public float fleeTriggerRadius = 6f;
+    
+    [Tooltip("조건(LowHealth): 최대 체력 대비 현재 체력이 이 비율(%) 이하일 때 도망칩니다.")]
+    [Range(0.1f, 1f)] public float fleeOnHealthPercentage = 0.3f;
+
+    [Tooltip("조건(Outnumbered): 이 반경 내 아군 몬스터 수가 설정 값 미만일 때 도망칩니다.")]
+    public float allyCheckRadius = 10f;
+    [Tooltip("조건(Outnumbered): 주변 아군 수가 이 값 미만일 때 도망칩니다.")]
+    public int fleeWhenAlliesLessThan = 2;
+    
+    // --- 공통 파라미터 ---
     [Tooltip("플레이어가 이 반경 밖으로 나가면 도망을 멈추고 순찰을 시작합니다.")]
     public float fleeSafeRadius = 12f;
-
     [Tooltip("도망칠 때의 이동 속도 배율입니다. (1.2 = 120%)")]
-    [Range(1f, 2f)]
-    public float fleeSpeedMultiplier = 1.2f;
+    [Range(1f, 2f)] public float fleeSpeedMultiplier = 1.2f;
 
 
-    [Header("특수 능력: 자폭 (플레이어 대상)")]
+    [Header("특수 능력: 자폭 (Explode)")]
     [Tooltip("체크 시, 이 몬스터는 사망 시 플레이어를 대상으로 자폭을 시도합니다.")]
     public bool canExplodeOnDeath;
 

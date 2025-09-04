@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 1945923988199384264}
   - component: {fileID: 497793090048292029}
   m_Layer: 0
-  m_Name: Monster_Base
+  m_Name: Mon_SuicideBomber
   m_TagString: Monster
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
