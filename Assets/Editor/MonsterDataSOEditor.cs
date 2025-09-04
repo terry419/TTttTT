@@ -26,7 +26,6 @@ public class MonsterDataSOEditor : Editor
         EditorGUILayout.LabelField("행동 패턴", EditorStyles.boldLabel);
         EditorGUILayout.PropertyField(serializedObject.FindProperty("behaviorType"));
 
-        // ▼▼▼ [수정] Patrol UI를 switch 문 안으로 통합하여 중복을 제거합니다. ▼▼▼
         switch (data.behaviorType)
         {
             case MonsterBehaviorType.Patrol:
@@ -45,7 +44,6 @@ public class MonsterDataSOEditor : Editor
         EditorGUILayout.Space(10);
         EditorGUILayout.LabelField("--- 특수 능력 ---", EditorStyles.boldLabel);
         
-        // ▼▼▼ [수정] Flee 기능을 체크박스 기반의 조건부 UI로 변경합니다. ▼▼▼
         EditorGUILayout.PropertyField(serializedObject.FindProperty("canFlee"));
         if (data.canFlee)
         {

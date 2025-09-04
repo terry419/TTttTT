@@ -88,4 +88,11 @@ public class MonsterDataSO : ScriptableObject
     public float explosionRadius = 3f;
 
     public AssetReferenceGameObject prefabRef;
+
+    [Header("--- [신규] 모듈형 AI 설정 ---")]
+    [Tooltip("체크 시, 이 몬스터는 기존 AI 대신 새로운 모듈형 AI 시스템을 사용합니다.")]
+    public bool useNewAI;
+
+    [Tooltip("이 몬스터가 처음 시작할 행동 부품(Behavior) 에셋을 여기에 연결합니다.")]
+    public MonsterBehavior initialBehavior;
 }
