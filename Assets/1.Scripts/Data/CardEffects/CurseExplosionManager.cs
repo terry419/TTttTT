@@ -54,7 +54,12 @@ public class CurseExplosionManager : MonoBehaviour
     /// </summary>
     private void HandleMonsterDied(MonsterController deadMonster)
     {
-        Debug.Log($"[DEBUG-CEM] HandleMonsterDied: '{deadMonster?.name ?? "NULL"}'의 죽음 처리 시작.");
+        if (deadMonster == null)
+        {
+            // 이미 다른 로직(예: 라운드 종료)에 의해 몬스터가 정리된 경우이므로,
+            // 아무것도 하지 않고 조용히 함수를 종료하는 것이 안전합니다.
+            return;
+        }
 
         if (deadMonster == null || statusEffectManager == null || string.IsNullOrEmpty(curseStatusEffectID))
         {
@@ -65,9 +70,7 @@ public class CurseExplosionManager : MonoBehaviour
         {
             Debug.Log($"<color=magenta>[CurseExplosionManager]</color> 저주에 걸린 '{deadMonster.name}'의 죽음을 감지! 효과를 발동합니다.");
             // 비동기 작업이므로 UniTask의 'Forget'으로 처리
-            Debug.Log("[DEBUG-CEM] CreateExplosion 호출 시도...");
             CreateExplosion(deadMonster.transform.position).Forget();
-            Debug.Log("[DEBUG-CEM] FireCurseMissiles 호출 시도...");
             FireCurseMissiles(deadMonster.transform.position).Forget();
         }
     }
