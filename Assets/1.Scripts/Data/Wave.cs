@@ -21,7 +21,7 @@ public class Wave
     [Tooltip("Spread 타입일 때 총 스폰 기간(초)을 설정합니다.")]
     public float duration = 10f;
 
-    [Tooltip("웨이브 완료 후 다음 웨이브까지 대기할 시간(초)입니다.")]
+    [Tooltip("웨이브 시작까지 대기할 시간(초)입니다. 0초 시 즉시 스폰 시작")]
     public float delayAfterWave;
 
     [Tooltip("이 웨이브의 스폰 방식을 선택합니다 (Spread: 시간 간격, Burst: 일괄 스폰).")]

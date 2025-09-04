@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 3932637901207357665}
   - component: {fileID: 8626768522941110022}
   - component: {fileID: 8331365052330270221}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Fill
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -85,7 +85,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4800289977547934847}
   - component: {fileID: 6822823154407695784}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: HealthBar
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -175,7 +175,7 @@ GameObject:
   - component: {fileID: 6337644597920240605}
   - component: {fileID: 1236625080464691705}
   - component: {fileID: 4099466831156772070}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Background
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -255,7 +255,7 @@ GameObject:
   - component: {fileID: 6761212658256558402}
   - component: {fileID: 1327497584030169129}
   - component: {fileID: 601887131027535560}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Player
   m_TagString: Player
   m_Icon: {fileID: 0}
@@ -452,7 +452,7 @@ CircleCollider2D:
   m_CallbackLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
   m_Offset: {x: 0, y: 0}
@@ -467,7 +467,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2476238230531238508}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Fill Area
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -506,7 +506,7 @@ GameObject:
   - component: {fileID: 2280747930156799828}
   - component: {fileID: 4404049255325741987}
   - component: {fileID: 7227527207843033305}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: HealthBarCanvas
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -605,7 +605,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3691342460919089392}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: FirePoint
   m_TagString: Untagged
   m_Icon: {fileID: 0}

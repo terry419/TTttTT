@@ -68,7 +68,7 @@ public class MonsterDataSO : ScriptableObject
     [Tooltip("플레이어가 이 반경 밖으로 나가면 도망을 멈추고 순찰을 시작합니다.")]
     public float fleeSafeRadius = 12f;
     [Tooltip("도망칠 때의 이동 속도 배율입니다. (1.2 = 120%)")]
-    [Range(1f, 2f)] public float fleeSpeedMultiplier = 1.2f;
+    [Range(0, 2f)] public float fleeSpeedMultiplier = 1.2f;
 
 
     [Header("특수 능력: 자폭 (Explode)")]

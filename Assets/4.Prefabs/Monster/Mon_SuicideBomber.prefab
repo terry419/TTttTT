@@ -13,7 +13,8 @@ GameObject:
   - component: {fileID: 6286935514974050612}
   - component: {fileID: 1945923988199384264}
   - component: {fileID: 497793090048292029}
-  m_Layer: 0
+  - component: {fileID: 8912835136396790200}
+  m_Layer: 7
   m_Name: Mon_SuicideBomber
   m_TagString: Monster
   m_Icon: {fileID: 0}
@@ -126,10 +127,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 958424369c453c9439c8936ded9ef415, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 3
-  contactDamage: 10
   maxHealth: 10
-  currentHealth: 0
 --- !u!58 &497793090048292029
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -165,3 +163,15 @@ CircleCollider2D:
   m_Offset: {x: 0, y: 0}
   serializedVersion: 2
   m_Radius: 0.5
+--- !u!114 &8912835136396790200
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4357389609628293305}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 393fc8e154a17ba46a1d09de504dec7b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

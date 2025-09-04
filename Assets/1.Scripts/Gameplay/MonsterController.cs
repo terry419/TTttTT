@@ -222,16 +222,28 @@ public class MonsterController : MonoBehaviour
         {
             case FleeCondition.PlayerProximity:
                 return (playerTransform.position - transform.position).sqrMagnitude < fleeTriggerRadius * fleeTriggerRadius;
-            
+
             case FleeCondition.LowHealth:
                 return monsterStats.CurrentHealth / monsterStats.FinalMaxHealth <= fleeOnHealthPercentage;
-            
+
             case FleeCondition.Outnumbered:
                 Collider2D[] allies = Physics2D.OverlapCircleAll(transform.position, allyCheckRadius, LayerMask.GetMask("Monster"));
-                return allies.Length < fleeWhenAlliesLessThan + 1;
+
+                bool decision = (allies.Length - 1) < fleeWhenAlliesLessThan;
+
+                string logMessage = string.Format(
+                    gameObject.name,
+                    gameObject.GetInstanceID(),
+                    allies.Length,
+                    allies.Length - 1,
+                    fleeWhenAlliesLessThan
+                );
+
+                return decision;
         }
         return false;
     }
+
     private void ExecutePatrolMovement()
     {
         // 목표 지점까지의 제곱 거리가 충분히 가까워지면 다음 목표를 갱신

@@ -1,138 +1,171 @@
+// 파일 경로: ./TTttTT/Assets/1/Scripts/Gameplay/MonsterSpawner.cs
+
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading; // SemaphoreSlim 사용을 위해 추가
+using Cysharp.Threading.Tasks; // UniTask, SemaphoreSlim.WaitAsync 사용을 위해 추가
 
 public class MonsterSpawner : MonoBehaviour
 {
     [Header("스폰 위치 설정")]
-    private Transform playerTransform;
     [SerializeField] private float minSpawnRadius = 10f;
     [SerializeField] private float maxSpawnRadius = 15f;
 
-    private Coroutine spawnCoroutine;
+    [Header("성능 최적화 설정")]
+    [Tooltip("동시에 스폰(Instantiate) 요청을 보낼 최대 몬스터 수입니다. PoolManager의 과부하를 방지합니다.")]
+    [SerializeField] private int maxConcurrentSpawns = 15;
 
-    // ★★★ 핵심 수정: StartSpawning의 인자를 List<Wave>로 수정 (Assets.txt 기반) ★★★
+    private Transform playerTransform;
+
+    // [개선 1] WaveState 클래스를 도입하여 코루틴과 웨이브 데이터를 함께 관리합니다.
+    private class WaveState
+    {
+        public Wave WaveData;
+        public Coroutine Runner;
+    }
+    private readonly List<WaveState> _runningWaveStates = new List<WaveState>();
+    private SemaphoreSlim _spawnLimiter; // [개선 3] 동시 스폰 수를 제어하기 위한 세마포
+
     public void StartSpawning(List<Wave> waves)
     {
         Debug.Log("[MonsterSpawner] StartSpawning called.");
-        if (spawnCoroutine != null) StopCoroutine(spawnCoroutine);
-        spawnCoroutine = StartCoroutine(SpawnRoutine(waves));
+        if (_runningWaveStates.Count > 0) StopSpawning();
+
+        // [개선 3] 동시 스폰 제한을 위한 세마포 초기화
+        _spawnLimiter = new SemaphoreSlim(maxConcurrentSpawns, maxConcurrentSpawns);
+
+        StartCoroutine(SpawnRoutine(waves));
     }
 
-    // ★★★ 핵심 수정: StopSpawning() 함수 복원 (CS1061 오류 해결) ★★★
     public void StopSpawning()
     {
         Debug.Log("[MonsterSpawner] StopSpawning called.");
-        if (spawnCoroutine != null)
+        // 모든 실행 중인 코루틴 중지
+        foreach (var state in _runningWaveStates)
         {
-            StopCoroutine(spawnCoroutine);
-            spawnCoroutine = null;
+            if (state.Runner != null)
+            {
+                StopCoroutine(state.Runner);
+            }
         }
+        _runningWaveStates.Clear();
     }
 
     private IEnumerator SpawnRoutine(List<Wave> waves)
     {
-        // --- 기존 디버그 로그 보존 ---
         Debug.Log($"[MonsterSpawner] 스폰 루틴 시작. 전달받은 웨이브 개수: {waves.Count}");
 
-        // playerTransform을 찾을 때까지 대기
+        // [개선 2] playerTransform을 상위 코루틴에서 한 번만 찾습니다.
         while (playerTransform == null)
         {
             var playerController = ServiceLocator.Get<PlayerController>();
             if (playerController != null)
             {
                 playerTransform = playerController.transform;
-                Debug.Log($"[MonsterSpawner] 성공: ServiceLocator를 통해 PlayerController를 찾아 playerTransform에 할당했습니다.");
+                Debug.Log($"[MonsterSpawner] 성공: PlayerController를 찾아 playerTransform에 할당했습니다.");
             }
             else
             {
-                // 아직 Player가 생성/등록되지 않았으면 한 프레임 대기 후 다시 시도
-                yield return null; 
+                yield return null;
             }
         }
-
-        yield return new WaitForSeconds(1f);
 
         foreach (var wave in waves)
         {
-            if (wave.monsterData == null)
-            {
-                // --- 기존 디버그 로그 보존 ---
-                Debug.LogWarning("Wave에 몬스터 데이터가 설정되지 않아 해당 웨이브를 건너뜁니다.");
-                continue;
-            }
-
-            // ▼▼▼ 방어 코드 추가 ▼▼▼
-            if (playerTransform == null)
-            {
-                Debug.LogWarning("[MonsterSpawner] Player가 파괴되어 스폰을 중단합니다.");
-                yield break; // 코루틴 즉시 종료
-            }
-            // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲
-
-            switch (wave.spawnType)
-            {
-                case SpawnType.Spread:
-                    float spawnInterval = (wave.count > 1 && wave.duration > 0) ? wave.duration / wave.count : 0.5f;
-                    for (int i = 0; i < wave.count; i++)
-                    {
-                        SpawnMonster(wave.monsterData, playerTransform.position);
-                        yield return new WaitForSeconds(spawnInterval);
-                    }
-                    yield return new WaitForSeconds(wave.delayAfterWave);
-                    break;
-
-                case SpawnType.Burst:
-                    yield return new WaitForSeconds(wave.delayAfterWave);
-                    for (int i = 0; i < wave.count; i++)
-                    {
-                        SpawnMonster(wave.monsterData, playerTransform.position);
-                    }
-                    break;
-            }
+            var newState = new WaveState { WaveData = wave };
+            newState.Runner = StartCoroutine(SpawnSingleWaveRoutine(newState));
+            _runningWaveStates.Add(newState);
         }
     }
 
-    // ★★★ 핵심 수정: MonsterData를 MonsterDataSO로 변경 (CS0246 오류 해결) ★★★
+    private IEnumerator SpawnSingleWaveRoutine(WaveState state)
+    {
+        try
+        {
+            // 1. 이 웨이브의 고유한 '시작 지연 시간'만큼 대기합니다.
+            if (state.WaveData.delayAfterWave > 0)
+            {
+                yield return new WaitForSeconds(state.WaveData.delayAfterWave);
+            }
+
+            if (state.WaveData.monsterData == null)
+            {
+                Debug.LogWarning("Wave에 몬스터 데이터가 설정되지 않아 해당 웨이브를 건너뜁니다.");
+                yield break;
+            }
+
+            Debug.Log($"[MonsterSpawner] '{state.WaveData.monsterData.name}' 웨이브 스폰 시작. (지연: {state.WaveData.delayAfterWave}초, 타입: {state.WaveData.spawnType}, 수량: {state.WaveData.count})");
+
+            switch (state.WaveData.spawnType)
+            {
+                case SpawnType.Spread:
+                    float spawnInterval = (state.WaveData.count > 1 && state.WaveData.duration > 0) ? state.WaveData.duration / (float)state.WaveData.count : 0.5f;
+                    for (int i = 0; i < state.WaveData.count; i++)
+                    {
+                        if (playerTransform == null) yield break;
+                        SpawnMonster(state.WaveData.monsterData, playerTransform.position);
+                        yield return new WaitForSeconds(spawnInterval);
+                    }
+                    break;
+
+                case SpawnType.Burst:
+                    for (int i = 0; i < state.WaveData.count; i++)
+                    {
+                        if (playerTransform == null) yield break;
+                        SpawnMonster(state.WaveData.monsterData, playerTransform.position);
+                    }
+                    break;
+            }
+        }
+        finally
+        {
+            // [개선 1] 코루틴이 끝나면(성공하든, 중간에 멈추든) 반드시 리스트에서 자기 자신을 제거합니다.
+            _runningWaveStates.Remove(state);
+            Debug.Log($"[MonsterSpawner] '{state.WaveData.monsterData?.name ?? "Unknown"}' 웨이브 코루틴 완료. 남은 웨이브 코루틴: {_runningWaveStates.Count}개");
+        }
+    }
+
     private async void SpawnMonster(MonsterDataSO monsterData, Vector3 center)
     {
-        if (monsterData == null)
+        // [개선 3] 스폰 제한 수에 도달하면 여기서 대기하여 PoolManager의 과부하를 막습니다.
+        await _spawnLimiter.WaitAsync();
+
+        try
         {
-            Debug.LogWarning("[MonsterSpawner] 스폰 실패! 전달된 MonsterDataSO가 null입니다.");
-            return;
+            if (monsterData == null || monsterData.prefabRef == null || !monsterData.prefabRef.RuntimeKeyIsValid())
+            {
+                Debug.LogError($"[MonsterSpawner] 스폰 실패! MonsterData 또는 PrefabRef가 유효하지 않습니다: '{monsterData?.monsterName ?? "NULL"}'");
+                return;
+            }
+            string key = monsterData.prefabRef.AssetGUID;
+
+            Vector2 randomDirection = Random.insideUnitCircle.normalized;
+            float randomDistance = Random.Range(minSpawnRadius, maxSpawnRadius);
+            Vector3 spawnPosition = center + (Vector3)(randomDirection * randomDistance);
+
+            GameObject monsterInstance = await ServiceLocator.Get<PoolManager>().GetAsync(key);
+            if (monsterInstance == null) return;
+
+            var renderer = monsterInstance.GetComponent<SpriteRenderer>();
+            if (renderer != null)
+            {
+                renderer.sortingOrder = 20;
+            }
+
+            monsterInstance.transform.position = spawnPosition;
+
+            MonsterController mc = monsterInstance.GetComponent<MonsterController>();
+            if (mc != null)
+            {
+                mc.Initialize(monsterData);
+                mc.SetInvulnerable(0.3f);
+            }
         }
-
-        // [수정] monsterData.prefab.name -> monsterData.prefabRef.AssetGUID
-        // AssetReference가 유효한지 먼저 확인합니다.
-        if (monsterData.prefabRef == null || !monsterData.prefabRef.RuntimeKeyIsValid())
+        finally
         {
-            Debug.LogError($"[MonsterSpawner] 스폰 실패! '{monsterData.monsterName}' 데이터에 프리팹이 유효하게 연결되지 않았습니다.");
-            return;
-        }
-        string key = monsterData.prefabRef.AssetGUID;
-
-        Vector2 randomDirection = Random.insideUnitCircle.normalized;
-        float randomDistance = Random.Range(minSpawnRadius, maxSpawnRadius);
-        Vector3 spawnPosition = center + (Vector3)(randomDirection * randomDistance);
-
-        GameObject monsterInstance = await ServiceLocator.Get<PoolManager>().GetAsync(key);
-
-        if (monsterInstance == null) return;
-
-        // [추가] 몬스터 렌더링 순서 설정
-        var renderer = monsterInstance.GetComponent<SpriteRenderer>();
-        if (renderer != null)
-        {
-            renderer.sortingOrder = 20;
-        }
-
-        monsterInstance.transform.position = spawnPosition;
-
-        MonsterController mc = monsterInstance.GetComponent<MonsterController>();
-        if (mc != null)
-        {
-            mc.Initialize(monsterData);
-            mc.SetInvulnerable(0.3f);
+            // [개선 3] 스폰 작업이 끝나면 제한 슬롯을 1개 반환하여 다른 대기 중인 스폰이 진행되도록 합니다.
+            _spawnLimiter.Release();
         }
     }
 }
