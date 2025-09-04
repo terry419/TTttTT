@@ -9,7 +9,7 @@ using System.Linq;
 
 /// </summary>
 
-[CreateAssetMenu(fileName = "Module_DetonateEffects_", menuName = "GameData/v8.0/Modules/DetonateEffects")]
+[CreateAssetMenu(fileName = "Module_DetonateEffects_", menuName = "GameData/CardData/Modules/DetonateEffects")]
 public class DetonateEffectsModule : CardEffectSO
 {
     [Header("[ 폭발 설정 ]")]

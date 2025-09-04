@@ -1,88 +1,88 @@
-// °æ·Î: ./TTttTT/Assets/1/Scripts/Data/CardEffects/ApplyEffectToCasterModule.cs
+// ê²½ë¡œ: Assets/1.Scripts/Data/CardEffects/ApplyEffectToCasterModule.cs
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.AddressableAssets;
 
 /// <summary>
-/// [½Å±Ô] ¿ÀÁ÷ ½ÃÀüÀÚ ÀÚ½Å(Caster)¿¡°Ô¸¸ ¸ğµç Á¾·ùÀÇ È¿°ú(½ºÅÈ, Áö¼Ó/Áï¹ß ÇÇÇØ ¹× È¸º¹, VFX)¸¦ Àû¿ëÇÏ´Â ÅëÇÕ ¸ğµâÀÔ´Ï´Ù.
+/// [ì‹ ê·œ] ì¹´ë“œ ì‹œì „ì ìì‹ (Caster)ì—ê²Œë§Œ ëª¨ë“  ì¢…ë¥˜ì˜ íš¨ê³¼(ë²„í”„, ìŠ¤íƒ¯/ì§€ì† í”¼í•´ ë° íšŒë³µ, VFX)ë¥¼ ë¶€ì—¬í•˜ëŠ” í†µí•© ëª¨ë“ˆì…ë‹ˆë‹¤.
 /// </summary>
-[CreateAssetMenu(fileName = "Module_ApplyEffectToCaster_", menuName = "GameData/v8.0/Modules/ApplyEffectToCaster")]
+[CreateAssetMenu(fileName = "Module_ApplyEffectToCaster_", menuName = "GameData/CardData/Modules/ApplyEffectToCaster")]
 public class ApplyEffectToCasterModule : CardEffectSO
 {
-    [Header("[ ¹ßµ¿ Á¶°Ç ]")]
-    [Tooltip("È¿°ú ¹ßµ¿ ½ÃÁ¡À» ¼±ÅÃÇÕ´Ï´Ù.")]
+    [Header("[ ë°œë™ ì¡°ê±´ ]")]
+    [Tooltip("íš¨ê³¼ ë°œë™ ì‹œì ì„ ì„¤ì •í•©ë‹ˆë‹¤.")]
     public EffectTrigger Trigger = EffectTrigger.OnFire;
 
-    [Tooltip("È¿°ú°¡ ½ÇÁ¦·Î Àû¿ëµÉ È®·ü (0.0 ~ 100.0)")]
+    [Tooltip("íš¨ê³¼ê°€ ì ìš©ë  í™•ë¥  (0.0 ~ 100.0)")]
     [Range(0f, 100f)] public float ApplicationChance = 100f;
 
-    [Header("[ È¿°ú ³»¿ë - °øÅë ]")]
-    [Tooltip("ÀÌ È¿°ú¸¦ ½Äº°ÇÒ °íÀ¯ ID¸¦ ÁöÁ¤ÇÕ´Ï´Ù. (¿¹: ½Å¼Ó, °ú¿­, ÈíÇ÷)")]
+    [Header("[ íš¨ê³¼ ë‚´ìš© - ê¸°ë³¸ ]")]
+    [Tooltip("ì´ íš¨ê³¼ë¥¼ ì‹ë³„í•  ê³ ìœ  IDë¥¼ ì§€ì •í•©ë‹ˆë‹¤. (ì˜ˆ: í™”ìƒ, ë¹™ê²°, ê°€ì†)")]
     public string StatusEffectID;
 
-    [Tooltip("½ºÅÈ º¯°æ ¹× Áö¼Ó È¿°úÀÇ Áö¼Ó ½Ã°£(ÃÊ). 0º¸´Ù Å« °ªÀ» ¹İµå½Ã ÀÔ·ÂÇØ¾ß ÇÕ´Ï´Ù.")]
+    [Tooltip("ìƒíƒœ ì´ìƒ ë° ì§€ì† íš¨ê³¼ì˜ ì§€ì† ì‹œê°„(ì´ˆ). 0ë³´ë‹¤ í° ê°’ì„ ë°˜ë“œì‹œ ì…ë ¥í•´ì•¼ í•©ë‹ˆë‹¤.")]
     public float Duration = 5.0f;
 
-    [Tooltip("µ¿ÀÏ È¿°ú ÁßÃ¸ ¹æ½ÄÀ» °áÁ¤ÇÕ´Ï´Ù.")]
+    [Tooltip("ìƒíƒœ íš¨ê³¼ ì¤‘ì²© ë°©ì‹ì„ ì„¤ì •í•©ë‹ˆë‹¤.")]
     public StackingBehavior StackingBehavior = StackingBehavior.RefreshDuration;
 
-    [Header("[ È¿°ú ³»¿ë - ÇÃ·¹ÀÌ¾î ½ºÅÈ º¯°æ (%) ]")]
-    [Tooltip("ÇÃ·¹ÀÌ¾îÀÇ ÃÖÁ¾ °ø°İ·Â º¸³Ê½º¸¦ º¯°æÇÕ´Ï´Ù.")]
+    [Header("[ íš¨ê³¼ ë‚´ìš© - í”Œë ˆì´ì–´ ìŠ¤íƒ¯ ë³´ë„ˆìŠ¤ (%) ]")]
+    [Tooltip("í”Œë ˆì´ì–´ì˜ ìµœì¢… ê³µê²©ë ¥ ìˆ˜ì‹ì–´ë¥¼ ì„¤ì •í•©ë‹ˆë‹¤.")]
     public float FinalDamageBonus;
-    [Tooltip("ÇÃ·¹ÀÌ¾îÀÇ ÃÖÁ¾ °ø°İ ¼Óµµ¸¦ º¯°æÇÕ´Ï´Ù.")]
+    [Tooltip("í”Œë ˆì´ì–´ì˜ ìµœì¢… ê³µê²© ì†ë„ë¥¼ ì„¤ì •í•©ë‹ˆë‹¤.")]
     public float FinalAttackSpeedBonus;
-    [Tooltip("ÇÃ·¹ÀÌ¾îÀÇ ÃÖÁ¾ ÀÌµ¿ ¼Óµµ¸¦ º¯°æÇÕ´Ï´Ù.")]
+    [Tooltip("í”Œë ˆì´ì–´ì˜ ìµœì¢… ì´ë™ ì†ë„ë¥¼ ì„¤ì •í•©ë‹ˆë‹¤.")]
     public float FinalMoveSpeedBonus;
-    [Tooltip("ÇÃ·¹ÀÌ¾îÀÇ ÃÖÁ¾ ÃÖ´ë Ã¼·ÂÀ» º¯°æÇÕ´Ï´Ù.")]
+    [Tooltip("í”Œë ˆì´ì–´ì˜ ìµœì¢… ìµœëŒ€ ì²´ë ¥ì„ ì„¤ì •í•©ë‹ˆë‹¤.")]
     public float FinalHealthBonus;
-    [Tooltip("ÇÃ·¹ÀÌ¾îÀÇ ÃÖÁ¾ Ä¡¸íÅ¸ È®·üÀ» º¯°æÇÕ´Ï´Ù.")]
+    [Tooltip("í”Œë ˆì´ì–´ì˜ ìµœì¢… ì¹˜ëª…íƒ€ í™•ë¥ ì„ ì„¤ì •í•©ë‹ˆë‹¤.")]
     public float FinalCritRateBonus;
-    [Tooltip("ÇÃ·¹ÀÌ¾îÀÇ ÃÖÁ¾ Ä¡¸íÅ¸ ÇÇÇØ·®À» º¯°æÇÕ´Ï´Ù.")]
+    [Tooltip("í”Œë ˆì´ì–´ì˜ ìµœì¢… ì¹˜ëª…íƒ€ ë°ë¯¸ì§€ë¥¼ ì„¤ì •í•©ë‹ˆë‹¤.")]
     public float FinalCritDamageBonus;
 
-    [Header("[ È¿°ú ³»¿ë - Áö¼Ó ÇÇÇØ (DoT) ]")]
-    [Tooltip("ÇÇÇØ·® °è»ê ¹æ½Ä (Flat: °íÁ¤ ¼öÄ¡, MaxHealthPercentage: ÃÖ´ë Ã¼·Â ºñ·Ê)")]
+    [Header("[ íš¨ê³¼ ë‚´ìš© - ì§€ì† ë°ë¯¸ì§€ (DoT) ]")]
+    [Tooltip("ë°ë¯¸ì§€ ìœ í˜• (Flat: ê³ ì • ìˆ˜ì¹˜, MaxHealthPercentage: ìµœëŒ€ ì²´ë ¥ ë¹„ë¡€)")]
     public DamageType DamageType = DamageType.Flat;
-    [Tooltip("ÃÊ´ç Áö¼Ó ÇÇÇØ·®. (Æ½ °£°İÀº 1ÃÊ·Î °íÁ¤)")]
+    [Tooltip("ì´ˆë‹¹ ì§€ì† ë°ë¯¸ì§€. (í‹± ì£¼ê¸°ëŠ” 1ì´ˆë¡œ ê³ ì •)")]
     public float DamageAmount;
-    [Tooltip("Ã¼Å© ½Ã, ÀÚ½ÅÀÇ FinalDamageBonus ½ºÅÈÀÌ DoT ÇÇÇØ·®¿¡ ¿µÇâÀ» Áİ´Ï´Ù.")]
+    [Tooltip("ì²´í¬ ì‹œ, ìì‹ ì˜ FinalDamageBonus ìŠ¤íƒ¯ì´ DoT ë°ë¯¸ì§€ì— ì˜í–¥ì„ ì¤ë‹ˆë‹¤.")]
     public bool ScalesWithDmgBonus = false;
 
-    [Header("[ È¿°ú ³»¿ë - È¸º¹ ]")]
-    [Tooltip("È¸º¹ÀÌ ÀÌ·ç¾îÁö´Â ½Ã°£ (ÃÊ). 0ÀÏ °æ¿ì Áï½Ã È¸º¹µË´Ï´Ù.")]
+    [Header("[ íš¨ê³¼ ë‚´ìš© - íšŒë³µ ]")]
+    [Tooltip("íšŒë³µì´ ì¼ì–´ë‚˜ëŠ” ì§€ì† ì‹œê°„ (ì´ˆ). 0ì€ ì¦‰ì‹œ íšŒë³µì„ ì˜ë¯¸í•©ë‹ˆë‹¤.")]
     public float HealDuration;
-    [Tooltip("È¸º¹·® °è»ê ¹æ½Ä (Flat: °íÁ¤ ¼öÄ¡, MaxHealthPercentage: ÃÖ´ë Ã¼·Â ºñ·Ê)")]
+    [Tooltip("íšŒë³µ ìœ í˜• (Flat: ê³ ì • ìˆ˜ì¹˜, MaxHealthPercentage: ìµœëŒ€ ì²´ë ¥ ë¹„ë¡€)")]
     public HealType HealType = HealType.Flat;
-    [Tooltip("ÃÑ È¸º¹·®.")]
+    [Tooltip("ì´ íšŒë³µëŸ‰.")]
     public float HealAmount;
 
-    [Header("[ È¿°ú ³»¿ë - VFX ]")]
-    [Tooltip("È¿°ú°¡ Ã³À½ Àû¿ëµÇ´Â ¼ø°£ 1È¸ Àç»ıµÉ VFXÀÇ ¾îµå·¹¼­ºí ÁÖ¼Ò.")]
+    [Header("[ íš¨ê³¼ ë‚´ìš© - VFX ]")]
+    [Tooltip("íš¨ê³¼ê°€ ì²˜ìŒ ì ìš©ë˜ëŠ” ìˆœê°„ 1íšŒ ì¬ìƒë  VFXì˜ í”„ë¦¬íŒ¹ ì£¼ì†Œ.")]
     public AssetReferenceGameObject OnApplyVFX;
-    [Tooltip("È¿°ú°¡ Áö¼ÓµÇ´Â µ¿¾È ÇÃ·¹ÀÌ¾î¿¡°Ô ºÙ¾î¼­ °è¼Ó Àç»ıµÉ VFXÀÇ ¾îµå·¹¼­ºí ÁÖ¼Ò.")]
+    [Tooltip("íš¨ê³¼ê°€ ì§€ì†ë˜ëŠ” ë™ì•ˆ í”Œë ˆì´ì–´ì—ê²Œ ë¶™ì–´ì„œ ê³„ì† ì¬ìƒë  VFXì˜ í”„ë¦¬íŒ¹ ì£¼ì†Œ.")]
     public AssetReferenceGameObject LoopingVFX;
-    [Tooltip("È¿°úÀÇ Áö¼Ó½Ã°£ÀÌ ³¡³ª »ç¶óÁö´Â ¼ø°£ 1È¸ Àç»ıµÉ VFXÀÇ ¾îµå·¹¼­ºí ÁÖ¼Ò.")]
+    [Tooltip("íš¨ê³¼ì˜ ì§€ì†ì‹œê°„ì´ ëë‚˜ ì‚¬ë¼ì§€ëŠ” ìˆœê°„ 1íšŒ ì¬ìƒë  VFXì˜ í”„ë¦¬íŒ¹ ì£¼ì†Œ.")]
     public AssetReferenceGameObject OnExpireVFX;
 
     public override void Execute(EffectContext context)
     {
-        // 1. À¯È¿¼º °Ë»ç: ½ÃÀüÀÚ°¡ ¾øÀ¸¸é ½ÇÇàÇÒ ¼ö ¾ø½À´Ï´Ù.
+        // 1. ìœ íš¨ì„± ê²€ì‚¬: ì‹œì „ìê°€ ì—†ìœ¼ë©´ íš¨ê³¼ë¥¼ ì ìš©í•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤.
         if (context.Caster == null)
         {
-            Debug.LogWarning($"<color=yellow>[{GetType().Name}]</color> '{this.name}' ½ÇÇà Áß´Ü: Caster°¡ ¾ø¾î È¿°ú¸¦ Àû¿ëÇÒ ´ë»óÀÌ ¾ø½À´Ï´Ù.");
+            Debug.LogWarning($"<color=yellow>[{GetType().Name}]</color> '{this.name}' ì‹¤í–‰ ì¤‘ë‹¨: Casterê°€ ì—†ì–´ íš¨ê³¼ë¥¼ ì ìš©í•  ëŒ€ìƒì´ ì—†ìŠµë‹ˆë‹¤.");
             return;
         }
 
-        Debug.Log($"<color=lime>[{GetType().Name}]</color> '{this.name}' ½ÇÇà ½Ãµµ. ´ë»ó: {context.Caster.name}");
+        Debug.Log($"<color=lime>[{GetType().Name}]</color> '{this.name}' ì‹¤í–‰ ì‹œë„. ëŒ€ìƒ: {context.Caster.name}");
 
-        // 2. È®·ü Ã¼Å©
+        // 2. í™•ë¥  ì²´í¬
         if (Random.Range(0f, 100f) > ApplicationChance)
         {
-            Debug.Log($"<color=yellow>[{GetType().Name}]</color> È®·ü({ApplicationChance}%) Ã¼Å©¿¡ ½ÇÆĞÇÏ¿© È¿°ú°¡ Àû¿ëµÇÁö ¾Ê¾Ò½À´Ï´Ù.");
+            Debug.Log($"<color=yellow>[{GetType().Name}]</color> í™•ë¥ ({ApplicationChance}%) ì²´í¬ì— ì‹¤íŒ¨í•˜ì—¬ íš¨ê³¼ê°€ ì ìš©ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤.");
             return;
         }
 
-        // 3. ½ºÅÈ º¸³Ê½º µ¥ÀÌÅÍ ±¸¼º
+        // 3. ìŠ¤íƒ¯ ìˆ˜ì‹ì–´ ë”•ì…”ë„ˆë¦¬ ìƒì„±
         var statBonuses = new Dictionary<StatType, float>();
         if (FinalDamageBonus != 0) statBonuses.Add(StatType.Attack, FinalDamageBonus);
         if (FinalAttackSpeedBonus != 0) statBonuses.Add(StatType.AttackSpeed, FinalAttackSpeedBonus);
@@ -91,7 +91,7 @@ public class ApplyEffectToCasterModule : CardEffectSO
         if (FinalCritRateBonus != 0) statBonuses.Add(StatType.CritRate, FinalCritRateBonus);
         if (FinalCritDamageBonus != 0) statBonuses.Add(StatType.CritMultiplier, FinalCritDamageBonus);
 
-        // 4. ¸ğµç µ¥ÀÌÅÍ¸¦ ´ã¾Æ StatusEffectInstance¸¦ »ı¼ºÇÕ´Ï´Ù.
+        // 4. ëª¨ë“  ë°ì´í„°ë¥¼ ì¢…í•©í•´ StatusEffectInstanceë¥¼ ìƒì„±í•©ë‹ˆë‹¤.
         var effectInstance = new StatusEffectInstance(
             target: context.Caster.gameObject,
             id: StatusEffectID,
@@ -110,8 +110,8 @@ public class ApplyEffectToCasterModule : CardEffectSO
             onExpireVFX: OnExpireVFX
         );
 
-        // 5. StatusEffectManager¿¡°Ô È¿°ú Àû¿ëÀ» ÃÖÁ¾ ¿äÃ»ÇÕ´Ï´Ù.
+        // 5. StatusEffectManagerì—ê²Œ íš¨ê³¼ ì ìš©ì„ ìµœì¢… ìš”ì²­í•©ë‹ˆë‹¤.
         ServiceLocator.Get<StatusEffectManager>()?.ApplyStatusEffect(context.Caster.gameObject, effectInstance);
-        Debug.Log($"<color=cyan>[{GetType().Name}]</color> '{context.Caster.name}'¿¡°Ô '{StatusEffectID}' È¿°ú Àû¿ëÀ» ¿äÃ»Çß½À´Ï´Ù.");
+        Debug.Log($"<color=cyan>[{GetType().Name}]</color> '{context.Caster.name}'ì—ê²Œ '{StatusEffectID}' íš¨ê³¼ ì ìš©ì„ ìš”ì²­í–ˆìŠµë‹ˆë‹¤.");
     }
 }

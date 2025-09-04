@@ -1,31 +1,31 @@
-// °æ·Î: Assets/1.Scripts/Data/CardEffects/CreateRippleEffectSO.cs
+// ê²½ë¡œ: Assets/1.Scripts/Data/CardEffects/CreateRippleEffectSO.cs
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 
-[CreateAssetMenu(fileName = "Module_Ripple_", menuName = "GameData/v8.0/Modules/CreateRippleEffect")]
+[CreateAssetMenu(fileName = "Module_Ripple_", menuName = "GameData/CardData/Modules/CreateRippleEffect")]
 public class CreateRippleEffectSO : CardEffectSO, IPreloadable
 {
-    [Header("ÆÄµ¿ ¼³Á¤")]
-    [Tooltip("ÆÄµ¿ È¿°ú¸¦ ³ªÅ¸³¾ ÇÁ¸®ÆÕ (¹İµå½Ã RippleController.cs¸¦ Æ÷ÇÔÇØ¾ß ÇÔ)")]
+    [Header("íŒŒë™ ì„¤ì •")]
+    [Tooltip("íŒŒë™ íš¨ê³¼ë¥¼ ë‚˜íƒ€ë‚¼ í”„ë¦¬íŒ¹ (ë°˜ë“œì‹œ RippleController.csë¥¼ í¬í•¨í•´ì•¼ í•¨)")]
     public AssetReferenceGameObject ripplePrefabRef;
-    [Tooltip("ÆÄµ¿ÀÌ ÆÛÁ®³ª°¡´Â ÃÖ´ë ¹İ°æ")]
+    [Tooltip("íŒŒë™ì´ í¼ì ¸ë‚˜ê°€ëŠ” ìµœëŒ€ ë°˜ê²½")]
     public float maxRadius = 10f;
-    [Tooltip("ÃÖ´ë ¹İ°æ±îÁö µµ´ŞÇÏ´Â µ¥ °É¸®´Â ½Ã°£")]
+    [Tooltip("ìµœëŒ€ ë°˜ê²½ê¹Œì§€ ë„ë‹¬í•˜ëŠ” ë° ê±¸ë¦¬ëŠ” ì‹œê°„")]
     public float expandDuration = 0.5f;
 
 
     public CreateRippleEffectSO()
     {
-        // ÀÌ ¸ğµâÀº Ä«µå ¹ß»ç ½Ã Áï½Ã È¿°ú¸¦ »ı¼ºÇÕ´Ï´Ù.
+        // ì´ íš¨ê³¼ëŠ” ì¹´ë“œ ë°œì‚¬ ì‹œ í•œ ë²ˆ íš¨ê³¼ë¥¼ ìƒì„±í•©ë‹ˆë‹¤.
         trigger = EffectTrigger.OnFire;
     }
 
     public override void Execute(EffectContext context)
     {
-        Debug.Log($"<color=lime>[{GetType().Name}]</color> '{this.name}' ½ÇÇà.");
-        // ºñµ¿±â ½ÇÇàÀ» À§ÇØ UniTask »ç¿ë
+        Debug.Log($"<color=lime>[{GetType().Name}]</color> '{this.name}' ì‹¤í–‰.");
+        // ë¹„ë™ê¸° ìƒì„±ì„ ìœ„í•´ UniTask ì‚¬ìš©
         _ = CreateRippleAsync(context);
     }
 
@@ -38,23 +38,23 @@ public class CreateRippleEffectSO : CardEffectSO, IPreloadable
 
         if (rippleGO != null && rippleGO.TryGetComponent<RippleController>(out var rippleController))
         {
-            // 1. »ç¿ëÇÒ ±âº» µ¥¹ÌÁö °áÁ¤
+            // 1. ì‹œì „ìì˜ ê¸°ë³¸ ë°ë¯¸ì§€ ê³„ì‚°
             float baseDamageToUse = (context.BaseDamageOverride > 0)
                 ? context.BaseDamageOverride
                 : context.Platform.baseDamage;
 
-            // 2. Ä«µå °­È­ ·¹º§ Àû¿ë
+            // 2. ì¹´ë“œ ê°•í™” ë ˆë²¨ ì ìš©
             int enhancementLevel = context.SourceCardInstance?.EnhancementLevel ?? 0;
             float enhancedBaseDamage = baseDamageToUse * (1f + enhancementLevel * 0.1f);
 
-            // 3. ÇÃ·¹ÀÌ¾î Á¾ÇÕ ½ºÅÈ("°¡ÁßÄ¡") Àû¿ë
+            // 3. í”Œë ˆì´ì–´ ìŠ¤íƒ¯ ë³´ë„ˆìŠ¤("í•©ì—°ì‚°") ì ìš©
             float finalDamage = enhancedBaseDamage * (1 + context.Caster.FinalDamageBonus / 100f);
 
             rippleController.transform.position = context.Caster.transform.position;
             rippleController.Initialize(context.Caster, maxRadius, expandDuration, finalDamage);
         }
     }
-    // IPreloadable ÀÎÅÍÆäÀÌ½º ±¸Çö
+    // IPreloadable ì¸í„°í˜ì´ìŠ¤ êµ¬í˜„
     public IEnumerable<AssetReferenceGameObject> GetPrefabsToPreload()
     {
         if (ripplePrefabRef != null && ripplePrefabRef.RuntimeKeyIsValid())

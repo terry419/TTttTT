@@ -1,17 +1,17 @@
 using UnityEngine;
 
 /// <summary>
-/// ÇÇ°İµÈ ´ë»ó¿¡°Ô ÁöÁ¤µÈ »óÅÂ ÀÌ»óÀ» ºÎ¿©ÇÏ´Â ¸ğµâÀÔ´Ï´Ù.
+/// í”¼ê²©ëœ ëŒ€ìƒì—ê²Œ ì§€ì •ëœ ìƒíƒœ ì´ìƒì„ ë¶€ì—¬í•˜ëŠ” ëª¨ë“ˆì…ë‹ˆë‹¤.
 /// </summary>
-[CreateAssetMenu(fileName = "Module_ApplyStatus_", menuName = "GameData/v8.0/Modules/ApplyStatusEffect")]
+[CreateAssetMenu(fileName = "Module_ApplyStatus_", menuName = "GameData/CardData/Modules/ApplyStatusEffect")]
 public class ApplyStatusEffectSO : CardEffectSO
 {
-    [Header("»óÅÂ ÀÌ»ó ¼³Á¤")]
-    [Tooltip("Àû¿¡°Ô Àû¿ëÇÒ »óÅÂ ÀÌ»ó µ¥ÀÌÅÍ(µ¶, È­»ó µî)ÀÔ´Ï´Ù.")]
+    [Header("ìƒíƒœ ì´ìƒ ì •ë³´")]
+    [Tooltip("ì ìš©í•  ìƒíƒœ ì´ìƒ ë°ì´í„°(ë…, í™”ìƒ ë“±)ì…ë‹ˆë‹¤.")]
     public StatusEffectDataSO statusToApply;
 
     /// <summary>
-    /// ÀÌ ¸ğµâÀº Åõ»çÃ¼°¡ Àû¿¡°Ô ¸íÁßÇßÀ» ¶§(OnHit) ½ÇÇàµÇ´Â °ÍÀÌ ÀÏ¹İÀûÀÔ´Ï´Ù.
+    /// ì´ íš¨ê³¼ëŠ” ë°œì‚¬ì²´ê°€ ëª¬ìŠ¤í„°ì— ëª…ì¤‘í–ˆì„ ë•Œ(OnHit) ë°œë™ë˜ëŠ” ê²ƒì´ ì¼ë°˜ì ì…ë‹ˆë‹¤.
     /// </summary>
     public ApplyStatusEffectSO()
     {
@@ -19,11 +19,11 @@ public class ApplyStatusEffectSO : CardEffectSO
     }
 
     /// <summary>
-    /// ÇÇ°İµÈ ´ë»ó(context.HitTarget)¿¡°Ô »óÅÂ ÀÌ»óÀ» Àû¿ëÇÕ´Ï´Ù.
+    /// í”¼ê²©ëœ ì (context.HitTarget)ì—ê²Œ ìƒíƒœ ì´ìƒì„ ì ìš©í•©ë‹ˆë‹¤.
     /// </summary>
     public override void Execute(EffectContext context)
     {
-        Debug.Log($"<color=lime>[{GetType().Name}]</color> '{this.name}' ½ÇÇà. ´ë»ó: {context.HitTarget?.name}");
+        Debug.Log($"<color=lime>[{GetType().Name}]</color> '{this.name}' ì‹¤í–‰. ëŒ€ìƒ: {context.HitTarget?.name}");
         if (statusToApply != null && context.HitTarget != null)
         {
             ServiceLocator.Get<StatusEffectManager>()?.ApplyStatusEffect(context.HitTarget.gameObject, statusToApply);

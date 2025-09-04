@@ -1,43 +1,38 @@
 using UnityEngine;
 
 /// <summary>
-/// ½ÃÀüÀÚ(Caster) ÀÚ½Å¿¡°Ô ÁöÁ¤µÈ »óÅÂ È¿°ú(ÁÖ·Î ¹öÇÁ)¸¦ ºÎ¿©ÇÏ´Â ¸ğµâÀÔ´Ï´Ù.
+/// ì‹œì „ì(Caster) ìì‹ ì—ê²Œ ìƒíƒœ ì´ìƒ íš¨ê³¼(ë²„í”„ ë“±)ë¥¼ ë¶€ì—¬í•˜ëŠ” ëª¨ë“ˆì…ë‹ˆë‹¤.
 /// </summary>
-[CreateAssetMenu(fileName = "Module_ApplyBuffToCaster_", menuName = "GameData/v8.0/Modules/ApplyBuffToCaster")]
+[CreateAssetMenu(fileName = "Module_ApplyBuffToCaster_", menuName = "GameData/CardData/Modules/ApplyBuffToCaster")]
 public class ApplyBuffToCasterSO : CardEffectSO
 {
-    [Header("¹öÇÁ ¼³Á¤")]
-    [Tooltip("½ÃÀüÀÚ¿¡°Ô Àû¿ëÇÒ »óÅÂ ÀÌ»ó µ¥ÀÌÅÍ(ÁÖ·Î ¹öÇÁ)ÀÔ´Ï´Ù.")]
+    [Header("ë²„í”„ ì •ë³´")]
+    [Tooltip("ì‹œì „ìì—ê²Œ ì ìš©í•  ìƒíƒœ ì´ìƒ ë°ì´í„°(ë²„í”„ ë“±)ì…ë‹ˆë‹¤.")]
     public StatusEffectDataSO buffToApply;
 
     public ApplyBuffToCasterSO()
     {
-        // ¹öÇÁ´Â ÀÏ¹İÀûÀ¸·Î ¹ß»ç ½ÃÁ¡¿¡ ¹ßµ¿ÇÕ´Ï´Ù.
+        // ê¸°ë³¸ì ìœ¼ë¡œëŠ” ë°œì‚¬ ì‹œì— ë°œë™ë©ë‹ˆë‹¤.
         trigger = EffectTrigger.OnFire;
     }
 
     /// <summary>
-    /// ½ÃÀüÀÚ(context.Caster)¿¡°Ô »óÅÂ ÀÌ»óÀ» Àû¿ëÇÕ´Ï´Ù.
+    /// ì‹œì „ì(context.Caster)ì—ê²Œ ìƒíƒœ ì´ìƒì„ ì ìš©í•©ë‹ˆë‹¤.
     /// </summary>
     public override void Execute(EffectContext context)
     {
-        Debug.Log($"<color=lime>[{GetType().Name}]</color> '{this.name}' ½ÇÇà. ´ë»ó: {context.Caster?.name}");
-
-        if (buffToApply != null && context.Caster != null)
-        {
-            ServiceLocator.Get<StatusEffectManager>()?.ApplyStatusEffect(context.Caster.gameObject, buffToApply);
-            // TODO: VFXManager¸¦ ÅëÇØ onBuffAppliedVFXRef Àç»ı ·ÎÁ÷ Ãß°¡
-        }
+        Debug.Log($"<color=lime>[{GetType().Name}]</color> '{this.name}' ì‹¤í–‰. ëŒ€ìƒ: {context.Caster?.name}");
 
         if (buffToApply == null)
         {
-            Debug.LogWarning($"[ApplyBuffToCasterSO] '{this.name}' ¸ğµâ¿¡ Àû¿ëÇÒ ¹öÇÁ°¡ ÇÒ´çµÇÁö ¾Ê¾Ò½À´Ï´Ù.");
+            Debug.LogWarning($"[ApplyBuffToCasterSO] '{this.name}' ëª¨ë“ˆì— ì ìš©í•  ë²„í”„ê°€ í• ë‹¹ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤.");
             return;
         }
 
         if (context.Caster != null)
         {
             ServiceLocator.Get<StatusEffectManager>()?.ApplyStatusEffect(context.Caster.gameObject, buffToApply);
+            // TODO: VFXManagerë¥¼ í†µí•´ onBuffAppliedVFXRef ì¬ìƒ ë¡œì§ ì¶”ê°€
         }
     }
 }

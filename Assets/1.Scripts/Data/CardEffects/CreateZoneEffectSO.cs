@@ -61,7 +61,7 @@ public class EnemyZoneEffectSettings
 /// <summary>
 /// [최종] 인스펙터에서 장판의 모든 효과(플레이어/적)를 대상에 맞게 설정할 수 있는 카드 효과 데이터입니다.
 /// </summary>
-[CreateAssetMenu(fileName = "Module_CreateZone_", menuName = "GameData/v8.0/Modules/CreateZoneEffect")]
+[CreateAssetMenu(fileName = "Module_CreateZone_", menuName = "GameData/CardData/Modules/CreateZoneEffect")]
 public class CreateZoneEffectSO : CardEffectSO
 {
     [Header("--- 장판 공통 설정 ---")]

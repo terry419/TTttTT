@@ -2,25 +2,25 @@ using UnityEngine;
 using UnityEngine.AddressableAssets;
 
 /// <summary>
-/// Æ¯Á¤ Á¶°ÇÀÌ ¸¸Á·µÇ¾úÀ» ¶§¸¸ ¿¬°áµÈ È¿°ú¸¦ ¹ßµ¿½ÃÅ°´Â ³í¸® ¸ğµâÀÔ´Ï´Ù.
+/// íŠ¹ì • ì¡°ê±´ì´ ì¶©ì¡±ë˜ì—ˆì„ ë•Œë§Œ ì—°ê²°ëœ íš¨ê³¼ë¥¼ ë°œë™ì‹œí‚¤ëŠ” íŠ¹ìˆ˜ ëª¨ë“ˆì…ë‹ˆë‹¤.
 /// </summary>
-[CreateAssetMenu(fileName = "Module_Conditional_", menuName = "GameData/v8.0/Modules/ConditionalEffect")]
+[CreateAssetMenu(fileName = "Module_Conditional_", menuName = "GameData/CardData/Modules/ConditionalEffect")]
 public class ConditionalEffectSO : CardEffectSO
 {
-    [Header("Á¶°ÇºÎ ½ÇÇà ¼³Á¤")]
-    [Tooltip("ÀÌ ¸ğµâÀÌ ¹İÀÀÇÒ Æ®¸®°Å Á¶°ÇÀÔ´Ï´Ù. (¿¹: OnCrit)")]
+    [Header("ì¡°ê±´ë¶€ ë°œë™ ì„¤ì •")]
+    [Tooltip("ì´ íš¨ê³¼ë¥¼ ë°œë™ì‹œí‚¬ íŠ¸ë¦¬ê±° ì¡°ê±´ì…ë‹ˆë‹¤. (ì˜ˆ: OnCrit)")]
     public EffectTrigger condition;
 
-    [Tooltip("Á¶°ÇÀÌ ¸¸Á·µÇ¾úÀ» ¶§ ½ÇÇàµÉ È¿°ú ¸ğµâÀÔ´Ï´Ù.")]
+    [Tooltip("ì¡°ê±´ì´ ì¶©ì¡±ë˜ì—ˆì„ ë•Œ ë°œë™í•  íš¨ê³¼ì…ë‹ˆë‹¤.")]
     public AssetReferenceT<CardEffectSO> effectToTrigger;
 
     /// <summary>
-    /// Á¶°ÇºÎ ¸ğµâ ÀÚÃ¼´Â Á÷Á¢ÀûÀÎ ·ÎÁ÷À» ½ÇÇàÇÏÁö ¾Ê½À´Ï´Ù.
-    /// EffectExecutor°¡ ÀÌ ¸ğµâÀÇ Á¸Àç¸¦ ÀÎÁöÇÏ°í, 'condition'ÀÌ ¸¸Á·µÇ¾úÀ» ¶§ 'effectToTrigger'¸¦ ´ë½Å ½ÇÇà½ÃÄÑÁà¾ß ÇÕ´Ï´Ù.
+    /// ì¡°ê±´ë¶€ íš¨ê³¼ ìì²´ëŠ” ì§ì ‘ì ì¸ ë¡œì§ì„ ì‹¤í–‰í•˜ì§€ ì•ŠìŠµë‹ˆë‹¤.
+    /// EffectExecutorê°€ ì´ ëª¨ë“ˆì˜ ì¡´ì¬ë¥¼ ì¸ì§€í•˜ê³ , 'condition'ì´ ì¶©ì¡±ë˜ì—ˆì„ ë•Œ 'effectToTrigger'ë¥¼ ëŒ€ì‹  ì‹¤í–‰í•´ì•¼ í•©ë‹ˆë‹¤.
     /// </summary>
     public override void Execute(EffectContext context)
     {
-        Debug.Log($"<color=lime>[{GetType().Name}]</color> '{this.name}' ½ÇÇà. Á¶°Ç: {condition}.");
-        // ÀÌ ¸ğµâÀº µ¥ÀÌÅÍ¸¦ Á¦°øÇÏ´Â ¿ªÇÒ¸¸ ÇÕ´Ï´Ù.
+        Debug.Log($"<color=lime>[{GetType().Name}]</color> '{this.name}' ì‹¤í–‰. ì¡°ê±´: {condition}.");
+        // ì´ ëª¨ë“ˆì€ ë°ì´í„°ë¥¼ ì „ë‹¬í•˜ëŠ” ì—­í• ë§Œ í•©ë‹ˆë‹¤.
     }
 }

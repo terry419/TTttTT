@@ -6,7 +6,7 @@ using UnityEngine.AddressableAssets;
 /// <summary>
 /// [카드 효과] 총알 명중 시, 폭발 효과(데미지)를 생성하는 모듈입니다.
 /// </summary>
-[CreateAssetMenu(fileName = "Module_ExplosiveZone_", menuName = "GameData/v8.0/Modules/ExplosiveZoneEffect")]
+[CreateAssetMenu(fileName = "Module_ExplosiveZone_", menuName = "GameData/CardData/Modules/ExplosiveZoneEffect")]
 public class ExplosiveZoneEffectSO : CardEffectSO
 {
     [Header("폭발 설정")]

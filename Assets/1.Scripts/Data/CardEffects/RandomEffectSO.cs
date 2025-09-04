@@ -3,23 +3,23 @@ using UnityEngine.AddressableAssets;
 using System.Collections.Generic;
 
 /// <summary>
-/// ÁöÁ¤µÈ ¿©·¯ È¿°ú ¸ğµâ Áß ÇÏ³ª¸¦ ¹«ÀÛÀ§·Î ¼±ÅÃÇÏ¿© ½ÇÇàÇÏ´Â ³í¸® ¸ğµâÀÔ´Ï´Ù.
+/// ì—°ê²°ëœ ì—¬ëŸ¬ íš¨ê³¼ ì¤‘ í•˜ë‚˜ë¥¼ ë¬´ì‘ìœ„ë¡œ ì„ íƒí•˜ì—¬ ì‹¤í–‰í•˜ëŠ” íŠ¹ìˆ˜ íš¨ê³¼ì…ë‹ˆë‹¤.
 /// </summary>
-[CreateAssetMenu(fileName = "Module_Random_", menuName = "GameData/v8.0/Modules/RandomEffect")]
+[CreateAssetMenu(fileName = "Module_Random_", menuName = "GameData/CardData/Modules/RandomEffect")]
 public class RandomEffectSO : CardEffectSO
 {
-    [Header("·£´ı È¿°ú Ç®")]
-    [Tooltip("¹«ÀÛÀ§·Î ¼±ÅÃµÉ È¿°ú ¸ğµâ ¿¡¼ÂÀÇ ¸ñ·ÏÀÔ´Ï´Ù.")]
+    [Header("ëœë¤ íš¨ê³¼ í’€")]
+    [Tooltip("ë¬´ì‘ìœ„ë¡œ ì„ íƒë  íš¨ê³¼ ëª©ë¡ì˜ í›„ë³´ë“¤ì…ë‹ˆë‹¤.")]
     public List<AssetReferenceT<CardEffectSO>> effectPool;
 
     /// <summary>
-    /// effectPool¿¡¼­ ¹«ÀÛÀ§·Î ¸ğµâ ÇÏ³ª¸¦ °ñ¶ó EffectExecutor¿¡°Ô ½ÇÇàÀ» À§ÀÓÇÕ´Ï´Ù.
-    /// ÀÌ ¸ğµâÀÇ ½ÇÁ¦ ½ÇÇàÀº EffectExecutor¿¡¼­ Ã³¸®ÇØ¾ß ÇÕ´Ï´Ù.
+    /// effectPoolì—ì„œ ë¬´ì‘ìœ„ë¡œ íš¨ê³¼ í•˜ë‚˜ë¥¼ ê³¨ë¼ EffectExecutorì—ê²Œ ì‹¤í–‰ì„ ìœ„ì„í•©ë‹ˆë‹¤.
+    /// ì´ ë¡œì§ì˜ ì‹¤ì œ êµ¬í˜„ì€ EffectExecutorì—ì„œ ì²˜ë¦¬í•´ì•¼ í•©ë‹ˆë‹¤.
     /// </summary>
     public override void Execute(EffectContext context)
     {
-        Debug.Log($"<color=lime>[{GetType().Name}]</color> '{this.name}' ½ÇÇà. È¿°ú Ç® °³¼ö: {effectPool?.Count ?? 0}°³.");
-        // ÀÌ ¸ğµâÀº µ¥ÀÌÅÍ¸¦ Á¦°øÇÏ°í, ½ÇÁ¦ ½ÇÇàÀº EffectExecutor°¡ ´ã´çÇÕ´Ï´Ù.
-        // EffectExecutor´Â ÀÌ ¸ğµâÀ» ¸¸³ª¸é, effectPool Áß ÇÏ³ª¸¦ °ñ¶ó ´Ù½Ã Execute¸¦ È£ÃâÇØ¾ß ÇÕ´Ï´Ù.
+        Debug.Log($"<color=lime>[{GetType().Name}]</color> '{this.name}' ì‹¤í–‰. íš¨ê³¼ í’€ í¬ê¸°: {effectPool?.Count ?? 0}ê°œ.");
+        // ì´ ë¡œì§ì˜ êµ¬í˜„ì„ ìƒëµí•˜ê³ , ì‹¤ì œ ì‹¤í–‰ì€ EffectExecutorì— ìœ„ì„í•©ë‹ˆë‹¤.
+        // EffectExecutorëŠ” ì´ ì •ë³´ë¥¼ ë°”íƒ•ìœ¼ë¡œ, effectPool ë‚´ í•˜ë‚˜ë¥¼ ê³¨ë¼ ë‹¤ì‹œ Executeë¥¼ í˜¸ì¶œí•´ì•¼ í•©ë‹ˆë‹¤.
     }
 }

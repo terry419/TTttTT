@@ -21,7 +21,7 @@ public class SequentialPayload
 /// <summary>
 /// 투사체에 관통, 튕김, 추적 등의 특수 능력을 부여하는 모듈입니다.
 /// </summary>
-[CreateAssetMenu(fileName = "Module_Projectile_", menuName = "GameData/v8.0/Modules/ProjectileEffect")]
+[CreateAssetMenu(fileName = "Module_Projectile_", menuName = "GameData/CardData/Modules/ProjectileEffect")]
 public class ProjectileEffectSO : CardEffectSO, IPreloadable
 {
     [Header("발사체 기본 설정")]

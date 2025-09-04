@@ -1,38 +1,38 @@
-// ÆÄÀÏ °æ·Î: Assets/1.Scripts/Data/CardEffects/CreateGravityPulseZoneEffectSO.cs
+// ê²½ë¡œ: Assets/1.Scripts/Data/CardEffects/CreateGravityPulseZoneEffectSO.cs
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using Cysharp.Threading.Tasks;
 
-[CreateAssetMenu(fileName = "Module_CreateGravityPulseZone_", menuName = "GameData/v8.0/Modules/CreateGravityPulseZoneEffect")]
+[CreateAssetMenu(fileName = "Module_CreateGravityPulseZone_", menuName = "GameData/CardData/Modules/CreateGravityPulseZoneEffect")]
 public class CreateGravityPulseZoneEffectSO : CardEffectSO
 {
-    [Header("--- ÀåÆÇ °øÅë ¼³Á¤ ---")]
-    [Tooltip("¹İµå½Ã GravityPulseZoneController.cs ÄÄÆ÷³ÍÆ®¸¦ °¡Áø 'ÀåÆÇ' ÇÁ¸®ÆÕÀÌ¾î¾ß ÇÕ´Ï´Ù.")]
+    [Header("--- ì¤‘ë ¥ ì§€ëŒ€ ì„¤ì • ---")]
+    [Tooltip("ë°˜ë“œì‹œ GravityPulseZoneController.cs ì»´í¬ë„ŒíŠ¸ë¥¼ ê°€ì§„ 'ì¤‘ë ¥ ì§€ëŒ€' í”„ë¦¬íŒ¹ì´ì–´ì•¼ í•©ë‹ˆë‹¤.")]
     public AssetReferenceGameObject ZonePrefabRef;
 
-    [Tooltip("ÀåÆÇ ÀüÃ¼°¡ À¯ÁöµÇ´Â ½Ã°£ (ÃÊ).")]
+    [Tooltip("ì¤‘ë ¥ ì§€ëŒ€ì˜ ì§€ì† ì‹œê°„ (ì´ˆ).")]
     public float ZoneDuration = 8f;
 
-    [Header("--- Áß·Â È¿°ú ---")]
-    [Tooltip("¸ó½ºÅÍ¸¦ ²ø¾î´ç±â´Â È¿°úÀÇ ÃÖ´ë ¹İ°æÀÔ´Ï´Ù.")]
+    [Header("--- ì¤‘ë ¥ íš¨ê³¼ ---")]
+    [Tooltip("ëª¬ìŠ¤í„°ë¥¼ ëŒì–´ë‹¹ê¸°ëŠ” íš¨ê³¼ì˜ ìµœëŒ€ ë°˜ê²½ì…ë‹ˆë‹¤.")]
     public float PullRadius = 8f;
 
-    [Tooltip("¸ó½ºÅÍ¸¦ Áß½ÉÀ¸·Î ²ø¾î´ç±â´Â ÈûÀÇ Å©±âÀÔ´Ï´Ù.")]
+    [Tooltip("ëª¬ìŠ¤í„°ë¥¼ ì¤‘ì‹¬ìœ¼ë¡œ ëŒì–´ë‹¹ê¸°ëŠ” í˜ì˜ í¬ê¸°ì…ë‹ˆë‹¤.")]
     public float PullForce = 150f;
 
-    [Header("--- ¸Æµ¿ ÇÇÇØ È¿°ú ---")]
-    [Tooltip("ÀÌ ÀåÆÇÀÌ °¡ÇÏ´Â ¸Æµ¿ÀÇ ±âº» ÇÇÇØ·®ÀÔ´Ï´Ù.")]
+    [Header("--- íŒŒë™ í”¼í•´ íš¨ê³¼ ---")]
+    [Tooltip("íŒŒë™ ê³µê²©ì´ ê°€í•˜ëŠ” ê¸°ë³¸ ë°ë¯¸ì§€ì…ë‹ˆë‹¤.")]
     public float pulseDamage = 15f;
 
-    [Tooltip("Ã¼Å© ½Ã, ÇÃ·¹ÀÌ¾îÀÇ ÃÖÁ¾ °ø°İ·Â º¸³Ê½º(%)°¡ ÀÌ ÀåÆÇÀÇ ÇÇÇØ·®¿¡ ¿µÇâÀ» Áİ´Ï´Ù.")]
+    [Tooltip("ì²´í¬ ì‹œ, í”Œë ˆì´ì–´ì˜ ìµœì¢… ê³µê²©ë ¥ ìˆ˜ì‹ì–´(%)ê°€ íŒŒë™ ê³µê²©ì˜ ë°ë¯¸ì§€ì— ì˜í–¥ì„ ì¤ë‹ˆë‹¤.")]
     public bool scalesWithPlayerDamageBonus = true;
 
 
-    [Tooltip("ÃÖ¼Ò Å©±â ºñÀ²ÀÔ´Ï´Ù. (¿¹: 0.2´Â ÃÖ´ë ¹İ°æÀÇ 20%±îÁö ÀÛ¾ÆÁü)")]
+    [Tooltip("ìµœì†Œ íŒŒë™ í¬ê¸° ë¹„ìœ¨ì…ë‹ˆë‹¤. (ì˜ˆ: 0.2ëŠ” ìµœëŒ€ ë°˜ê²½ì˜ 20%ê¹Œì§€ ì‘ì•„ì§)")]
     [Range(0f, 1f)]
     public float MinPulseScaleRatio = 0.2f;
 
-    [Tooltip("²ø¾î´ç±è°ú ÇÇÇØ°¡ ¹ß»ıÇÏ´Â ÁÖ±â(ÃÊ)ÀÔ´Ï´Ù. (±ÇÀå: 0.5)")]
+    [Tooltip("íŒŒë™ ê³µê²©ì´ ë°œìƒí•˜ëŠ” ì£¼ê¸°(ì´ˆ)ì…ë‹ˆë‹¤. (ê¶Œì¥: 0.5)")]
     public float DamageTickInterval = 0.5f;
 
 
@@ -40,7 +40,7 @@ public class CreateGravityPulseZoneEffectSO : CardEffectSO
     {
         if (ZonePrefabRef == null || !ZonePrefabRef.RuntimeKeyIsValid())
         {
-            Debug.LogError($"[{name}] ÀåÆÇ ÇÁ¸®ÆÕÀÌ À¯È¿ÇÏ°Ô ¼³Á¤µÇÁö ¾Ê¾Ò½À´Ï´Ù!");
+            Debug.LogError($"[{name}] ì¤‘ë ¥ ì§€ëŒ€ í”„ë¦¬íŒ¹ì´ ìœ íš¨í•˜ê²Œ ì„¤ì •ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤!");
             return;
         }
         CreateZoneAsync(context).Forget();

@@ -6,7 +6,7 @@ using UnityEngine.AddressableAssets;
 /// <summary>
 /// [v2.2 최종본] 오직 적중된 대상(HitTarget)에게만 모든 종류의 효과(스탯, 지속/즉발 피해 및 회복)를 적용하는 통합 모듈입니다.
 /// </summary>
-[CreateAssetMenu(fileName = "Module_ApplyEffectToTarget_", menuName = "GameData/v8.0/Modules/ApplyEffectToHitTarget")]
+[CreateAssetMenu(fileName = "Module_ApplyEffectToTarget_", menuName = "GameData/CardData/Modules/ApplyEffectToHitTarget")]
 public class ApplyEffectToHitTargetModule : CardEffectSO
 {
     [Header("[ 발동 조건 ]")]

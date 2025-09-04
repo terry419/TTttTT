@@ -1,52 +1,52 @@
-// ÆÄÀÏ °æ·Î: Assets/1.Scripts/Data/NewCardDataSO.cs
+// ê²½ë¡œ: Assets/1.Scripts/Data/NewCardDataSO.cs
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using System.Collections.Generic;
 using System;
 
-[CreateAssetMenu(fileName = "NewCard_", menuName = "GameData/v8.0/New Card Platform")]
+[CreateAssetMenu(fileName = "NewCard_", menuName = "GameData/CardData/New Card Platform")]
 public class NewCardDataSO : ScriptableObject
 {
-    [Header("[1] ±âº» Á¤º¸ (UI Ç¥±â¿ë)")]
+    [Header("[1] ê¸°ë³¸ ì •ë³´ (UI í‘œì‹œìš©)")]
     public BasicInfo basicInfo;
 
-    [Header("[2] ½ºÅÈ º¸³Ê½º (ÇÃ·¹ÀÌ¾î °­È­)")]
+    [Header("[2] ìŠ¤íƒ¯ ìˆ˜ì‹ì–´ (í”Œë ˆì´ì–´ ê°•í™”)")]
     public StatModifiers statModifiers;
 
-    [Header("[3] Ä«µå °íÀ¯ ¹ß»ç ½ºÆå")]
-    [Tooltip("ÀÌ Ä«µåÀÇ °íÀ¯ °ø°İ ÁÖ±â(ÃÊ)ÀÔ´Ï´Ù. 1.0Àº 1ÃÊ¿¡ ÇÑ ¹ø, 0.2´Â 1ÃÊ¿¡ 5¹øÀ» ÀÇ¹ÌÇÕ´Ï´Ù.")]
+    [Header("[3] ì¹´ë“œ íš¨ê³¼ ë°œë™ ì„¤ì •")]
+    [Tooltip("ì´ ì¹´ë“œì˜ ê³µê²© ë°œë™ ì£¼ê¸°(ì´ˆ)ì…ë‹ˆë‹¤. 1.0ì€ 1ì´ˆì— í•œ ë²ˆ, 0.2ëŠ” 1ì´ˆì— 5ë²ˆì„ ì˜ë¯¸í•©ë‹ˆë‹¤.")]
     public float attackInterval = 1.0f; 
 
-    [Tooltip("Ã¼Å© ½Ã, µ¿ÀÏ Åõ»çÃ¼°¡ ÇÑ ¸ó½ºÅÍ¸¦ ¿©·¯ ¹ø Å¸°İÇÒ ¼ö ÀÖ½À´Ï´Ù.")]
+    [Tooltip("ì²´í¬ ì‹œ, í•˜ë‚˜ì˜ ë°œì‚¬ì²´ê°€ ì—¬ëŸ¬ ëª¬ìŠ¤í„°ë¥¼ ê´€í†µí•˜ì—¬ íƒ€ê²©í•  ìˆ˜ ìˆìŠµë‹ˆë‹¤.")]
     public bool allowMultipleHits = false;
 
-    [Tooltip("ÇÑ ¹ø¿¡ ¹ß»çÇÏ´Â Åõ»çÃ¼ÀÇ °³¼öÀÔ´Ï´Ù.")]
+    [Tooltip("í•œ ë²ˆì— ë°œì‚¬í•˜ëŠ” ë°œì‚¬ì²´ì˜ ìˆ˜ëŸ‰ì…ë‹ˆë‹¤.")]
     public int projectileCount = 1;
 
-    [Tooltip("Åõ»çÃ¼°¡ ÆÛÁö´Â °¢µµÀÔ´Ï´Ù. 0ÀÌ¸é ¸ğµç Åõ»çÃ¼°¡ ÇÑ ¹æÇâÀ¸·Î ³ª°©´Ï´Ù.")]
+    [Tooltip("ë°œì‚¬ì²´ë“¤ì´ í¼ì§€ëŠ” ê°ë„ì…ë‹ˆë‹¤. 0ì´ë©´ ëª¨ë“  ë°œì‚¬ì²´ê°€ í•œ ë°©í–¥ìœ¼ë¡œ ë‚˜ê°‘ë‹ˆë‹¤.")]
     public float spreadAngle = 0f;
 
-    [Tooltip("ÀÌ Ä«µå°¡ »ç¿ëÇÏ´Â Åõ»çÃ¼¸¦ ¹Ì¸® ¸î °³ »ı¼ºÇØµÑÁö Á¤ÇÕ´Ï´Ù.")]
+    [Tooltip("ì´ ì¹´ë“œê°€ ì‚¬ìš©í•˜ëŠ” ë°œì‚¬ì²´ë¥¼ ë¯¸ë¦¬ ëª‡ ê°œ ìƒì„±í•´ë‘˜ì§€ ì •í•©ë‹ˆë‹¤.")]
     public int preloadCount = 10;
 
-    [Tooltip("Ä«µå°¡ ¹ß»çÇÏ´Â Åõ»çÃ¼ÀÇ ±âº» ÇÇÇØ·®ÀÔ´Ï´Ù.")]
+    [Tooltip("ì¹´ë“œê°€ ë°œì‚¬í•˜ëŠ” ë°œì‚¬ì²´ì˜ ê¸°ë³¸ ë°ë¯¸ì§€ì…ë‹ˆë‹¤.")]
     public float baseDamage = 10f;
 
-    [Tooltip("Ä«µå°¡ ¹ß»çÇÏ´Â Åõ»çÃ¼ÀÇ ±âº» ¼ÓµµÀÔ´Ï´Ù.")]
+    [Tooltip("ì¹´ë“œê°€ ë°œì‚¬í•˜ëŠ” ë°œì‚¬ì²´ì˜ ê¸°ë³¸ ì†ë„ì…ë‹ˆë‹¤.")]
     public float baseSpeed = 10f;
 
-    [Header("[4] ÀåÂø È¿°ú (¸ğµâ)")]
-    [Tooltip("ÀÌ Ä«µå¿¡ ÀåÂøÇÒ Æ¯¼ö È¿°ú(CardEffectSO) ¸ñ·ÏÀÔ´Ï´Ù.")]
+    [Header("[4] íŠ¹ìˆ˜ íš¨ê³¼ (ëª¨ë“ˆ)")]
+    [Tooltip("ì´ ì¹´ë“œì— ì—°ê²°ëœ íŠ¹ìˆ˜ íš¨ê³¼(CardEffectSO) ëª©ë¡ì…ë‹ˆë‹¤.")]
     public List<ModuleEntry> modules;
 
-    [Header("[5] ±âÅ¸ ¸ŞÅ¸ Á¤º¸")]
-    [Tooltip("Ä«µå ¼±ÅÃÁö¿¡ ÀÌ Ä«µå°¡ µîÀåÇÒ È®·ü °¡ÁßÄ¡ÀÔ´Ï´Ù.")]
+    [Header("[5] ê¸°íƒ€ ë©”íƒ€ ë°ì´í„°")]
+    [Tooltip("ì¹´ë“œ ì„ íƒì§€ì—ì„œ ì´ ì¹´ë“œê°€ ë“±ì¥í•  í™•ë¥  ê°€ì¤‘ì¹˜ì…ë‹ˆë‹¤.")]
     public float selectionWeight = 1f;
 
-    [Tooltip("º¸»ó ¸ñ·Ï¿¡ ÀÌ Ä«µå°¡ µîÀåÇÒ È®·ü °¡ÁßÄ¡ÀÔ´Ï´Ù.")]
+    [Tooltip("ë³´ìƒ ëª©ë¡ì—ì„œ ì´ ì¹´ë“œê°€ ë“±ì¥í•  í™•ë¥  ê°€ì¤‘ì¹˜ì…ë‹ˆë‹¤.")]
     public float rewardAppearanceWeight;
 
-    [Tooltip("ÀÌ Ä«µå¸¦ ÇØ±İÇÏ±â À§ÇÑ Á¶°ÇÀÔ´Ï´Ù. (¹Ì±¸Çö)")]
+    [Tooltip("ì´ ì¹´ë“œë¥¼ í•´ê¸ˆí•˜ê¸° ìœ„í•œ ì¡°ê±´ì…ë‹ˆë‹¤. (ë¯¸êµ¬í˜„)")]
     public string unlockCondition;
 
     public ICardAction CreateAction()
@@ -58,9 +58,9 @@ public class NewCardDataSO : ScriptableObject
 [Serializable]
 public class ModuleEntry
 {
-    [Tooltip("ÀÌ ¸ğµâ¿¡ ´ëÇÑ ¼³¸íÀÔ´Ï´Ù.")]
+    [Tooltip("ì´ ëª¨ë“ˆì— ëŒ€í•œ ì„¤ëª…ì…ë‹ˆë‹¤.")]
     public string description;
 
-    [Tooltip("½ÇÇàÇÒ CardEffectSO ¸ğµâÀ» ¿©±â¿¡ ¿¬°áÇÕ´Ï´Ù.")]
+    [Tooltip("ì—°ê²°í•  CardEffectSO ì—ì…‹ì„ ì—¬ê¸°ì— í• ë‹¹í•©ë‹ˆë‹¤.")]
     public AssetReferenceT<CardEffectSO> moduleReference;
 }

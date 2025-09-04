@@ -1,26 +1,24 @@
 using UnityEngine;
 
 /// <summary>
-/// OnHit ½ÃÁ¡¿¡ ÇÇÇØ·®ÀÇ ÀÏÁ¤ ºñÀ²¸¸Å­ Ã¼·ÂÀ» È¸º¹ÇÏ´Â ¸ğµâÀÔ´Ï´Ù.
+/// OnHit ì´ë²¤íŠ¸ ë°œìƒ ì‹œ, ê°€í•œ ë°ë¯¸ì§€ì˜ ì¼ì • ë¹„ìœ¨ë§Œí¼ ì²´ë ¥ì„ íšŒë³µí•˜ëŠ” ëª¨ë“ˆì…ë‹ˆë‹¤.
 /// </summary>
-[CreateAssetMenu(fileName = "Module_Lifesteal_", menuName = "GameData/v8.0/Modules/LifestealEffect")]
+[CreateAssetMenu(fileName = "Module_Lifesteal_", menuName = "GameData/CardData/Modules/LifestealEffect")]
 public class LifestealEffectSO : CardEffectSO
 {
-    [Header("ÈíÇ÷ ¼³Á¤")]
-    [Tooltip("ÇÇÇØ·® ´ëºñ È¸º¹ÇÒ Ã¼·ÂÀÇ ºñÀ² (%)")]
+    [Header("í¡í˜ˆ ì„¤ì •")]
+    [Tooltip("ê°€í•œ ë°ë¯¸ì§€ ëŒ€ë¹„ íšŒë³µí•  ì²´ë ¥ì˜ ë¹„ìœ¨ (%)")]
     [Range(0f, 100f)]
     public float lifestealPercentage = 10f;
 
     public LifestealEffectSO()
     {
-        // ÈíÇ÷Àº ÀÏ¹İÀûÀ¸·Î ÇÇ°İ ½ÃÁ¡¿¡ ¹ßµ¿ÇÕ´Ï´Ù.
+        // ê¸°ë³¸ì ìœ¼ë¡œëŠ” í”¼ê²© ì‹œì— ë°œë™ë©ë‹ˆë‹¤.
         trigger = EffectTrigger.OnHit;
     }
 
     /// <summary>
-    /// ½ÇÁ¦ ÈíÇ÷ ·ÎÁ÷Àº EffectExecutor ¶Ç´Â BulletController¿¡¼­
-    /// ÀÌ ¸ğµâÀÇ Á¸Àç ¿©ºÎ¿Í lifestealPercentage °ªÀ» È®ÀÎÇÏ¿© Ã³¸®ÇÏ°Ô µË´Ï´Ù.
-    /// µû¶ó¼­ ÀÌ ¸ğµâÀÇ Execute´Â ºñ¿öµÓ´Ï´Ù.
+    /// í”¼í•´ë¥¼ ì…íŒ ì£¼ì²´(Caster)ê°€ ê°€í•œ ë°ë¯¸ì§€(context.DamageDealt)ì— ë¹„ë¡€í•˜ì—¬ ì²´ë ¥ì„ íšŒë³µí•©ë‹ˆë‹¤.
     /// </summary>
     public override void Execute(EffectContext context)
     {
