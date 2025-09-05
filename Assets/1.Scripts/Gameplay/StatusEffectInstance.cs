@@ -202,13 +202,15 @@ public class StatusEffectInstance
             }
         }
 
-        // [v7.0 수정] 1초마다 회복하는 틱 기반 로직으로 변경
         if (totalHealAmount > 0 && healDuration > 0)
         {
             hotTimer += deltaTime;
             if (hotTimer >= 1f)
             {
-                ApplyHeal(totalHealAmount);
+                // 총 회복량을 지속 시간으로 나누어 1초당 회복량을 계산합니다.
+                // healDuration이 1이면, 1초마다 totalHealAmount만큼 회복됩니다.
+                float healPerTick = totalHealAmount / healDuration;
+                ApplyHeal(healPerTick);
                 hotTimer -= 1f;
             }
         }

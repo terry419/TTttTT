@@ -12,6 +12,7 @@ public class ChaseBehavior : MonsterBehavior
 
     public override void OnEnter(MonsterController monster)
     {
+        base.OnEnter(monster);
         // 특별한 초기화 작업은 없습니다.
     }
 

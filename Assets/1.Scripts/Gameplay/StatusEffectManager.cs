@@ -136,6 +136,24 @@ public class StatusEffectManager : MonoBehaviour
             effectList.Remove(effect);
         }
     }
+
+    public void RemoveStatusEffect(GameObject target, string effectId)
+    {
+        if (target == null || string.IsNullOrEmpty(effectId)) return;
+
+        if (activeEffects.TryGetValue(target, out var effectList))
+        {
+            // FirstOrDefault를 사용해 해당 ID를 가진 첫 번째 효과를 찾습니다.
+            var effectToRemove = effectList.FirstOrDefault(e => e.EffectId == effectId);
+            if (effectToRemove != null)
+            {
+                // 찾았다면 기존의 제거 함수를 호출합니다.
+                RemoveStatusEffect(effectToRemove);
+            }
+        }
+    }
+
+
     // --- Public API ---
     public List<StatusEffectInstance> GetActiveEffectsOn(GameObject target) => activeEffects.TryGetValue(target, out var e) ? new List<StatusEffectInstance>(e) : new List<StatusEffectInstance>();
     public bool HasStatusEffect(GameObject target, string effectId) => !string.IsNullOrEmpty(effectId) && activeEffects.TryGetValue(target, out var e) && e.Any(inst => inst.EffectId == effectId);

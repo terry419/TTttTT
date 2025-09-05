@@ -13,13 +13,24 @@ public abstract class MonsterBehavior : ScriptableObject
     [Tooltip("이 행동이 다른 행동으로 전환될 수 있는 '규칙'들의 목록입니다.")]
     public List<Transition> transitions = new List<Transition>();
 
+    [Header("행동 패시브 효과 (Behavioral Passives)")]
+    [Tooltip("이 행동에 진입할 때 몬스터 자신에게 적용할 상태 효과입니다.")]
+    public MonsterStatusEffectSO effectToApplyOnEnter;
+    [Tooltip("이 행동을 떠날 때 몬스터 자신에게서 제거할 상태 효과입니다.")]
+    public MonsterStatusEffectSO effectToRemoveOnExit;
+
     /// <summary>
     /// 이 행동이 처음 시작될 때 단 한 번 호출되는 초기화 함수입니다.
     /// (예: 돌진 공격의 방향을 처음 한 번만 계산)
     /// </summary>
     /// <param name="monster">이 행동을 실행하는 몬스터의 '엔진'</param>
-    public virtual void OnEnter(MonsterController monster) { }
-
+    public virtual void OnEnter(MonsterController monster)
+    {
+        if (effectToApplyOnEnter != null)
+        {
+            monster.ApplySelfStatusEffect(effectToApplyOnEnter);
+        }
+    }
     /// <summary>
     /// 이 행동이 활성화된 동안 매 프레임(또는 주기적으로) 실행되는 핵심 로직입니다.
     /// </summary>
@@ -31,8 +42,13 @@ public abstract class MonsterBehavior : ScriptableObject
     /// (예: 사용했던 타이머나 변수들을 초기화)
     /// </summary>
     /// <param name="monster">이 행동을 실행하는 몬스터의 '엔진'</param>
-    public virtual void OnExit(MonsterController monster) { }
-
+    public virtual void OnExit(MonsterController monster)
+    {
+        if (effectToRemoveOnExit != null)
+        {
+            monster.RemoveSelfStatusEffect(effectToRemoveOnExit.effectId);
+        }
+    }
     /// <summary>
     /// 모든 행동 부품들이 공통으로 사용하는 '상태 전환 검사' 기능입니다.
     /// transitions 목록에 있는 모든 '규칙'을 하나씩 확인하여, 조건이 맞으면 다음 행동으로 전환시킵니다.

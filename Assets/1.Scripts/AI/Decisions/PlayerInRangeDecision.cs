@@ -17,13 +17,12 @@ public class PlayerInRangeDecision : Decision
     {
         if (monster.playerTransform == null) return false;
 
-        // Vector3.Distance는 제곱근 연산 때문에 비교적 느립니다.
-        // 거리 자체보다 '안/밖' 여부만 판단할 때는, 제곱 거리를 비교하는 것이 훨씬 효율적입니다.
         float sqrDistance = (monster.playerTransform.position - monster.transform.position).sqrMagnitude;
-
         bool isInRange = sqrDistance < range * range;
+        bool result = negate ? !isInRange : isInRange;
 
-        // negate가 체크되어 있으면 결과를 뒤집어서 반환합니다.
-        return negate ? !isInRange : isInRange;
+        float distance = Mathf.Sqrt(sqrDistance);
+
+        return result;
     }
 }

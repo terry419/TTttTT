@@ -28,6 +28,7 @@ public class MonsterController : MonoBehaviour
     [HideInInspector] public float chargeDistanceRemaining; // 자신만의 남은 돌진 거리
 
     [HideInInspector] public bool countsTowardKillGoal = true;
+    [HideInInspector] public Dictionary<ScriptableObject, float> cooldownTimers = new Dictionary<ScriptableObject, float>();
 
 
     private int _originalLayer;
@@ -50,6 +51,7 @@ public class MonsterController : MonoBehaviour
     private int fleeWhenAlliesLessThan;
     private const float STATE_CHECK_INTERVAL = 0.2f;
     private float stateCheckTimer;
+    private MonsterGlobalModifiers _globalModifiers;
     #endregion
 
     #region Common Variables
@@ -72,6 +74,7 @@ public class MonsterController : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         monsterStats = GetComponent<MonsterStats>();
         _originalLayer = gameObject.layer;
+        _globalModifiers = GetComponent<MonsterGlobalModifiers>();
     }
 
     void OnEnable()
@@ -100,6 +103,11 @@ public class MonsterController : MonoBehaviour
         monsterStats.Initialize(data);
         startPosition = transform.position;
         isDead = false;
+
+        if (_globalModifiers != null)
+        {
+            _globalModifiers.Initialize(monsterData.globalModifierRules);
+        }
 
         if (monsterData.useNewAI && monsterData.initialBehavior != null)
         {
@@ -137,6 +145,44 @@ public class MonsterController : MonoBehaviour
             #endregion
         }
     }
+
+    public void ApplySelfStatusEffect(MonsterStatusEffectSO effectData)
+    {
+        if (effectData == null) return;
+
+        var statusEffectManager = ServiceLocator.Get<StatusEffectManager>();
+        if (statusEffectManager != null)
+        {
+            // 이 부분은 MonsterStatusEffectSO를 StatusEffectInstance로 변환하는
+            // 생성자를 새로 만들어야 하지만, 우선 호환성을 위해 임시로 이렇게 처리합니다.
+            // (추후 이 변환 로직을 더 정교하게 만들 수 있습니다)
+            var bonuses = new Dictionary<StatType, float>();
+            if (effectData.moveSpeedBonus != 0) bonuses.Add(StatType.MoveSpeed, effectData.moveSpeedBonus);
+            if (effectData.contactDamageBonus != 0) bonuses.Add(StatType.ContactDamage, effectData.contactDamageBonus);
+            if (effectData.damageTakenBonus != 0) bonuses.Add(StatType.DamageTaken, effectData.damageTakenBonus);
+
+            var instance = new StatusEffectInstance(
+                this.gameObject, effectData.effectId, effectData.duration, bonuses,
+                effectData.damageOverTime, DamageType.Flat, false,
+                effectData.healOverTime, 1f, HealType.MaxHealthPercentage, // 회복은 일단 최대체력 비례로 고정
+                StackingBehavior.RefreshDuration, null, null, null, null
+            );
+
+            statusEffectManager.ApplyStatusEffect(this.gameObject, instance);
+            string logMessage = $"{name}이(가) 자신에게 '{effectData.effectId}' 효과를 적용했습니다.";
+            if (effectData.healOverTime > 0)
+            {
+                logMessage += $" (초당 {effectData.healOverTime} 회복 시작)";
+            }
+            if (effectData.damageOverTime > 0)
+            {
+                logMessage += $" (초당 {effectData.damageOverTime} 피해 시작)";
+            }
+            Log.Info(Log.LogCategory.AI_Behavior, logMessage);
+
+        }
+    }
+
 
     void Update()
     {
@@ -220,6 +266,13 @@ public class MonsterController : MonoBehaviour
             statusEffectManager.ApplyStatusEffect(this.gameObject, instance);
             Log.Info(Log.LogCategory.AI_Behavior, $"{name}이(가) 자신에게 '{effectData.effectName}' 효과를 적용했습니다.");
         }
+    }
+    // 자신에게 걸린 특정 효과를 제거하는 명령 함수
+    public void RemoveSelfStatusEffect(string effectId)
+    {
+        if (string.IsNullOrEmpty(effectId)) return;
+        ServiceLocator.Get<StatusEffectManager>()?.RemoveStatusEffect(this.gameObject, effectId);
+        Log.Info(Log.LogCategory.AI_Behavior, $"{name}에게서 '{effectId}' 효과를 제거했습니다.");
     }
 
     #region Unchanged Methods

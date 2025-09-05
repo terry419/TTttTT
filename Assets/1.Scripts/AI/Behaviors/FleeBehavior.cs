@@ -10,6 +10,11 @@ public class FleeBehavior : MonsterBehavior
     [Tooltip("도망 시 기본 이동 속도에 곱해질 배율입니다.")]
     public float speedMultiplier = 1.2f; // 보통 도망은 추격보다 약간 빠르게 설정합니다.
 
+    public override void OnEnter(MonsterController monster)
+    {
+        base.OnEnter(monster);
+    }
+
     public override void OnExecute(MonsterController monster)
     {
         if (monster.playerTransform == null)
