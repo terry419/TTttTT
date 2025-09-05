@@ -1,6 +1,5 @@
 // 경로: ./TTttTT/Assets/1.Scripts/Gameplay/MonsterController.cs
-// (주석이 길어 상단 using 부분은 생략했습니다. 코드 내용은 모두 포함됩니다.)
-
+// (상단 using 부분은 생략했습니다. 코드 내용은 모두 포함됩니다.)
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -11,6 +10,7 @@ using Cysharp.Threading.Tasks;
 [RequireComponent(typeof(Rigidbody2D), typeof(MonsterStats))]
 public class MonsterController : MonoBehaviour
 {
+    #region Variables
     private MonsterBehavior currentBehavior;
     private float behaviorCheckTimer = 0f;
 
@@ -18,8 +18,15 @@ public class MonsterController : MonoBehaviour
     [HideInInspector] public MonsterStats monsterStats;
     [HideInInspector] public Rigidbody2D rb;
     [HideInInspector] public Transform playerTransform;
+    [HideInInspector] public Rigidbody2D playerRigidbody;
     [HideInInspector] public Vector3 startPosition;
     [HideInInspector] public float stateTimer = 0f;
+
+    [HideInInspector] public int chargeState; // 돌진의 내부 상태 (0: 조준, 1: 준비, 2: 돌진)
+    [HideInInspector] public Vector2 chargeDirection; // 자신만의 돌진 방향
+    [HideInInspector] public float chargeDistanceRemaining; // 자신만의 남은 돌진 거리
+
+    private int _originalLayer;
 
     #region Legacy FSM Variables
     private enum State { Spawning, Chasing, Patrolling, Fleeing }
@@ -54,10 +61,13 @@ public class MonsterController : MonoBehaviour
     public static event Action<MonsterController> OnMonsterDied;
     #endregion
 
+    // (이 아래의 모든 함수들은 이전과 동일합니다. ApplySelfStatusEffect 함수만 추가되었습니다.)
+    #region Methods
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         monsterStats = GetComponent<MonsterStats>();
+        _originalLayer = gameObject.layer;
     }
 
     void OnEnable()
@@ -69,6 +79,7 @@ public class MonsterController : MonoBehaviour
         if (playerController != null)
         {
             playerTransform = playerController.transform;
+            playerRigidbody = playerController.rb;
         }
     }
 
@@ -183,7 +194,30 @@ public class MonsterController : MonoBehaviour
         }
     }
 
-    // (이 아래의 모든 함수들은 기존 스크립트와 동일하므로 생략합니다)
+    public void SetLayer(string layerName)
+    {
+        gameObject.layer = LayerMask.NameToLayer(layerName);
+    }
+
+    public void ResetLayer()
+    {
+        gameObject.layer = _originalLayer;
+    }
+
+
+    public void ApplySelfStatusEffect(StatusEffectDataSO effectData)
+    {
+        if (effectData == null) return;
+
+        var statusEffectManager = ServiceLocator.Get<StatusEffectManager>();
+        if (statusEffectManager != null)
+        {
+            var instance = new StatusEffectInstance(this.gameObject, effectData);
+            statusEffectManager.ApplyStatusEffect(this.gameObject, instance);
+            Log.Info(Log.LogCategory.AI_Behavior, $"{name}이(가) 자신에게 '{effectData.effectName}' 효과를 적용했습니다.");
+        }
+    }
+
     #region Unchanged Methods
     void FixedUpdate()
     {
@@ -303,7 +337,26 @@ public class MonsterController : MonoBehaviour
         rb.velocity = newVelocity;
         isVelocityOverridden = true;
     }
-    void OnCollisionEnter2D(Collision2D collision) { CheckForPlayer(collision.gameObject); }
+    void OnCollisionEnter2D(Collision2D collision)
+    {
+        // 1. 플레이어와 부딪혔는지 확인
+        if (collision.gameObject.CompareTag(Tags.Player))
+        {
+            // 2. 현재 행동이 '돌진' 중인지 확인 (ChargeBehavior의 Charging 상태 코드는 '2'입니다)
+            if (currentBehavior is ChargeBehavior && chargeState == 2)
+            {
+                Log.Info(Log.LogCategory.AI_Behavior, $"{name}이(가) 플레이어와 충돌하여 자폭합니다!");
+
+                // 3. 자폭 및 데미지 처리를 위해 Die() 함수를 즉시 호출
+                Die().Forget();
+            }
+            else
+            {
+                // 이 부분이 없으면, 몬스터는 돌진할 때만 플레이어와 충돌하게 됩니다.
+                CheckForPlayer(collision.gameObject);
+            }
+        }
+    }
     void OnTriggerEnter2D(Collider2D other) { CheckForPlayer(other.gameObject); }
     private void CheckForPlayer(GameObject target)
     {
@@ -343,7 +396,7 @@ public class MonsterController : MonoBehaviour
     {
         OnMonsterDamaged?.Invoke(finalDamage, transform.position);
     }
-    private async UniTaskVoid Die()
+    public async UniTaskVoid Die()
     {
         if (isDead) return;
         isDead = true;
@@ -413,4 +466,6 @@ public class MonsterController : MonoBehaviour
         }
     }
     #endregion
+    #endregion
 }
+#endregion

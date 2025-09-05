@@ -127,7 +127,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 958424369c453c9439c8936ded9ef415, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHealth: 10
+  monsterData: {fileID: 0}
+  monsterStats: {fileID: 0}
+  rb: {fileID: 0}
+  playerTransform: {fileID: 0}
+  startPosition: {x: 0, y: 0, z: 0}
+  stateTimer: 0
+  chargeState: 0
+  chargeDirection: {x: 0, y: 0}
+  chargeDistanceRemaining: 0
 --- !u!58 &497793090048292029
 CircleCollider2D:
   m_ObjectHideFlags: 0
