@@ -22,9 +22,13 @@ public class MonsterController : MonoBehaviour
     [HideInInspector] public Vector3 startPosition;
     [HideInInspector] public float stateTimer = 0f;
 
+
     [HideInInspector] public int chargeState; // 돌진의 내부 상태 (0: 조준, 1: 준비, 2: 돌진)
     [HideInInspector] public Vector2 chargeDirection; // 자신만의 돌진 방향
     [HideInInspector] public float chargeDistanceRemaining; // 자신만의 남은 돌진 거리
+
+    [HideInInspector] public bool countsTowardKillGoal = true;
+
 
     private int _originalLayer;
 

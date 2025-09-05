@@ -294,14 +294,22 @@ public class RoundManager : MonoBehaviour
     {
         if (!isRoundActive) return;
 
-        killCount++;
-        Debug.Log($"[{GetType().Name}] 몬스터 처치. 현재 킬 수: {killCount}/{currentRoundData.killGoal}");
-        OnKillCountChanged?.Invoke(killCount, currentRoundData.killGoal);
-
-        if (killCount >= currentRoundData.killGoal)
+        // 몬스터의 countsTowardKillGoal 꼬리표가 true일 때만 킬 카운트를 올립니다.
+        if (monster.countsTowardKillGoal)
         {
-            Debug.Log($"[{GetType().Name}] 목표 킬 수를 달성했습니다! 라운드를 승리로 종료합니다.");
-            StartCoroutine(EndRoundCoroutine(true));
+            killCount++;
+            Log.Info(Log.LogCategory.GameManager, $"라운드 몬스터 처치. 현재 킬 수: {killCount}/{currentRoundData.killGoal}");
+            OnKillCountChanged?.Invoke(killCount, currentRoundData.killGoal);
+
+            if (killCount >= currentRoundData.killGoal)
+            {
+                Log.Info(Log.LogCategory.GameManager, "목표 킬 수를 달성했습니다! 라운드를 승리로 종료합니다.");
+                StartCoroutine(EndRoundCoroutine(true));
+            }
+        }
+        else
+        {
+            Log.Info(Log.LogCategory.GameManager, "소환된 하수인을 처치했습니다. (킬 카운트 미포함)");
         }
     }
     private void OnDestroy()

@@ -370,6 +370,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fb9cf391c181f504bab06c5d2e815728, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  rb: {fileID: 0}
   firePoint: {fileID: 3691342460919089392}
 --- !u!114 &5717583237825516066
 MonoBehaviour:
@@ -422,7 +423,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   testStartingNewCards:
-  - {fileID: 0}
+  - {fileID: 11400000, guid: 1c931ac983ca8094bbe20fe7bc5a9c7f, type: 2}
 --- !u!58 &601887131027535560
 CircleCollider2D:
   m_ObjectHideFlags: 0
