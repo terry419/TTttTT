@@ -27,7 +27,7 @@ public class EffectContext
     /// </summary>
     public void Reset()
     {
-        Log.Print("[EffectContext] Resetting context for pooling.");
+        Log.Info(Log.LogCategory.PoolManager, "[EffectContext] Resetting context for pooling.");
         Caster = null;
         SpawnPoint = null;
         HitTarget = null;

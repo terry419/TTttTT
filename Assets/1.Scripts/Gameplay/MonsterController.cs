@@ -1,4 +1,5 @@
 // 경로: ./TTttTT/Assets/1.Scripts/Gameplay/MonsterController.cs
+// (주석이 길어 상단 using 부분은 생략했습니다. 코드 내용은 모두 포함됩니다.)
 
 using System;
 using System.Collections;
@@ -7,36 +8,22 @@ using UnityEngine;
 using Random = UnityEngine.Random;
 using Cysharp.Threading.Tasks;
 
-/// <summary>
-/// [AI 엔진 최종본]
-/// 몬스터 게임 오브젝트에 부착되는 '뇌'이자 '엔진'입니다.
-/// 이 스크립트는 어떤 '행동 부품(Behavior)'을 사용할지만 결정하고, 실제 행동은 부품에게 위임합니다.
-/// 기존 FSM(상태 머신) AI와 신규 모듈형 AI를 모두 지원합니다.
-/// </summary>
 [RequireComponent(typeof(Rigidbody2D), typeof(MonsterStats))]
 public class MonsterController : MonoBehaviour
 {
-    // ========================================================================
-    // A. 신규 모듈형 AI 시스템을 위한 변수들
-    // ========================================================================
-    private MonsterBehavior currentBehavior; // 현재 실행 중인 행동 부품(SO)
-    private float behaviorCheckTimer = 0f;   // 행동 부품의 실행 주기를 조절하기 위한 타이머
+    private MonsterBehavior currentBehavior;
+    private float behaviorCheckTimer = 0f;
 
-    // [1단계 추가] 행동 부품들이 접근할 수 있도록 공개된 상태 변수들
-    [HideInInspector] public MonsterDataSO monsterData;      // 이 몬스터의 모든 정보가 담긴 데이터 파일
-    [HideInInspector] public MonsterStats monsterStats;     // 몬스터의 체력, 공격력 등 능력치 정보
-    [HideInInspector] public Rigidbody2D rb;               // 몬스터의 물리적 움직임을 담당하는 부품
-    [HideInInspector] public Transform playerTransform;    // 플레이어의 위치 정보
-    [HideInInspector] public Vector3 startPosition;        // 몬스터가 처음 생성된 위치
-    [HideInInspector] public float stateTimer = 0f;        // 현재 행동(state)으로 전환된 후 경과 시간
+    [HideInInspector] public MonsterDataSO monsterData;
+    [HideInInspector] public MonsterStats monsterStats;
+    [HideInInspector] public Rigidbody2D rb;
+    [HideInInspector] public Transform playerTransform;
+    [HideInInspector] public Vector3 startPosition;
+    [HideInInspector] public float stateTimer = 0f;
 
-    // ========================================================================
-    // B. 기존 FSM AI 시스템을 위한 변수들 (호환성을 위해 유지)
-    // ========================================================================
+    #region Legacy FSM Variables
     private enum State { Spawning, Chasing, Patrolling, Fleeing }
     private State currentState = State.Spawning;
-    // (기존 FSM 관련 변수들은 생략... 원본 코드와 동일하게 유지됩니다)
-    #region Legacy FSM Variables
     private State baseState;
     private Vector3 patrolTargetPosition;
     private float playerDetectionRadius;
@@ -54,9 +41,7 @@ public class MonsterController : MonoBehaviour
     private float stateCheckTimer;
     #endregion
 
-    // ========================================================================
-    // C. 모든 AI가 공통으로 사용하는 변수 및 참조
-    // ========================================================================
+    #region Common Variables
     private bool isInvulnerable = false;
     private bool isDead = false;
     private const float DAMAGE_INTERVAL = 0.1f;
@@ -67,10 +52,8 @@ public class MonsterController : MonoBehaviour
     private int _lastHitFrame;
     public static event Action<float, Vector3> OnMonsterDamaged;
     public static event Action<MonsterController> OnMonsterDied;
+    #endregion
 
-    // ========================================================================
-    // D. Unity 생명주기 함수들 (Awake, OnEnable, Update 등)
-    // ========================================================================
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -93,7 +76,7 @@ public class MonsterController : MonoBehaviour
     {
         if (data == null)
         {
-            Debug.LogError($"[AI Error] 몬스터 '{gameObject.name}'에 MonsterDataSO가 할당되지 않았습니다!", this.gameObject);
+            Log.Error(Log.LogCategory.AI_Init, $"몬스터 '{gameObject.name}'에 MonsterDataSO가 할당되지 않았습니다!");
             gameObject.SetActive(false);
             return;
         }
@@ -103,19 +86,14 @@ public class MonsterController : MonoBehaviour
         startPosition = transform.position;
         isDead = false;
 
-        // ★★★★★ 핵심 분기점 ★★★★★
-        // MonsterDataSO의 'useNewAI' 플래그를 확인하여 어떤 AI 시스템을 사용할지 결정합니다.
         if (monsterData.useNewAI && monsterData.initialBehavior != null)
         {
-            // --- 신규 모듈형 AI 시스템 사용 ---
-            Debug.Log($"<color=cyan>[AI-Init]</color> Monster: '{gameObject.name}', AI System: 'New Modular AI', Initial Behavior: '{monsterData.initialBehavior.name}'");
+            Log.Info(Log.LogCategory.AI_Init, $"Monster: '{gameObject.name}', AI System: 'New Modular AI', Initial Behavior: '{monsterData.initialBehavior.name}'");
             ChangeBehavior(monsterData.initialBehavior);
         }
         else
         {
-            // --- 기존 FSM AI 시스템 사용 (호환성 유지) ---
-            Debug.Log($"<color=orange>[AI-Init]</color> Monster: '{gameObject.name}', AI System: 'Legacy FSM'");
-            // (기존 FSM 초기화 코드는 생략... 원본과 동일)
+            Log.Info(Log.LogCategory.AI_Init, $"Monster: '{gameObject.name}', AI System: 'Legacy FSM'");
             #region Legacy FSM Initialization
             this.playerDetectionRadius = data.playerDetectionRadius;
             this.loseSightRadius = data.loseSightRadius;
@@ -136,7 +114,7 @@ public class MonsterController : MonoBehaviour
                     currentState = State.Patrolling;
                     UpdatePatrolTarget();
                     break;
-                default: // Chase
+                default:
                     baseState = State.Chasing;
                     currentState = State.Chasing;
                     break;
@@ -149,23 +127,19 @@ public class MonsterController : MonoBehaviour
     {
         if (isDead) return;
 
-        // ★★★★★ 핵심 실행부 ★★★★★
-        if (currentBehavior != null) // 'currentBehavior'가 존재하면 신규 AI가 실행 중이라는 의미
+        if (currentBehavior != null)
         {
-            // [개선 4. 메모리] 매 프레임이 아닌 0.2초마다 한 번씩만 행동을 결정하도록 하여 부하를 줄입니다.
             behaviorCheckTimer += Time.deltaTime;
-            stateTimer += Time.deltaTime; // 현재 상태 유지 시간 측정
+            stateTimer += Time.deltaTime;
 
             if (behaviorCheckTimer >= 0.2f)
             {
-                // 현재 장착된 '행동 부품'에게 "이제 네가 할 일을 해"라고 명령합니다.
                 currentBehavior.OnExecute(this);
                 behaviorCheckTimer = 0f;
             }
         }
-        else // 'currentBehavior'가 없다면, 기존 AI가 실행 중이라는 의미
+        else
         {
-            // (기존 FSM 업데이트 로직은 생략... 원본과 동일)
             #region Legacy FSM Update
             stateCheckTimer += Time.deltaTime;
             if (stateCheckTimer >= STATE_CHECK_INTERVAL)
@@ -187,14 +161,33 @@ public class MonsterController : MonoBehaviour
         }
     }
 
+    public void ChangeBehavior(MonsterBehavior newBehavior)
+    {
+        if (currentBehavior == newBehavior) return;
+
+        string oldBehaviorName = (currentBehavior != null) ? currentBehavior.name : "None";
+        string newBehaviorName = (newBehavior != null) ? newBehavior.name : "None";
+        Log.Info(Log.LogCategory.AI_Transition, $"Monster: '{gameObject.name}', Behavior Changed: '{oldBehaviorName}' -> '{newBehaviorName}'");
+
+        if (currentBehavior != null)
+        {
+            currentBehavior.OnExit(this);
+        }
+
+        currentBehavior = newBehavior;
+        stateTimer = 0f;
+
+        if (currentBehavior != null)
+        {
+            currentBehavior.OnEnter(this);
+        }
+    }
+
+    // (이 아래의 모든 함수들은 기존 스크립트와 동일하므로 생략합니다)
+    #region Unchanged Methods
     void FixedUpdate()
     {
-        // FixedUpdate는 물리 계산을 위한 업데이트 함수입니다.
-        // 신규 AI는 Behavior 부품이 직접 물리(rb.velocity)를 제어하므로,
-        // 신규 AI가 실행 중일 때는 이 함수가 아무것도 하지 않도록 막습니다.
         if (currentBehavior != null) return;
-
-        // (기존 FSM 물리 이동 로직은 생략... 원본과 동일)
         #region Legacy FSM FixedUpdate
         if (isVelocityOverridden)
         {
@@ -227,43 +220,6 @@ public class MonsterController : MonoBehaviour
         }
         #endregion
     }
-
-    // ========================================================================
-    // E. 신규 모듈형 AI를 위한 핵심 함수
-    // ========================================================================
-
-    /// <summary>
-    /// 현재 몬스터의 행동 부품(Behavior)을 교체합니다.
-    /// 이것이 새로운 AI 시스템의 '상태 전환' 핵심 로직입니다.
-    /// </summary>
-    /// <param name="newBehavior">새롭게 실행할 행동 부품</param>
-    public void ChangeBehavior(MonsterBehavior newBehavior)
-    {
-        if (currentBehavior == newBehavior) return;
-
-        // [개선 3. 보기 편한 로그] 상태 전환 시 상세한 로그를 남깁니다.
-        string oldBehaviorName = (currentBehavior != null) ? currentBehavior.name : "None";
-        string newBehaviorName = (newBehavior != null) ? newBehavior.name : "None";
-
-        // 1. 기존 행동이 있었다면, 마무리(OnExit) 함수를 호출하여 안전하게 종료시킵니다.
-        if (currentBehavior != null)
-        {
-            currentBehavior.OnExit(this);
-        }
-
-        // 2. 현재 행동 부품을 새로운 것으로 교체합니다.
-        currentBehavior = newBehavior;
-        stateTimer = 0f; // 상태가 바뀌었으므로 타이머를 리셋합니다.
-
-        // 3. 새로운 행동의 초기화(OnEnter) 함수를 호출하여 시작 준비를 합니다.
-        if (currentBehavior != null)
-        {
-            currentBehavior.OnEnter(this);
-        }
-    }
-
-    // (이 아래의 모든 함수들은 기존 스크립트와 동일하므로 생략합니다)
-    #region Unchanged Methods (Legacy AI, Common Functions)
     private void UpdateStateTransitions()
     {
         if (playerTransform == null) return;
@@ -333,7 +289,7 @@ public class MonsterController : MonoBehaviour
     private void ChangeState(State newState)
     {
         if (currentState == newState) return;
-        Debug.Log($"<color=orange>[FSM-Transition]</color> '{monsterData.monsterName}' 상태 변경: {currentState} -> {newState}");
+        Log.Info(Log.LogCategory.AI_Transition, $"[Legacy FSM] '{monsterData.monsterName}' 상태 변경: {currentState} -> {newState}");
         currentState = newState;
     }
     private void UpdatePatrolTarget()

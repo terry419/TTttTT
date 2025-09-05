@@ -56,4 +56,25 @@ public abstract class MonsterBehavior : ScriptableObject
             }
         }
     }
+    private void OnValidate()
+    {
+        // transitions 리스트에 있는 모든 규칙들을 검사합니다.
+        for (int i = 0; i < transitions.Count; i++)
+        {
+            var transition = transitions[i];
+
+            // 만약 'Decision' 슬롯이 비어있다면, Console 창에 경고를 띄웁니다.
+            if (transition.decision == null)
+            {
+                Debug.LogWarning($"[Asset Validator] '{this.name}' 에셋의 Transitions 목록 {i}번째 항목에 'Decision'이 연결되지 않았습니다.");
+            }
+
+            // 만약 'Next Behavior' 슬롯이 비어있다면, Console 창에 경고를 띄웁니다.
+            if (transition.nextBehavior == null)
+            {
+                Debug.LogWarning($"[Asset Validator] '{this.name}' 에셋의 Transitions 목록 {i}번째 항목에 'Next Behavior'가 연결되지 않았습니다.");
+            }
+        }
+    }
+
 }

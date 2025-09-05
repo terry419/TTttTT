@@ -13,12 +13,12 @@ public class EffectContextPool
     {
         if (pool.Count > 0)
         {
-            Log.Print($"[EffectContextPool] Reusing existing context. Pool size: {pool.Count - 1}");
+            Log.Info(Log.LogCategory.PoolManager, $"Reusing existing context. Pool size: {pool.Count - 1}");
             return pool.Pop();
         }
         else
         {
-            Log.Print("[EffectContextPool] Pool is empty. Creating new context.");
+            Log.Info(Log.LogCategory.PoolManager, "Pool is empty. Creating new context.");
             return new EffectContext();
         }
     }
@@ -30,6 +30,6 @@ public class EffectContextPool
     {
         context.Reset();
         pool.Push(context);
-        Log.Print($"[EffectContextPool] Context returned. Pool size: {pool.Count}");
+        Log.Info(Log.LogCategory.PoolManager, $"Context returned. Pool size: {pool.Count}");
     }
 }
