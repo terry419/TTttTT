@@ -8,13 +8,11 @@ using System;
 [RequireComponent(typeof(MonsterController))]
 public class MonsterStats : MonoBehaviour, IStatHolder
 {
-    // --- 이벤트 방송 ---
     public static event Action<float, Vector3> OnMonsterDamaged;
 
     private MonsterController controller;
     private MonsterDataSO monsterData;
 
-    // --- 능력치 ---
     private float baseMaxHealth;
     private float baseMoveSpeed;
     private float baseContactDamage;
@@ -26,14 +24,6 @@ public class MonsterStats : MonoBehaviour, IStatHolder
     public float FinalContactDamage => Mathf.Max(0f, CalculateFinalValue(StatType.ContactDamage, baseContactDamage));
     public float FinalDamageTakenBonus => statModifiers.ContainsKey(StatType.DamageTaken) ? statModifiers[StatType.DamageTaken].Sum(mod => mod.Value) : 0f;
 
-    void Awake()
-    {
-        foreach (StatType type in System.Enum.GetValues(typeof(StatType)))
-        {
-            statModifiers[type] = new List<StatModifier>();
-        }
-    }
-
     public void Initialize(MonsterController owner, MonsterDataSO data)
     {
         this.controller = owner;
@@ -42,6 +32,9 @@ public class MonsterStats : MonoBehaviour, IStatHolder
         baseMoveSpeed = data.moveSpeed;
         baseContactDamage = data.contactDamage;
         CurrentHealth = FinalMaxHealth;
+
+        // 모든 효과 초기화
+        foreach (var list in statModifiers.Values) { list.Clear(); }
     }
 
     public void TakeDamage(float damage)
@@ -50,7 +43,7 @@ public class MonsterStats : MonoBehaviour, IStatHolder
         float finalDamage = damage * damageMultiplier;
         CurrentHealth -= finalDamage;
 
-        OnMonsterDamaged?.Invoke(finalDamage, transform.position); // 데미지 UI를 위해 방송
+        OnMonsterDamaged?.Invoke(finalDamage, transform.position);
 
         if (CurrentHealth <= 0)
         {
@@ -58,9 +51,14 @@ public class MonsterStats : MonoBehaviour, IStatHolder
         }
     }
 
-    private async UniTaskVoid HandleDeath()
+    public void Heal(float amount)
     {
-        // 사망 시 장판 생성 로직
+        if (amount <= 0) return;
+        CurrentHealth = Mathf.Min(CurrentHealth + amount, FinalMaxHealth);
+    }
+
+    public async UniTaskVoid HandleDeath()
+    {
         if (monsterData.onDeathZoneEffect != null)
         {
             var player = ServiceLocator.Get<PlayerController>()?.GetComponent<CharacterStats>();
@@ -72,23 +70,63 @@ public class MonsterStats : MonoBehaviour, IStatHolder
             }
         }
 
-        // 사망 시 자폭 로직
         if (monsterData.canExplodeOnDeath)
         {
             await PlayerTargetedExplosionAsync(transform.position, monsterData);
             if (this == null) return;
         }
 
-        // 모든 사망 효과가 처리된 후, Controller에게 죽음을 최종 통보
         controller.Die();
     }
 
     private static async UniTask PlayerTargetedExplosionAsync(Vector3 deathPosition, MonsterDataSO monsterData)
     {
-        // (이 함수 내용은 이전과 동일하여 생략)
+        await UniTask.Delay(TimeSpan.FromSeconds(monsterData.explosionDelay));
+        var poolManager = ServiceLocator.Get<PoolManager>();
+        var playerController = ServiceLocator.Get<PlayerController>();
+        if (poolManager == null || playerController == null) return;
+        GameObject vfxGO = await poolManager.GetAsync(monsterData.explosionVfxRef.AssetGUID);
+        if (vfxGO != null)
+        {
+            vfxGO.transform.position = deathPosition;
+        }
+        float sqrDistanceToPlayer = (deathPosition - playerController.transform.position).sqrMagnitude;
+        float explosionSqrRadius = monsterData.explosionRadius * monsterData.explosionRadius;
+        if (sqrDistanceToPlayer <= explosionSqrRadius)
+        {
+            if (playerController.TryGetComponent<CharacterStats>(out var playerStats))
+            {
+                playerStats.TakeDamage(monsterData.explosionDamage);
+            }
+        }
     }
 
-    #region IStatHolder Implementation and Helpers
+    public void ApplySelfStatusEffect(MonsterStatusEffectSO effectData)
+    {
+        if (effectData == null) return;
+        var statusEffectManager = ServiceLocator.Get<StatusEffectManager>();
+        if (statusEffectManager == null) return;
+
+        var bonuses = new Dictionary<StatType, float>();
+        if (effectData.moveSpeedBonus != 0) bonuses.Add(StatType.MoveSpeed, effectData.moveSpeedBonus);
+        if (effectData.contactDamageBonus != 0) bonuses.Add(StatType.ContactDamage, effectData.contactDamageBonus);
+        if (effectData.damageTakenBonus != 0) bonuses.Add(StatType.DamageTaken, effectData.damageTakenBonus);
+
+        var instance = new StatusEffectInstance(
+            this.gameObject, effectData.effectId, effectData.duration, bonuses,
+            effectData.damageOverTime, DamageType.Flat, false,
+            effectData.healOverTime, 1f, HealType.Flat,
+            StackingBehavior.RefreshDuration, null, null, null, null
+        );
+        statusEffectManager.ApplyStatusEffect(this.gameObject, instance);
+    }
+
+    public void RemoveSelfStatusEffect(string effectId)
+    {
+        if (string.IsNullOrEmpty(effectId)) return;
+        ServiceLocator.Get<StatusEffectManager>()?.RemoveStatusEffect(this.gameObject, effectId);
+    }
+
     public void AddModifier(StatType type, StatModifier modifier)
     {
         if (!statModifiers.ContainsKey(type)) statModifiers[type] = new List<StatModifier>();
@@ -106,5 +144,4 @@ public class MonsterStats : MonoBehaviour, IStatHolder
         float totalBonusRatio = statModifiers.ContainsKey(type) ? statModifiers[type].Sum(mod => mod.Value) : 0f;
         return baseValue * (1 + totalBonusRatio / 100f);
     }
-    #endregion
 }

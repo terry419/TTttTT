@@ -43,14 +43,12 @@ public class MonsterGlobalModifiers : MonoBehaviour
 
             if (conditionMet && !wasApplied)
             {
-                // 조건이 충족되었는데 효과가 적용 안 된 상태 -> 효과 적용
-                _controller.ApplySelfStatusEffect(rule.effectToApply);
+                _controller.monsterStats.ApplySelfStatusEffect(rule.effectToApply);
                 _isEffectApplied[rule] = true;
             }
             else if (!conditionMet && wasApplied && rule.removeWhenConditionIsFalse)
             {
-                // 조건이 해제되었고 효과가 적용된 상태이며, 자동 제거 옵션이 켜져있을 때 -> 효과 제거
-                _controller.RemoveSelfStatusEffect(rule.effectToApply.effectId);
+                _controller.monsterStats.RemoveSelfStatusEffect(rule.effectToApply.effectId);
                 _isEffectApplied[rule] = false;
             }
         }

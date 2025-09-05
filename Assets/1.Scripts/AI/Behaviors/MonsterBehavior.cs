@@ -28,9 +28,10 @@ public abstract class MonsterBehavior : ScriptableObject
     {
         if (effectToApplyOnEnter != null)
         {
-            monster.ApplySelfStatusEffect(effectToApplyOnEnter);
+            monster.monsterStats.ApplySelfStatusEffect(effectToApplyOnEnter);
         }
     }
+    
     /// <summary>
     /// 이 행동이 활성화된 동안 매 프레임(또는 주기적으로) 실행되는 핵심 로직입니다.
     /// </summary>
@@ -46,9 +47,10 @@ public abstract class MonsterBehavior : ScriptableObject
     {
         if (effectToRemoveOnExit != null)
         {
-            monster.RemoveSelfStatusEffect(effectToRemoveOnExit.effectId);
+            monster.monsterStats.RemoveSelfStatusEffect(effectToRemoveOnExit.effectId);
         }
     }
+    
     /// <summary>
     /// 모든 행동 부품들이 공통으로 사용하는 '상태 전환 검사' 기능입니다.
     /// transitions 목록에 있는 모든 '규칙'을 하나씩 확인하여, 조건이 맞으면 다음 행동으로 전환시킵니다.

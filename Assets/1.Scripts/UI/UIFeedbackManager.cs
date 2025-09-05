@@ -4,12 +4,12 @@ public class UIFeedbackManager : MonoBehaviour
 {
     void OnEnable()
     {
-        MonsterController.OnMonsterDamaged += HandleMonsterDamaged;
+        MonsterStats.OnMonsterDamaged += HandleMonsterDamaged;
     }
 
     void OnDisable()
     {
-        MonsterController.OnMonsterDamaged -= HandleMonsterDamaged;
+        MonsterStats.OnMonsterDamaged -= HandleMonsterDamaged;
     }
 
     private async void HandleMonsterDamaged(float damageAmount, Vector3 position)
