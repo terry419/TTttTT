@@ -1,78 +1,94 @@
 // 경로: ./TTttTT/Assets/1/Scripts/AI/Behaviors/SummonBehavior.cs
 using UnityEngine;
 using Cysharp.Threading.Tasks;
+using System.Collections.Generic;
+using System; // Serializable을 위해 추가
 
 /// <summary>
-/// [고급 행동 부품] 지정된 시간 동안 캐스팅 후, 하수인을 소환하는 행동입니다.
+/// [수정] 소환 목록의 각 항목을 정의하는 데이터 구조입니다.
+/// MonsterDataSO와 summonCount를 하나의 쌍으로 묶습니다.
+/// </summary>
+[Serializable]
+public class SummonEntry
+{
+    [Tooltip("소환할 하수인의 MonsterDataSO 에셋입니다.")]
+    public MonsterDataSO minionToSummon;
+    [Tooltip("이 하수인을 몇 마리 소환할지 정합니다.")]
+    public int summonCount = 1;
+}
+
+/// <summary>
+/// [고급 행동 부품 - 다중 동시 소환 최종본] 
+/// 목록에 있는 모든 종류의 하수인을 각자 지정된 수만큼 동시에 소환하는 행동입니다.
 /// </summary>
 [CreateAssetMenu(menuName = "Monster AI/Behaviors/Summon")]
 public class SummonBehavior : MonsterBehavior
 {
     [Header("소환 설정")]
-    [Tooltip("소환할 하수인의 MonsterDataSO 에셋을 연결합니다.")]
-    public MonsterDataSO minionToSummon;
-    [Tooltip("한 번에 소환할 하수인의 수입니다.")]
-    public int summonCount = 3;
     [Tooltip("소환 동작(캐스팅)에 걸리는 시간(초)입니다.")]
     public float summonCastTime = 1.5f;
 
+    [Header("소환 목록")]
+    [Tooltip("이 행동으로 소환될 모든 하수인들의 목록입니다.")]
+    public List<SummonEntry> summonList;
+
     public override void OnEnter(MonsterController monster)
     {
-        // 소환을 시작하면, 그 자리에 멈춥니다.
+        base.OnEnter(monster);
         monster.rb.velocity = Vector2.zero;
         Log.Info(Log.LogCategory.AI_Behavior, $"{monster.name}이(가) 하수인 소환을 시작합니다. (캐스팅 시간: {summonCastTime}초)");
     }
 
     public override void OnExecute(MonsterController monster)
     {
-        // 캐스팅 시간 동안에는 계속 제자리에 멈춰있습니다.
         monster.rb.velocity = Vector2.zero;
 
-        // 캐스팅 시간이 다 지났는지 확인합니다.
         if (monster.stateTimer >= summonCastTime)
         {
-            // 시간이 다 되면, 소환을 실행하고 다음 행동으로 넘어갑니다.
-            Log.Info(Log.LogCategory.AI_Behavior, $"{monster.name}이(가) {minionToSummon.monsterName} {summonCount}마리를 소환합니다!");
-
-            // 비동기 작업이므로, UniTask의 'Forget'으로 처리합니다.
+            Log.Info(Log.LogCategory.AI_Behavior, $"{monster.name}이(가) 소환 목록에 따라 하수인을 소환합니다!");
             SummonMinionsAsync(monster).Forget();
-
-            // 소환을 마쳤으니, 다음 행동으로 전환될지 검사합니다.
             CheckTransitions(monster);
         }
     }
 
     private async UniTaskVoid SummonMinionsAsync(MonsterController summoner)
     {
-        if (minionToSummon == null || !minionToSummon.prefabRef.RuntimeKeyIsValid())
+        if (summonList == null || summonList.Count == 0)
         {
-            Log.Error(Log.LogCategory.AI_Behavior, $"'{summoner.name}'이(가) 소환하려는 하수인({minionToSummon?.name})의 데이터가 유효하지 않습니다.");
+            Log.Error(Log.LogCategory.AI_Behavior, $"'{summoner.name}'이(가) 소환할 하수인 목록(Summon List)이 비어있습니다.");
             return;
         }
 
         var poolManager = ServiceLocator.Get<PoolManager>();
         if (poolManager == null) return;
 
-        string key = minionToSummon.prefabRef.AssetGUID;
-
-        for (int i = 0; i < summonCount; i++)
+        // 목록에 있는 모든 항목(Entry)에 대해 반복합니다.
+        foreach (var entry in summonList)
         {
-            // 소환사 주변의 무작위 위치를 계산합니다.
-            Vector2 randomOffset = Random.insideUnitCircle * 2.0f; // 2미터 반경 내
-            Vector3 spawnPosition = summoner.transform.position + (Vector3)randomOffset;
-
-            // 풀 매니저를 통해 하수인 인스턴스를 가져옵니다.
-            GameObject minionInstance = await poolManager.GetAsync(key);
-            if (minionInstance != null)
+            if (entry.minionToSummon == null || !entry.minionToSummon.prefabRef.RuntimeKeyIsValid())
             {
-                minionInstance.transform.position = spawnPosition;
+                Log.Warn(Log.LogCategory.AI_Behavior, $"소환 목록의 항목 중 하나가 유효하지 않아 건너뜁니다.");
+                continue;
+            }
 
-                // 하수인 몬스터를 초기화합니다.
-                MonsterController mc = minionInstance.GetComponent<MonsterController>();
-                if (mc != null)
+            // 각 항목에 지정된 summonCount 만큼 반복합니다.
+            for (int i = 0; i < entry.summonCount; i++)
+            {
+                string key = entry.minionToSummon.prefabRef.AssetGUID;
+                Vector2 randomOffset = UnityEngine.Random.insideUnitCircle * 2.0f;
+                Vector3 spawnPosition = summoner.transform.position + (Vector3)randomOffset;
+
+                GameObject minionInstance = await poolManager.GetAsync(key);
+                if (minionInstance != null)
                 {
-                    mc.countsTowardKillGoal = false;
-                    mc.Initialize(minionToSummon);
+                    minionInstance.transform.position = spawnPosition;
+
+                    MonsterController mc = minionInstance.GetComponent<MonsterController>();
+                    if (mc != null)
+                    {
+                        mc.countsTowardKillGoal = false;
+                        mc.Initialize(entry.minionToSummon);
+                    }
                 }
             }
         }

@@ -20,6 +20,7 @@ public class GameManager : MonoBehaviour
 
     // 라운드 간 플레이어 체력을 보존하기 위한 변수
     private float? lastPlayerHealth = null;
+    private bool isRunCleanupAfterGameOver = false; // <<< 이 변수를 추가합니다.
 
     public event System.Action<GameState> OnGameStateChanged;
 
@@ -226,6 +227,8 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator GameOverRoutine()
     {
+        isRunCleanupAfterGameOver = true; // <<< 게임오버 처리 시작을 알립니다.
+
         var poolManager = ServiceLocator.Get<PoolManager>();
         if (poolManager != null)
         {
@@ -261,6 +264,8 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator StartRoundAfterSceneLoad()
     {
+        isRunCleanupAfterGameOver = false; // <<< 새 라운드가 시작되면, 게임오버 후 정리 상태가 끝났음을 의미합니다.
+
         Debug.Log("--- [GameManager] StartRoundAfterSceneLoad 코루틴 시작 ---");
 
         var mapManager = ServiceLocator.Get<MapManager>();
@@ -334,6 +339,11 @@ public class GameManager : MonoBehaviour
     /// </summary>
     public void SetCurrentHealth(float health)
     {
+        if (isRunCleanupAfterGameOver)
+        {
+            Debug.Log($"[DEBUG-HEALTH] GameManager.SetCurrentHealth: 게임오버 후 정리 중이므로 체력({health}) 저장을 무시합니다.");
+            return;
+        }
         lastPlayerHealth = health;
         Debug.Log($"[DEBUG-HEALTH] GameManager.SetCurrentHealth: 체력 저장 요청을 받았습니다. 저장된 체력: {lastPlayerHealth}");
     }

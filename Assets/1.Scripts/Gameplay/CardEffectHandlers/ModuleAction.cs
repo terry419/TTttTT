@@ -9,8 +9,7 @@ public class ModuleAction : ICardAction
     {
         var card = context.CardInstance.CardData;
 
-        // [ٽ ]  ModuleAction  ߻  մϴ.
-        // ProjectileEffectSO  ãƼ ߻  ɴϴ.
+        // 이 카드에 연결된 모듈 중 발사체(Projectile) 효과를 찾아냅니다.
         ProjectileEffectSO pModule = null;
         foreach (var moduleEntry in card.modules)
         { 
@@ -21,30 +20,30 @@ public class ModuleAction : ICardAction
                 if (module is ProjectileEffectSO foundPModule)
                 {
                     pModule = foundPModule;
-                    break; // ù ° ProjectileEffectSO  
+                    break; // 첫 번째로 발견된 발사체 모듈을 사용합니다.
                 }
             }
         }
 
         if (pModule == null || !pModule.bulletPrefabReference.RuntimeKeyIsValid())
         {
-            Debug.LogWarning($"[{card.name}] ߻ ProjectileEffectSO  ã  ϴ.");
-            // ü  ٸ OnFire ⸸   Ƿ ⼭ return ʽϴ.
+            Debug.LogWarning($"[{card.name}] 발사할 ProjectileEffectSO 모듈을 찾지 못했습니다.");
         }
         else
         {
-            // pModule ã, ī ÷ ߻  Ͽ ü ߻մϴ.
+            // 발사체 모듈을 찾았다면, 해당 모듈의 설정에 따라 발사체를 쏩니다.
             await FireProjectiles(pModule, card, context);
         }
 
-        // OnFire Ÿ ٸ   ( )
+        // 'OnFire'(발사 시) 트리거를 가진 다른 모듈들을 실행합니다.
         foreach (var moduleEntry in card.modules)
         {
             if (moduleEntry.moduleReference.RuntimeKeyIsValid())
             {
                 var resourceManager = ServiceLocator.Get<ResourceManager>();
                 CardEffectSO module = await resourceManager.LoadAsync<CardEffectSO>(moduleEntry.moduleReference.AssetGUID);
-                // ü  ƴϰ, OnFire ƮŸ  ⸸ 
+                
+                // 방금 발사한 발사체 모듈이 아니고, OnFire 트리거를 가진 모듈만 실행합니다.
                 if (module != null && !(module is ProjectileEffectSO) && module.trigger == CardEffectSO.EffectTrigger.OnFire)
                 {
                     var effectContextForModule = new EffectContext
