@@ -74,7 +74,6 @@ public class PlayerController : MonoBehaviour
         AutoAttackLoop(_attackLoopCts.Token).Forget();
     }
 
-    // ▼▼▼ [핵심 수정] 공격 간격 계산 방식을 변경합니다. ▼▼▼
     private async UniTask AutoAttackLoop(CancellationToken token)
     {
         try
@@ -128,7 +127,6 @@ public class PlayerController : MonoBehaviour
             Debug.LogError($"[!!! MissingReferenceException !!!] PlayerController.PerformAttack() 내부에서 오류 발생. 원본 오류: {ex.Message}\n{ex.StackTrace}");
         }
     }
-    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
     void FixedUpdate()
     {

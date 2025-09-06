@@ -29,7 +29,7 @@ public class CardRewardTestHarness : MonoBehaviour
     private bool isInitialized = false;
     private bool isTestRun = false;
 
-    async UniTaskVoid Awake()
+    async void Awake()
     {
         if (ServiceLocator.IsRegistered<GameManager>())
         {
@@ -42,7 +42,7 @@ public class CardRewardTestHarness : MonoBehaviour
         await Addressables.InstantiateAsync(PrefabKeys.GameplaySession).Task;
         Debug.Log("[TestHarness] 필수 매니저 생성 완료.");
 
-        // ▼▼▼▼▼▼ [핵심 수정] DataManager를 찾아 데이터 로드를 직접 실행하고 기다립니다. ▼▼▼▼▼▼
+        //  [핵심 수정] DataManager를 찾아 데이터 로드를 직접 실행하고 기다립니다. 
         dataManager = ServiceLocator.Get<DataManager>();
         if (dataManager != null)
         {
@@ -56,7 +56,6 @@ public class CardRewardTestHarness : MonoBehaviour
             isInitialized = true; // 오류가 있더라도 Update 루프가 멈추지 않도록 설정
             return;
         }
-        // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
         // 데이터 로드 후 나머지 매니저들을 할당합니다.
         cardRewardUI = ServiceLocator.Get<CardRewardUIManager>();

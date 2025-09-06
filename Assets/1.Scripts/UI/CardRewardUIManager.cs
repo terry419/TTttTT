@@ -81,6 +81,12 @@ public class CardRewardUIManager : MonoBehaviour
             }
         }
 
+        var dynamicLayout = cardSlotsParent.GetComponent<DynamicSpacingLayout>();
+        if (dynamicLayout != null)
+        {
+            dynamicLayout.RecalculateSpacing();
+
+        }
         selectedDisplay = null;
         UpdateButtonsState();
         StartCoroutine(SetFocusToFirstCard());

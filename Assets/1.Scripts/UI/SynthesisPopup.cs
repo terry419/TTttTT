@@ -1,3 +1,4 @@
+// 파일 경로: Assets/1.Scripts/UI/SynthesisPopup.cs
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
@@ -30,7 +31,6 @@ public class SynthesisPopup : MonoBehaviour
 
     void OnEnable()
     {
-        // UI가 활성화된 후 포커스를 설정하도록 코루틴을 여기서 시작합니다.
         StartCoroutine(SetInitialPopupFocus());
     }
 
@@ -43,11 +43,9 @@ public class SynthesisPopup : MonoBehaviour
 
         if (titleText != null) titleText.text = $"Synthesize: {baseCard.basicInfo.cardName}";
 
-        // 이전 재료 카드 UI 삭제
         foreach (var display in spawnedCardDisplays) Destroy(display.gameObject);
         spawnedCardDisplays.Clear();
 
-        // 새 재료 카드로 UI 생성
         foreach (var cardInstance in materialChoices)
         {
             GameObject cardUI = Instantiate(cardDisplayPrefab, contentPanel.transform);
@@ -60,6 +58,7 @@ public class SynthesisPopup : MonoBehaviour
             }
         }
 
+        // ▼▼▼ [핵심 수정] 네비게이션 설정 함수 호출 ▼▼▼
         SetupNavigation();
         UpdateConfirmButton();
     }
@@ -72,7 +71,6 @@ public class SynthesisPopup : MonoBehaviour
             display.SetHighlight(display == selectedDisplay);
         }
         UpdateConfirmButton();
-        // 재료 선택 시 확인 버튼으로 포커스 이동
         EventSystem.current.SetSelectedGameObject(confirmButton.gameObject);
     }
 
@@ -96,47 +94,64 @@ public class SynthesisPopup : MonoBehaviour
         gameObject.SetActive(false);
     }
 
+    /// <summary>
+    /// [새로 추가된 함수] 생성된 카드와 하단 버튼들의 네비게이션을 수동으로 연결합니다.
+    /// </summary>
     private void SetupNavigation()
     {
-        // 포커스가 팝업 밖으로 나가지 않도록 네비게이션 설정
+        if (spawnedCardDisplays.Count == 0) return;
+
+        int columnCount = 4; // Grid Layout Group의 Constraint Count와 동일한 값
+
         for (int i = 0; i < spawnedCardDisplays.Count; i++)
         {
-            var currentSelectable = spawnedCardDisplays[i].selectButton;
-            Navigation nav = currentSelectable.navigation;
-            nav.mode = Navigation.Mode.Explicit;
-            
-            // 좌우 네비게이션 설정
-            nav.selectOnLeft = (i == 0) ? cancelButton : spawnedCardDisplays[i - 1].selectButton;
-            nav.selectOnRight = (i == spawnedCardDisplays.Count - 1) ? confirmButton : spawnedCardDisplays[i + 1].selectButton;
-            
-            currentSelectable.navigation = nav;
+            var currentButton = spawnedCardDisplays[i].selectButton;
+            var nav = new Navigation { mode = Navigation.Mode.Explicit };
+
+            // 위쪽 연결 (i - 4)
+            nav.selectOnUp = (i < columnCount) ? null : spawnedCardDisplays[i - columnCount].selectButton;
+
+            // 아래쪽 연결 (i + 4)
+            if (i + columnCount >= spawnedCardDisplays.Count) // 마지막 줄 카드인 경우
+            {
+                nav.selectOnDown = cancelButton; // 일단 Cancel 버튼으로 연결
+            }
+            else
+            {
+                nav.selectOnDown = spawnedCardDisplays[i + columnCount].selectButton;
+            }
+
+            // 왼쪽 연결 (i - 1)
+            nav.selectOnLeft = (i % columnCount == 0) ? null : spawnedCardDisplays[i - 1].selectButton;
+
+            // 오른쪽 연결 (i + 1)
+            nav.selectOnRight = ((i + 1) % columnCount == 0 || i + 1 >= spawnedCardDisplays.Count) ? null : spawnedCardDisplays[i + 1].selectButton;
+
+            currentButton.navigation = nav;
         }
 
-        // 확인/취소 버튼 네비게이션 설정
-        Navigation confirmNav = confirmButton.navigation;
-        confirmNav.mode = Navigation.Mode.Explicit;
-        confirmNav.selectOnLeft = spawnedCardDisplays.LastOrDefault()?.selectButton;
-        confirmButton.navigation = confirmNav;
-
-        Navigation cancelNav = cancelButton.navigation;
+        // 하단 버튼(Cancel, Confirm)들의 위쪽 네비게이션 설정
+        var cancelNav = cancelButton.navigation;
         cancelNav.mode = Navigation.Mode.Explicit;
-        cancelNav.selectOnRight = spawnedCardDisplays.FirstOrDefault()?.selectButton;
+        cancelNav.selectOnUp = spawnedCardDisplays.LastOrDefault(c => c.transform.GetSiblingIndex() % columnCount < 2)?.selectButton; // 왼쪽 카드들 중 마지막 줄
         cancelButton.navigation = cancelNav;
+
+        var confirmNav = confirmButton.navigation;
+        confirmNav.mode = Navigation.Mode.Explicit;
+        confirmNav.selectOnUp = spawnedCardDisplays.LastOrDefault(c => c.transform.GetSiblingIndex() % columnCount >= 2)?.selectButton; // 오른쪽 카드들 중 마지막 줄
+        confirmButton.navigation = confirmNav;
     }
 
     private IEnumerator SetInitialPopupFocus()
     {
-        yield return null; // UI가 완전히 활성화될 때까지 한 프레임 대기
+        yield return null;
         EventSystem.current.SetSelectedGameObject(null);
-        
-        // 가장 왼쪽 카드에 포커스
         if (spawnedCardDisplays.Count > 0)
         {
             EventSystem.current.SetSelectedGameObject(spawnedCardDisplays[0].gameObject);
         }
         else
         {
-            // 카드가 없으면 취소 버튼에 포커스
             EventSystem.current.SetSelectedGameObject(cancelButton.gameObject);
         }
     }
