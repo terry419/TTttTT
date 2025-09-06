@@ -1,4 +1,4 @@
-// 경로: ./TTttTT/Assets/1.Scripts/Gameplay/CharacterStats.cs
+// 경로: ./TTttTT/Assets/1/Scripts/Gameplay/CharacterStats.cs
 
 using UnityEngine;
 using UnityEngine.Events;
@@ -46,6 +46,33 @@ public class CharacterStats : MonoBehaviour, IStatHolder
         {
             statModifiers[type] = new List<StatModifier>();
         }
+    }
+
+    void Start()
+    {
+        var gameManager = ServiceLocator.Get<GameManager>();
+        if (gameManager != null)
+        {
+            if (gameManager.isFirstRound)
+            {
+                // 새 게임의 첫 라운드이므로, 체력을 최대로 설정합니다.
+                currentHealth = FinalHealth;
+            }
+            else
+            {
+                // 이전 라운드에서 이어지는 경우, 저장된 체력을 가져옵니다.
+                // (혹시 모를 오류에 대비해, 저장된 값이 없으면 최대로 설정)
+                currentHealth = gameManager.GetCurrentHealth() ?? FinalHealth;
+            }
+        }
+        else
+        {
+            // GameManager를 찾을 수 없는 예외적인 경우, 체력을 최대로 설정합니다.
+            currentHealth = FinalHealth;
+        }
+
+        // 체력 초기화 후, HUD UI를 즉시 업데이트합니다.
+        playerHealthBar.UpdateHealth(currentHealth, FinalHealth);
     }
 
     void OnDestroy()

@@ -3650,6 +3650,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   minSpawnRadius: 10
   maxSpawnRadius: 15
+  maxConcurrentSpawns: 15
 --- !u!114 &1237349107
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3712,7 +3713,7 @@ MonoBehaviour:
   explosionDuration: 0.3
   explosionDamage: 30
   curseMissileModuleRef:
-    m_AssetGUID: 1333038a86b3c4c4f92461117a635c79
+    m_AssetGUID: a78c45964b33f2d408fa9288cb5d024a
     m_SubObjectName: 
     m_SubObjectType: 
     m_EditorAssetChanged: 0

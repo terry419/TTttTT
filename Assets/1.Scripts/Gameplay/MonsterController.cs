@@ -59,6 +59,14 @@ public class MonsterController : MonoBehaviour
         }
     }
 
+    void OnDisable()
+    {
+        if (ServiceLocator.IsRegistered<MonsterManager>())
+        {
+            ServiceLocator.Get<MonsterManager>()?.UnregisterMonster(this);
+        }
+    }
+
     public void Initialize(MonsterDataSO data)
     {
         this.monsterData = data;
@@ -190,7 +198,7 @@ public class MonsterController : MonoBehaviour
 
         string oldBehaviorName = (currentBehavior != null) ? currentBehavior.name : "None";
         string newBehaviorName = (newBehavior != null) ? newBehavior.name : "None";
-        Log.Info(Log.LogCategory.AI_Transition, $"Monster: '{gameObject.name}', Behavior Changed: '{oldBehaviorName}' -> '{newBehaviorName}'");
+        //Log.Info(Log.LogCategory.AI_Transition, $"Monster: '{gameObject.name}', Behavior Changed: '{oldBehaviorName}' -> '{newBehaviorName}'");
 
         if (currentBehavior != null)
             currentBehavior.OnExit(this);
