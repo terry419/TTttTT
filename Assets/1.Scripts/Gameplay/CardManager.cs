@@ -17,6 +17,8 @@ public class CardManager : MonoBehaviour
     [Header("실시간 카드 상태")]
     public CardInstance activeCard;
 
+    public CharacterStats PlayerStats => playerStats;
+
     private CharacterStats playerStats;
     private CancellationTokenSource _cardSelectionCts;
 

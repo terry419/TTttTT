@@ -79,20 +79,27 @@ public class InventoryController : MonoBehaviour
     public void Show(bool editable)
     {
         this.isEditable = editable;
-
-        // 필요한 매니저 참조 가져오기
         cardManager = ServiceLocator.Get<CardManager>();
-        var playerController = ServiceLocator.Get<PlayerController>();
-        if (playerController != null)
+
+        // CardManager는 DontDestroyOnLoad 객체이므로 씬이 바뀌어도 유지됩니다.
+        if (cardManager != null)
         {
-            playerStats = playerController.GetComponent<CharacterStats>();
+            // CardManager에 playerStats를 참조할 수 있는 public 프로퍼티가 있다고 가정합니다. (없다면 CardManager에 추가해야 함)
+            // 예: public CharacterStats PlayerStats => playerStats;
+            playerStats = cardManager.PlayerStats;
+        }
+
+        // playerStats를 여전히 찾지 못했다면 경고를 남기고 중단합니다.
+        if (playerStats == null)
+        {
+            Debug.LogError("[InventoryController] CardManager를 통해서도 CharacterStats를 찾을 수 없습니다!");
+            return;
         }
 
         mainPanel.SetActive(true);
         RefreshAllUI();
         StartCoroutine(SetupNavigationAndFocus());
     }
-
     public void Hide()
     {
         // 락인 상태 초기화 후 숨김
