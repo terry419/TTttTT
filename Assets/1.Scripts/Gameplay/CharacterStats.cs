@@ -175,7 +175,7 @@ public class CharacterStats : MonoBehaviour, IStatHolder
         if (availableStats.Count == 0) return;
         for (int i = 0; i < points; i++)
         {
-            StatType targetStat = availableStats[Random.Range(0, availableStats.Count)];
+            StatType targetStat = availableStats[UnityEngine.Random.Range(0, availableStats.Count)];
             float weight = GetWeightForStat(targetStat);
             AddModifier(targetStat, new StatModifier(weight, StatSources.Allocated));
         }

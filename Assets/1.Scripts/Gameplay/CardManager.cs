@@ -63,7 +63,7 @@ public class CardManager : MonoBehaviour
         {
             if (equippedCards.Count > 0)
             {
-                int randomIndex = Random.Range(0, equippedCards.Count);
+                int randomIndex = UnityEngine.Random.Range(0, equippedCards.Count);
                 CardInstance cardToRemove = equippedCards[randomIndex];
                 Debug.Log($"[CardManager] 카드 슬롯이 가득 찼습니다. 장착된 카드 '{cardToRemove.CardData.basicInfo.cardName}'(을)를 제거합니다.");
                 Unequip(cardToRemove);
@@ -144,7 +144,7 @@ public class CardManager : MonoBehaviour
         ownedCards.Remove(materialCard);
 
         // 2. 보상 카드와 재료 카드 중 하나를 무작위로 선택
-        var baseSO = (Random.Range(0, 2) == 0) ? rewardCardData : materialCard.CardData;
+        var baseSO = (UnityEngine.Random.Range(0, 2) == 0) ? rewardCardData : materialCard.CardData;
         Debug.Log($"[CardManager] 합성 베이스 카드로 '{baseSO.basicInfo.cardName}'가 선택되었습니다.");
 
         // 3. 강화된 새 카드 생성
@@ -219,12 +219,12 @@ public class CardManager : MonoBehaviour
         if (selectableCards.Count == 0)
         {
             // 가중치가 모두 0이면, 그냥 장착된 카드 중 하나를 무작위로 선택합니다.
-            activeCard = equippedCards[Random.Range(0, equippedCards.Count)];
+            activeCard = equippedCards[UnityEngine.Random.Range(0, equippedCards.Count)];
         }
         else
         {
             float totalWeight = selectableCards.Sum(c => c.CardData.selectionWeight);
-            float randomValue = Random.Range(0f, totalWeight);
+            float randomValue = UnityEngine.Random.Range(0f, totalWeight);
             float currentWeight = 0f;
 
             foreach (var card in selectableCards)

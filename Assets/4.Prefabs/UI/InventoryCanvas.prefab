@@ -6322,6 +6322,7 @@ GameObject:
   - component: {fileID: 5570965056889534049}
   - component: {fileID: 3104274728738632838}
   - component: {fileID: 1424555842703854117}
+  - component: {fileID: 4437357760677859716}
   m_Layer: 5
   m_Name: InventoryCanvas
   m_TagString: Untagged
@@ -6431,12 +6432,6 @@ MonoBehaviour:
   - {fileID: 6069827881514183081}
   - {fileID: 7351109176335999178}
   - {fileID: 4501148920074387080}
-  equippedEmptyVisuals:
-  - {fileID: 587549606065078891}
-  - {fileID: 6305137925384595826}
-  - {fileID: 9017678711568888144}
-  - {fileID: 6794251653622410346}
-  - {fileID: 1408318815189673081}
   equippedEmptySlotButtons:
   - {fileID: 544142691013084286}
   - {fileID: 257052462057778115}
@@ -6446,9 +6441,6 @@ MonoBehaviour:
   ownedCardDisplays:
   - {fileID: 7745500382032026572}
   - {fileID: 5368570289302758283}
-  ownedEmptyVisuals:
-  - {fileID: 201486123106756901}
-  - {fileID: 4319433625411792557}
   ownedEmptySlotButtons:
   - {fileID: 2559049693245357360}
   - {fileID: 5716788797376640907}
@@ -6462,6 +6454,23 @@ MonoBehaviour:
   moveSpeedValueText: {fileID: 4697494980970253829}
   critDamageValueText: {fileID: 5969542388193207010}
   backButton: {fileID: 986807792299282887}
+--- !u!114 &4437357760677859716
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3898583526339060128}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_IgnoreReversedGraphics: 1
+  m_BlockingObjects: 0
+  m_BlockingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!1 &3955740408113311775
 GameObject:
   m_ObjectHideFlags: 0

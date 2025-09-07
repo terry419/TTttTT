@@ -70,19 +70,17 @@ public class CardRewardUIManager : MonoBehaviour
     {
         if (inventoryController != null)
         {
-            // 인벤토리를 "수정 가능(true)" 모드로 엽니다.
+            inventoryController.gameObject.SetActive(true);
+
             inventoryController.Show(true);
-            // 자신의 카드 보상 UI는 숨깁니다.
+
             Hide();
         }
         else
         {
             Debug.LogError("[CardRewardUIManager] InventoryController 참조가 설정되지 않았습니다!");
         }
-
-
     }
-
 
     public void Initialize(List<NewCardDataSO> cardChoices)
     {
