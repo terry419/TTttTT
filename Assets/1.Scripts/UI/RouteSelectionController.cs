@@ -25,10 +25,6 @@ public class RouteSelectionController : MonoBehaviour
     [Header("포커스 대상 버튼")]
     public Button rewardPageButton;
 
-    [Header("외부 UI 컨트롤러")] // 헤더 추가
-    [SerializeField] private InventoryController inventoryController; // 인벤토리 컨트롤러 참조 추가
-
-
     // --- Unity Lifecycle Methods --- //
     void Awake()
     {
@@ -55,20 +51,6 @@ public class RouteSelectionController : MonoBehaviour
         }
         mapView.OnNodeSelected += OnNodeClicked;
         routeSelectPanel.SetActive(false); // 시작 시에는 비활성화 상태
-
-        var inventoryButton = GetComponentInChildren<Button>(true); // 이름으로 찾기보다 GetComponentInChildren 권장
-        if (inventoryButton != null && inventoryButton.name == "InventoryButton")
-        {
-            inventoryButton.onClick.AddListener(OpenInventory);
-        }
-    }
-
-    public void OpenInventory()
-    {
-        Hide();
-        inventoryController.Show(false, () => { // 수정 불가 모드, 뒤로가기 시 실행될 람다 함수 전달
-            Show(); // RouteSelectionController 자신을 다시 보여줌
-        });
     }
 
     // --- Public Methods --- //
@@ -214,18 +196,9 @@ public class RouteSelectionController : MonoBehaviour
 
         if (isRewardSelectionComplete)
         {
-            // ✨[수정] 보상 완료 시, InventoryButton으로 포커스를 우선 이동시킵니다.
-            var inventoryButton = GetComponentInChildren<Button>(true);
-            if (inventoryButton != null && inventoryButton.name == "InventoryButton" && inventoryButton.interactable)
-            {
-                targetObjectToFocus = inventoryButton.gameObject;
-                Debug.Log($"[{GetType().Name}] 포커스 대상: InventoryButton");
-            }
-            else // 인벤토리 버튼이 없다면 기존 로직대로 맵 노드에 포커스
-            {
-                targetObjectToFocus = mapView.FindLeftmostAvailableNode(ServiceLocator.Get<MapManager>().GetReachableNodes());
-                Debug.Log($"[{GetType().Name}] 포커스 대상: 맵 노드 ({(targetObjectToFocus != null ? targetObjectToFocus.name : "없음")})");
-            }
+            // 보상 선택이 끝났다면, 선택 가능한 맵 노드 중 가장 왼쪽에 있는 노드에 포커스를 줍니다.
+            targetObjectToFocus = mapView.FindLeftmostAvailableNode(ServiceLocator.Get<MapManager>().GetReachableNodes());
+            Debug.Log($"[{GetType().Name}] 포커스 대상: 맵 노드 ({(targetObjectToFocus != null ? targetObjectToFocus.name : "없음")})");
         }
         else
         {

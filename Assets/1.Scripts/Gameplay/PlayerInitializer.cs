@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -14,7 +13,7 @@ public class PlayerInitializer : MonoBehaviour
         GetComponent<SpriteRenderer>().sortingOrder = 20; // [추가] 플레이어 렌더링 순서 설정
         var playerController = GetComponent<PlayerController>();
         var gameManager = ServiceLocator.Get<GameManager>();
-        
+
         CharacterDataSO characterToLoad = gameManager.SelectedCharacter ?? ServiceLocator.Get<DataManager>().GetCharacter(CharacterIDs.Warrior);
         if (characterToLoad == null)
         {
@@ -39,7 +38,6 @@ public class PlayerInitializer : MonoBehaviour
 
         var cardManager = ServiceLocator.Get<CardManager>();
         var artifactManager = ServiceLocator.Get<ArtifactManager>();
-        var playerDataManager = ServiceLocator.Get<PlayerDataManager>();
 
         if (gameManager.isFirstRound)
         {
@@ -115,30 +113,5 @@ public class PlayerInitializer : MonoBehaviour
         {
             cardManager.StartCardSelectionLoop();
         }
-        StartCoroutine(DelayedManagerLink());
     }
-    private IEnumerator DelayedManagerLink()
-    {
-        // 다른 모든 Start 함수가 실행될 시간을 벌기 위해 한 프레임 대기
-        yield return null;
-
-        var playerDataManager = ServiceLocator.Get<PlayerDataManager>();
-        var cardManager = ServiceLocator.Get<CardManager>();
-        var playerStats = GetComponent<CharacterStats>();
-
-        if (playerDataManager != null && cardManager != null && playerStats != null)
-        {
-            playerDataManager.LinkManagers(cardManager, playerStats);
-            Debug.Log("[PlayerInitializer] PlayerDataManager 연결 및 초기 동기화 완료.");
-        }
-        else
-        {
-            Debug.LogError("[PlayerInitializer] PlayerDataManager 또는 다른 핵심 매니저를 찾지 못해 연결에 실패했습니다!");
-        }
-
-        // PlayerDataManager 연결 후 스탯 계산 및 카드 루프 시작
-        playerStats.CalculateFinalStats();
-        ServiceLocator.Get<CardManager>()?.StartCardSelectionLoop();
-    }
-
 }

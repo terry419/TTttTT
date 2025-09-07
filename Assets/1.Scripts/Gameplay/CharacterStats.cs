@@ -1,10 +1,9 @@
 // 경로: ./TTttTT/Assets/1/Scripts/Gameplay/CharacterStats.cs
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.Events;
+using System.Collections.Generic;
+using System.Linq;
 
 [RequireComponent(typeof(PlayerHealthBar))]
 public class CharacterStats : MonoBehaviour, IStatHolder
@@ -20,7 +19,6 @@ public class CharacterStats : MonoBehaviour, IStatHolder
     private PlayerHealthBar playerHealthBar;
     public float cardSelectionInterval = 10f;
     private readonly Dictionary<StatType, List<StatModifier>> statModifiers = new Dictionary<StatType, List<StatModifier>>();
-    public event Action<float, float> OnHealthChanged;
 
     // [리팩토링] 최종 스탯을 실시간으로 계산하는 프로퍼티 (올바른 StatType 사용)
     // [수정] FinalDamage -> FinalDamageBonus로 변경하여 '추가 피해량 %'임을 명확히 함
@@ -132,12 +130,7 @@ public class CharacterStats : MonoBehaviour, IStatHolder
         if (currentHealth <= 0)
         {
             currentHealth = 0;
-            OnHealthChanged?.Invoke(currentHealth, FinalHealth);
             Die();
-        }
-        else
-        {
-            OnHealthChanged?.Invoke(currentHealth, FinalHealth);
         }
     }
 
@@ -153,7 +146,6 @@ public class CharacterStats : MonoBehaviour, IStatHolder
         currentHealth += amount;
         if (currentHealth > FinalHealth) currentHealth = FinalHealth;
         playerHealthBar.UpdateHealth(currentHealth, FinalHealth);
-        OnHealthChanged?.Invoke(currentHealth, FinalHealth); 
     }
 
     public void ApplyPermanentStats(CharacterPermanentStats permanentStats)
@@ -175,7 +167,7 @@ public class CharacterStats : MonoBehaviour, IStatHolder
         if (availableStats.Count == 0) return;
         for (int i = 0; i < points; i++)
         {
-            StatType targetStat = availableStats[UnityEngine.Random.Range(0, availableStats.Count)];
+            StatType targetStat = availableStats[Random.Range(0, availableStats.Count)];
             float weight = GetWeightForStat(targetStat);
             AddModifier(targetStat, new StatModifier(weight, StatSources.Allocated));
         }
