@@ -221,4 +221,4 @@ public class CardRewardUIManager : MonoBehaviour
 
     public void Show() { gameObject.SetActive(true); StartCoroutine(SetFocusToFirstCard()); }
     public void Hide() { gameObject.SetActive(false); }
-}
+    }

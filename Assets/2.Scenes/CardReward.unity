@@ -621,11 +621,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dceb98c4090ff1945b5f05448894e0b7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  scrollRect: {fileID: 249619034}
-  contentRect: {fileID: 52318349}
-  viewportRect: {fileID: 1292774849}
-  contentSizeFitter: {fileID: 52318350}
-  gridLayoutGroup: {fileID: 52318351}
 --- !u!1 &295128184
 GameObject:
   m_ObjectHideFlags: 0
