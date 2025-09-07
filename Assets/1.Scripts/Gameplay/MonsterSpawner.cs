@@ -17,22 +17,23 @@ public class MonsterSpawner : MonoBehaviour
     [SerializeField] private int maxConcurrentSpawns = 15;
 
     private Transform playerTransform;
+    private MapBoundary mapBoundary; // [추가] 맵 경계 참조
 
-    // [개선 1] WaveState 클래스를 도입하여 코루틴과 웨이브 데이터를 함께 관리합니다.
+    // WaveState 클래스를 도입하여 코루틴과 웨이브 데이터를 함께 관리합니다.
     private class WaveState
     {
         public Wave WaveData;
         public Coroutine Runner;
     }
     private readonly List<WaveState> _runningWaveStates = new List<WaveState>();
-    private SemaphoreSlim _spawnLimiter; // [개선 3] 동시 스폰 수를 제어하기 위한 세마포
+    private SemaphoreSlim _spawnLimiter; // 동시 스폰 수를 제어하기 위한 세마포
 
     public void StartSpawning(List<Wave> waves)
     {
-        Debug.Log("[MonsterSpawner] StartSpawning called.");
+        Debug.Log("[MonsterSpawner] StartSpawning 호출됨.");
         if (_runningWaveStates.Count > 0) StopSpawning();
 
-        // [개선 3] 동시 스폰 제한을 위한 세마포 초기화
+        // 동시 스폰 제한을 위한 세마포 초기화
         _spawnLimiter = new SemaphoreSlim(maxConcurrentSpawns, maxConcurrentSpawns);
 
         StartCoroutine(SpawnRoutine(waves));
@@ -40,7 +41,7 @@ public class MonsterSpawner : MonoBehaviour
 
     public void StopSpawning()
     {
-        Debug.Log("[MonsterSpawner] StopSpawning called.");
+        Debug.Log("[MonsterSpawner] StopSpawning 호출됨.");
         // 모든 실행 중인 코루틴 중지
         foreach (var state in _runningWaveStates)
         {
@@ -56,19 +57,37 @@ public class MonsterSpawner : MonoBehaviour
     {
         Debug.Log($"[MonsterSpawner] 스폰 루틴 시작. 전달받은 웨이브 개수: {waves.Count}");
 
-        // [개선 2] playerTransform을 상위 코루틴에서 한 번만 찾습니다.
-        while (playerTransform == null)
+        // playerTransform과 mapBoundary를 상위 코루틴에서 한 번만 찾습니다.
+        while (playerTransform == null || mapBoundary == null)
         {
-            var playerController = ServiceLocator.Get<PlayerController>();
-            if (playerController != null)
+            if (playerTransform == null)
             {
-                playerTransform = playerController.transform;
-                Debug.Log($"[MonsterSpawner] 성공: PlayerController를 찾아 playerTransform에 할당했습니다.");
+                var playerController = ServiceLocator.Get<PlayerController>();
+                if (playerController != null)
+                {
+                    playerTransform = playerController.transform;
+                    Debug.Log("[MonsterSpawner] 성공: PlayerController를 찾아 playerTransform에 할당했습니다.");
+                }
             }
-            else
+
+            if (mapBoundary == null)
             {
-                yield return null;
+                mapBoundary = FindObjectOfType<MapBoundary>();
+                if (mapBoundary != null)
+                {
+                    Debug.Log("[MonsterSpawner] 성공: MapBoundary를 찾아 할당했습니다.");
+                }
             }
+            
+            if (playerTransform == null || mapBoundary == null)
+            {
+                 yield return null;
+            }
+        }
+        
+        if (mapBoundary == null)
+        {
+            Debug.LogWarning("[MonsterSpawner] MapBoundary 컴포넌트를 찾지 못했습니다. 몬스터가 맵 경계 내에서 스폰되지 않을 수 있습니다.");
         }
 
         foreach (var wave in waves)
@@ -120,7 +139,7 @@ public class MonsterSpawner : MonoBehaviour
         }
         finally
         {
-            // [개선 1] 코루틴이 끝나면(성공하든, 중간에 멈추든) 반드시 리스트에서 자기 자신을 제거합니다.
+            // 코루틴이 끝나면(성공하든, 중간에 멈추든) 반드시 리스트에서 자기 자신을 제거합니다.
             _runningWaveStates.Remove(state);
             Debug.Log($"[MonsterSpawner] '{state.WaveData.monsterData?.name ?? "Unknown"}' 웨이브 코루틴 완료. 남은 웨이브 코루틴: {_runningWaveStates.Count}개");
         }
@@ -128,7 +147,7 @@ public class MonsterSpawner : MonoBehaviour
 
     private async void SpawnMonster(MonsterDataSO monsterData, Vector3 center)
     {
-        // [개선 3] 스폰 제한 수에 도달하면 여기서 대기하여 PoolManager의 과부하를 막습니다.
+        // 스폰 제한 수에 도달하면 여기서 대기하여 PoolManager의 과부하를 막습니다.
         await _spawnLimiter.WaitAsync();
 
         try
@@ -140,9 +159,23 @@ public class MonsterSpawner : MonoBehaviour
             }
             string key = monsterData.prefabRef.AssetGUID;
 
+            // 1. 플레이어 주변에 스폰 위치를 계산합니다. (기존 로직)
             Vector2 randomDirection = Random.insideUnitCircle.normalized;
             float randomDistance = Random.Range(minSpawnRadius, maxSpawnRadius);
             Vector3 spawnPosition = center + (Vector3)(randomDirection * randomDistance);
+
+            // 2. [추가] 계산된 위치가 맵 경계를 벗어나지 않도록 위치를 보정(Clamp)합니다.
+            if (mapBoundary != null)
+            {
+                Vector2 mapSize = mapBoundary.MapSize;
+                float minX = -mapSize.x / 2;
+                float maxX = mapSize.x / 2;
+                float minY = -mapSize.y / 2;
+                float maxY = mapSize.y / 2;
+
+                spawnPosition.x = Mathf.Clamp(spawnPosition.x, minX, maxX);
+                spawnPosition.y = Mathf.Clamp(spawnPosition.y, minY, maxY);
+            }
 
             GameObject monsterInstance = await ServiceLocator.Get<PoolManager>().GetAsync(key);
             if (monsterInstance == null) return;
@@ -164,7 +197,7 @@ public class MonsterSpawner : MonoBehaviour
         }
         finally
         {
-            // [개선 3] 스폰 작업이 끝나면 제한 슬롯을 1개 반환하여 다른 대기 중인 스폰이 진행되도록 합니다.
+            // 스폰 작업이 끝나면 제한 슬롯을 1개 반환하여 다른 대기 중인 스폰이 진행되도록 합니다.
             _spawnLimiter.Release();
         }
     }

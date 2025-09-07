@@ -3629,6 +3629,7 @@ GameObject:
   - component: {fileID: 1237349106}
   - component: {fileID: 1237349109}
   - component: {fileID: 1237349110}
+  - component: {fileID: 1237349111}
   m_Layer: 0
   m_Name: _RoundSystems
   m_TagString: Untagged
@@ -3673,7 +3674,7 @@ Transform:
   m_GameObject: {fileID: 1237349105}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 304.4421, y: 1170.5261, z: 7.067377}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3718,6 +3719,20 @@ MonoBehaviour:
     m_SubObjectType: 
     m_EditorAssetChanged: 0
   missileCount: 6
+--- !u!114 &1237349111
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1237349105}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c619eb65c691d245a35225b213f923d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mapSize: {x: 384, y: 216}
+  wallThickness: 1
 --- !u!1 &1259565395
 GameObject:
   m_ObjectHideFlags: 0
@@ -4138,8 +4153,28 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3584919349513980085, guid: 5cce4f9218475d841ac798ba161e79e5, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6100308376107964443}
   m_SourcePrefab: {fileID: 100100000, guid: 5cce4f9218475d841ac798ba161e79e5, type: 3}
+--- !u!1 &6100308376107964442 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3584919349513980085, guid: 5cce4f9218475d841ac798ba161e79e5, type: 3}
+  m_PrefabInstance: {fileID: 6100308376107964441}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &6100308376107964443
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6100308376107964442}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a19db08153ab5954fb6fbdca9ac11611, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

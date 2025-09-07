@@ -1,32 +1,27 @@
-// 파일명: GameManager.cs (리팩토링 완료)
+// 파일명: GameManager.cs (수정 완료)
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
-using UnityEngine.ResourceManagement.AsyncOperations;
-using Cysharp.Threading.Tasks; 
+using Cysharp.Threading.Tasks;
 using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
-
-    public enum GameState { MainMenu, CharacterSelect, PointAllocation, Gameplay, Reward, Pause, Codex, GameOver, Shop, Rest, Event }
+    public enum GameState { MainMenu, CharacterSelect, PointAllocation, Gameplay, Reward, Pause, Codex, GameOver, Shop, Rest, Event, GameWon }
     public GameState CurrentState { get; private set; }
     public CharacterDataSO SelectedCharacter { get; set; }
     public int AllocatedPoints { get; set; }
     public bool isFirstRound = true;
 
-    // 라운드 간 플레이어 체력을 보존하기 위한 변수
     private float? lastPlayerHealth = null;
-    private bool isRunCleanupAfterGameOver = false; // <<< 이 변수를 추가합니다.
+    private bool isRunCleanupAfterGameOver = false;
 
     public event System.Action<GameState> OnGameStateChanged;
 
     private SceneTransitionManager sceneTransitionManager;
     private InputManager inputManager;
-
 
     private void Awake()
     {
@@ -37,12 +32,10 @@ public class GameManager : MonoBehaviour
             DontDestroyOnLoad(transform.root.gameObject);
             SceneManager.sceneLoaded += OnSceneLoaded;
 
-            // 보상 생성 서비스가 없다면 동적으로 생성
             if (!ServiceLocator.IsRegistered<RewardGenerationService>())
             {
                 GameObject serviceGO = new GameObject("RewardGenerationService");
                 serviceGO.AddComponent<RewardGenerationService>();
-                // DontDestroyOnLoad는 RewardGenerationService의 Awake에서 처리됩니다.
             }
         }
         else
@@ -50,6 +43,7 @@ public class GameManager : MonoBehaviour
             Destroy(transform.root.gameObject);
         }
     }
+
     private void Start()
     {
         Debug.Log($"[GameManager] Start() 호출됨. (ID: {GetInstanceID()}) - 다른 매니저 참조 시작");
@@ -70,6 +64,7 @@ public class GameManager : MonoBehaviour
             Debug.LogError("[GameManager] Start()에서 InputManager를 찾지 못했습니다!");
         }
     }
+
     private void OnDestroy()
     {
         Debug.Log($"[생명주기] GameManager (ID: {GetInstanceID()}) - OnDestroy() 호출됨.");
@@ -83,7 +78,6 @@ public class GameManager : MonoBehaviour
 
     private void OnEnable()
     {
-        Debug.Log($"[GameManager] OnEnable() 호출됨. (ID: {GetInstanceID()})");
         Debug.Log($"[생명주기] GameManager (ID: {GetInstanceID()}) - OnEnable() 호출됨.");
     }
 
@@ -109,7 +103,28 @@ public class GameManager : MonoBehaviour
         if (CurrentState == newState && CurrentState != GameState.Gameplay) return;
         Debug.Log($"[GameManager] 상태 변경: {CurrentState} -> {newState}");
 
-        // Gameplay 상태를 벗어날 때 루프 중지 및 풀 정리
+        if (newState == GameState.Reward)
+        {
+            var rewardManager = ServiceLocator.Get<RewardManager>();
+            var campaignManager = ServiceLocator.Get<CampaignManager>();
+            var mapManager = ServiceLocator.Get<MapManager>();
+            CampaignDataSO currentCampaign = campaignManager?.GetCurrentCampaign();
+
+            if (rewardManager != null && rewardManager.LastRoundWon && mapManager != null && currentCampaign != null)
+            {
+                MapNode currentNode = mapManager.CurrentNode;
+                int totalRounds = currentCampaign.rounds.Count;
+                int currentRoundIndex = currentNode.Position.y;
+
+                if (currentRoundIndex >= totalRounds - 1)
+                {
+                    Debug.Log("[GameManager] 최종 라운드 클리어! 게임 승리 상태로 전환합니다.");
+                    ChangeState(GameState.GameWon);
+                    return;
+                }
+            }
+        }
+
         if (CurrentState == GameState.Gameplay && newState != GameState.Gameplay)
         {
             var cardManager = ServiceLocator.Get<CardManager>();
@@ -124,15 +139,18 @@ public class GameManager : MonoBehaviour
         }
 
         CurrentState = newState;
-
-        if (inputManager == null)
-        {
-            Debug.LogWarning("[GameManager] InputManager가 아직 참조되지 않았습니다. 다음 프레임에 처리될 예정입니다.");
-        }
-
         OnGameStateChanged?.Invoke(newState);
 
-        if (newState == GameState.Pause)
+        if (newState == GameState.GameWon)
+        {
+            Debug.Log("[GameManager] 게임 승리! 엔딩 씬을 재생해야 하지만, 현재는 메인 메뉴로 바로 이동합니다.");
+            // 나중에 엔딩 씬이 추가되면 아래 로직을 수정하여 엔딩 씬으로 이동시키세요.
+            isFirstRound = true;
+            ResetSavedHealth();
+            ChangeState(GameState.MainMenu);
+            return;
+        }
+        else if (newState == GameState.Pause)
         {
             Time.timeScale = 0;
             return;
@@ -178,10 +196,7 @@ public class GameManager : MonoBehaviour
         Debug.Log("--- [GameManager] v9.0 프리로딩 시작 ---");
         var poolManager = ServiceLocator.Get<PoolManager>();
         var cardManager = ServiceLocator.Get<CardManager>();
-        var prefabProvider = ServiceLocator.Get<PrefabProvider>();
-        var resourceManager = ServiceLocator.Get<ResourceManager>(); // ResourceManager 참조
-
-        // ... (기존의 null 체크 로직) ...
+        var resourceManager = ServiceLocator.Get<ResourceManager>();
 
         var preloadTasks = new List<UniTask>();
         var preloadRequests = new Dictionary<string, int>();
@@ -198,17 +213,15 @@ public class GameManager : MonoBehaviour
             }
         }
 
-
-        foreach (var card in cardManager.equippedCards) // equippedCards는 이제 CardInstance 리스트입니다.
+        foreach (var card in cardManager.equippedCards)
         {
-            foreach (var moduleEntry in card.CardData.modules) // card.CardData.modules로 접근
+            foreach (var moduleEntry in card.CardData.modules)
             {
                 if (moduleEntry.moduleReference.RuntimeKeyIsValid())
                 {
                     CardEffectSO module = await resourceManager.LoadAsync<CardEffectSO>(moduleEntry.moduleReference.AssetGUID);
                     if (module is ProjectileEffectSO pModule)
                     {
-                        // card.preloadCount -> card.CardData.preloadCount로 접근
                         AddOrUpdatePreloadRequest(pModule.bulletPrefabReference, card.CardData.preloadCount);
                     }
                 }
@@ -227,7 +240,7 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator GameOverRoutine()
     {
-        isRunCleanupAfterGameOver = true; // <<< 게임오버 처리 시작을 알립니다.
+        isRunCleanupAfterGameOver = true;
 
         var poolManager = ServiceLocator.Get<PoolManager>();
         if (poolManager != null)
@@ -240,31 +253,23 @@ public class GameManager : MonoBehaviour
         {
             popupController.ShowError("GAME OVER", 3f);
         }
-        yield return new WaitForSecondsRealtime(3f); // Use real-time seconds
-        Time.timeScale = 1; // Resume game time before changing scene
+        yield return new WaitForSecondsRealtime(3f);
+        Time.timeScale = 1;
 
         var cardManager = ServiceLocator.Get<CardManager>();
         if (cardManager != null)
         {
-            cardManager.ClearAndResetDeck(); // 카드 매니저 초기화
+            cardManager.ClearAndResetDeck();
         }
-
-        // 만약 ArtifactManager도 초기화해야 한다면 비슷한 함수를 만들어 호출합니다.
-        // var artifactManager = ServiceLocator.Get<ArtifactManager>();
-        // if (artifactManager != null)
-        // {
-        //     artifactManager.ClearAndResetArtifacts(); 
-        // }
-
-        isFirstRound = true; // '첫 라운드'라는 표시도 다시 true로!
-        ResetSavedHealth(); // 저장된 체력 정보 리셋
-
+        
+        isFirstRound = true;
+        ResetSavedHealth();
         ChangeState(GameState.MainMenu);
     }
 
     private IEnumerator StartRoundAfterSceneLoad()
     {
-        isRunCleanupAfterGameOver = false; // <<< 새 라운드가 시작되면, 게임오버 후 정리 상태가 끝났음을 의미합니다.
+        isRunCleanupAfterGameOver = false;
 
         Debug.Log("--- [GameManager] StartRoundAfterSceneLoad 코루틴 시작 ---");
 
@@ -326,17 +331,11 @@ public class GameManager : MonoBehaviour
 
     #region 체력 관리 메서드
 
-    /// <summary>
-    /// 다른 씬(이벤트, 상점 등)에서 플레이어의 현재 체력을 가져옵니다.
-    /// </summary>
     public float? GetCurrentHealth()
     {
         return lastPlayerHealth;
     }
 
-    /// <summary>
-    /// 다른 씬에서 플레이어의 체력을 특정 값으로 설정합니다.
-    /// </summary>
     public void SetCurrentHealth(float health)
     {
         if (isRunCleanupAfterGameOver)
@@ -348,9 +347,6 @@ public class GameManager : MonoBehaviour
         Debug.Log($"[DEBUG-HEALTH] GameManager.SetCurrentHealth: 체력 저장 요청을 받았습니다. 저장된 체력: {lastPlayerHealth}");
     }
 
-    /// <summary>
-    /// 다른 씬에서 플레이어의 체력을 회복하거나 감소시킵니다.
-    /// </summary>
     public void ModifyHealth(float amount)
     {
         if (lastPlayerHealth.HasValue)
@@ -364,9 +360,6 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 게임 오버 또는 새 게임 시작 시, 저장된 체력 정보를 리셋합니다.
-    /// </summary>
     public void ResetSavedHealth()
     {
         lastPlayerHealth = null;
