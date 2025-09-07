@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using UnityEngine;
+using System;
 
 public class CardManager : MonoBehaviour
 {
@@ -18,6 +19,7 @@ public class CardManager : MonoBehaviour
     public CardInstance activeCard;
 
     public CharacterStats PlayerStats => playerStats;
+    public event Action OnInventoryChanged;
 
     private CharacterStats playerStats;
     private CancellationTokenSource _cardSelectionCts;
@@ -61,30 +63,28 @@ public class CardManager : MonoBehaviour
         {
             if (equippedCards.Count > 0)
             {
-                // 1. 무작위로 장착된 카드 선택
                 int randomIndex = Random.Range(0, equippedCards.Count);
                 CardInstance cardToRemove = equippedCards[randomIndex];
-
                 Debug.Log($"[CardManager] 카드 슬롯이 가득 찼습니다. 장착된 카드 '{cardToRemove.CardData.basicInfo.cardName}'(을)를 제거합니다.");
-
-                // 2. 해당 카드 장착 해제 및 소유 목록에서 제거
                 Unequip(cardToRemove);
                 ownedCards.Remove(cardToRemove);
             }
             else
             {
-                // 소유 슬롯은 가득 찼지만 장착된 카드가 없어 제거할 수 없는 경우
                 Debug.LogWarning("[CardManager] 카드 슬롯이 가득 찼지만, 장착된 카드가 없어 새 카드를 추가할 수 없습니다.");
                 return null;
             }
         }
 
-        // 새 카드 인스턴스 생성 및 추가
         CardInstance newInstance = new CardInstance(newCardData);
         ownedCards.Add(newInstance);
         Debug.Log($"[CardManager] 새 카드 인스턴스 추가: {newInstance.CardData.name} ({newInstance.InstanceId})");
+
+        OnInventoryChanged?.Invoke();
         return newInstance;
     }
+
+
 
     // [수정] 특정 위치에 카드를 장착할 수 있도록 index 파라미터 추가
     public bool Equip(CardInstance cardInstance, int index = -1)
@@ -105,7 +105,6 @@ public class CardManager : MonoBehaviour
 
         if (playerStats != null)
         {
-            // [수정] CardData의 기본 수치 대신, 강화 레벨이 적용된 CardInstance의 최종 수치를 사용
             playerStats.AddModifier(StatType.Attack, new StatModifier(cardInstance.GetFinalDamageMultiplier(), cardInstance));
             playerStats.AddModifier(StatType.AttackSpeed, new StatModifier(cardInstance.GetFinalAttackSpeedMultiplier(), cardInstance));
             playerStats.AddModifier(StatType.MoveSpeed, new StatModifier(cardInstance.GetFinalMoveSpeedMultiplier(), cardInstance));
@@ -113,6 +112,7 @@ public class CardManager : MonoBehaviour
             playerStats.AddModifier(StatType.CritRate, new StatModifier(cardInstance.GetFinalCritRateMultiplier(), cardInstance));
             playerStats.AddModifier(StatType.CritMultiplier, new StatModifier(cardInstance.GetFinalCritDamageMultiplier(), cardInstance));
         }
+        OnInventoryChanged?.Invoke();
         return true;
     }
 
@@ -336,6 +336,8 @@ public class CardManager : MonoBehaviour
         Equip(cardToMove, targetEquipIndex);
         playerStats.CalculateFinalStats();
     }
+
+
 
     private void AddCardStats(CardInstance cardInstance)
     {
