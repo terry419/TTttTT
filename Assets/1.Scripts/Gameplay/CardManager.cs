@@ -241,7 +241,6 @@ public class CardManager : MonoBehaviour
             activeCard = selectableCards.Last();
         }
 
-        // ▼▼▼ [수정] 기존 if문을 아래 블록으로 교체합니다 ▼▼▼
         if (activeCard != null)
         {
             Debug.Log($"<color=cyan>[CARD SELECT]</color> 활성 카드 선택됨: {activeCard.CardData.basicInfo.cardName} (Lv.{activeCard.EnhancementLevel + 1})");
@@ -258,5 +257,94 @@ public class CardManager : MonoBehaviour
         ownedCards.Clear();
         equippedCards.Clear();
         activeCard = null;
+    }
+
+    /// <summary>
+    /// 두 카드의 위치를 서로 교환합니다. 장착-장착, 장착-소유 교환을 모두 처리합니다.
+    /// </summary>
+    /// <param name="cardA">교환할 첫 번째 카드</param>
+    /// <param name="cardB">교환할 두 번째 카드</param>
+    public void SwapCards(CardInstance cardA, CardInstance cardB)
+    {
+        if (cardA == null || cardB == null || cardA == cardB) return;
+
+        // 각 카드의 장착 여부와 인덱스를 미리 파악합니다.
+        bool isA_Equipped = equippedCards.Contains(cardA);
+        int indexA = isA_Equipped ? equippedCards.IndexOf(cardA) : -1;
+
+        bool isB_Equipped = equippedCards.Contains(cardB);
+        int indexB = isB_Equipped ? equippedCards.IndexOf(cardB) : -1;
+
+        // --- 경우의 수에 따른 처리 ---
+
+        // 1. 장착 ↔ 장착 교환
+        if (isA_Equipped && isB_Equipped)
+        {
+            Debug.Log($"[CardManager] 장착카드 교환: '{cardA.CardData.basicInfo.cardName}' ↔ '{cardB.CardData.basicInfo.cardName}'");
+            // 두 카드의 스탯 보너스를 먼저 제거합니다.
+            playerStats.RemoveModifiersFromSource(cardA);
+            playerStats.RemoveModifiersFromSource(cardB);
+
+            // 리스트 내에서 위치를 교환합니다.
+            (equippedCards[indexA], equippedCards[indexB]) = (equippedCards[indexB], equippedCards[indexA]);
+
+            // 교체된 위치 기준으로 스탯 보너스를 다시 적용합니다.
+            // (Equip 함수는 스탯 추가 로직을 포함하므로 재사용하지 않습니다.)
+            AddCardStats(cardA);
+            AddCardStats(cardB);
+        }
+        // 2. 장착 ↔ 소유 교환
+        else if (isA_Equipped && !isB_Equipped)
+        {
+            Debug.Log($"[CardManager] 장착↔소유 교환: '{cardA.CardData.basicInfo.cardName}' ↔ '{cardB.CardData.basicInfo.cardName}'");
+            Unequip(cardA); // cardA를 장착 해제 (이제 cardA는 소유 상태)
+            Equip(cardB, indexA); // cardA가 있던 자리에 cardB를 장착
+        }
+        else if (!isA_Equipped && isB_Equipped)
+        {
+            Debug.Log($"[CardManager] 소유↔장착 교환: '{cardA.CardData.basicInfo.cardName}' ↔ '{cardB.CardData.basicInfo.cardName}'");
+            Unequip(cardB); // cardB를 장착 해제
+            Equip(cardA, indexB); // cardB가 있던 자리에 cardA를 장착
+        }
+        // 3. 소유 ↔ 소유 교환
+        // 데이터상 ownedCards 리스트의 순서를 바꾸는 것은 큰 의미가 없으므로,
+        // InventoryController에서 UI를 새로고침하는 것만으로 충분합니다. 여기서는 별도 로직이 필요 없습니다.
+
+        // 최종적으로 플레이어 스탯을 다시 계산하여 UI에 반영되도록 합니다.
+        playerStats.CalculateFinalStats();
+    }
+
+    /// <summary>
+    /// 특정 카드를 지정된 빈 장착 슬롯으로 이동시킵니다.
+    /// </summary>
+    /// <param name="cardToMove">이동시킬 카드 (주로 소유 카드)</param>
+    /// <param name="targetEquipIndex">목표로 하는 빈 장착 슬롯 인덱스</param>
+    public void MoveCardToEmptyEquipSlot(CardInstance cardToMove, int targetEquipIndex)
+    {
+        if (cardToMove == null || equippedCards.Count >= maxEquipSlots) return;
+        if (targetEquipIndex >= maxEquipSlots) return;
+
+        // 이미 장착된 카드였다면 먼저 장착 해제
+        if (equippedCards.Contains(cardToMove))
+        {
+            Unequip(cardToMove);
+        }
+
+        Debug.Log($"[CardManager] '{cardToMove.CardData.basicInfo.cardName}' 카드를 {targetEquipIndex}번 장착 슬롯으로 이동.");
+        Equip(cardToMove, targetEquipIndex);
+        playerStats.CalculateFinalStats();
+    }
+
+    private void AddCardStats(CardInstance cardInstance)
+    {
+        if (playerStats == null || cardInstance == null) return;
+
+        // CardInstance의 GetFinal- 메서드들을 사용하여 강화 레벨이 적용된 최종 수치를 가져옵니다.
+        playerStats.AddModifier(StatType.Attack, new StatModifier(cardInstance.GetFinalDamageMultiplier(), cardInstance));
+        playerStats.AddModifier(StatType.AttackSpeed, new StatModifier(cardInstance.GetFinalAttackSpeedMultiplier(), cardInstance));
+        playerStats.AddModifier(StatType.MoveSpeed, new StatModifier(cardInstance.GetFinalMoveSpeedMultiplier(), cardInstance));
+        playerStats.AddModifier(StatType.Health, new StatModifier(cardInstance.GetFinalHealthMultiplier(), cardInstance));
+        playerStats.AddModifier(StatType.CritRate, new StatModifier(cardInstance.GetFinalCritRateMultiplier(), cardInstance));
+        playerStats.AddModifier(StatType.CritMultiplier, new StatModifier(cardInstance.GetFinalCritDamageMultiplier(), cardInstance));
     }
 }

@@ -1,9 +1,10 @@
-using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using TMPro;
+using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 public class InventoryController : MonoBehaviour
 {
@@ -89,12 +90,7 @@ public class InventoryController : MonoBehaviour
 
         mainPanel.SetActive(true);
         RefreshAllUI();
-
-        // 포커스 설정 (예: 첫 번째 장착 슬롯)
-        if (equippedCardDisplays.Count > 0)
-        {
-            EventSystem.current.SetSelectedGameObject(equippedCardDisplays[0].gameObject);
-        }
+        StartCoroutine(SetupNavigationAndFocus());
     }
 
     public void Hide()
@@ -103,14 +99,91 @@ public class InventoryController : MonoBehaviour
         CancelLockIn();
         mainPanel.SetActive(false);
     }
+    private IEnumerator SetupNavigationAndFocus()
+    {
+        yield return null; // UI 요소들이 활성화되고 위치가 계산될 때까지 한 프레임 대기
+
+        SetupNavigation(); // 네비게이션 설정
+
+        // [수정] 초기 포커스를 BackButton으로 고정
+        EventSystem.current.SetSelectedGameObject(null);
+        yield return null; // 포커스 해제 후 한 프레임 더 대기하여 안정성 확보
+
+        if (backButton != null && backButton.interactable)
+        {
+            EventSystem.current.SetSelectedGameObject(backButton.gameObject);
+        }
+    }
+    private void SetupNavigation()
+    {
+        // 1. 현재 상호작용 가능한 모든 버튼 목록을 생성합니다.
+        List<Button> allButtons = new List<Button>();
+        allButtons.AddRange(equippedCardDisplays.Select((display, i) => display.gameObject.activeSelf ? display.selectButton : equippedEmptySlotButtons[i]));
+        allButtons.AddRange(ownedCardDisplays.Select((display, i) => display.gameObject.activeSelf ? display.selectButton : ownedEmptySlotButtons[i]));
+        allButtons.Add(backButton);
+
+        List<Button> interactableButtons = allButtons.Where(b => b != null && b.gameObject.activeInHierarchy && b.interactable).ToList();
+
+        // 2. 각 버튼에 대해 네비게이션을 설정합니다.
+        foreach (var button in interactableButtons)
+        {
+            Navigation nav = new Navigation { mode = Navigation.Mode.Explicit };
+
+            nav.selectOnUp = FindNextSelectable(button, Vector2.up, interactableButtons);
+            nav.selectOnDown = FindNextSelectable(button, Vector2.down, interactableButtons);
+            nav.selectOnLeft = FindNextSelectable(button, Vector2.left, interactableButtons);
+            nav.selectOnRight = FindNextSelectable(button, Vector2.right, interactableButtons);
+
+            button.navigation = nav;
+        }
+    }
+
+    private Button FindNextSelectable(Button current, Vector2 direction, List<Button> allButtons)
+    {
+        RectTransform currentRect = current.GetComponent<RectTransform>();
+        Button bestTarget = null;
+        float minDistance = float.MaxValue;
+
+        foreach (var potentialTarget in allButtons)
+        {
+            if (potentialTarget == current) continue;
+
+            RectTransform targetRect = potentialTarget.GetComponent<RectTransform>();
+            Vector2 toTargetVector = targetRect.position - currentRect.position;
+
+            // 1. 원하는 방향에 있는지 확인 (Dot Product 사용)
+            // 방향 벡터와의 내적이 양수여야 같은 방향으로 간주합니다.
+            if (Vector2.Dot(direction, toTargetVector.normalized) < 0.2f) // 0.2f는 약간의 대각선도 허용하기 위함
+            {
+                continue;
+            }
+
+            // 2. 거리 계산 (가장 가까운 대상을 찾기 위함)
+            float distance = toTargetVector.magnitude;
+            if (distance < minDistance)
+            {
+                minDistance = distance;
+                bestTarget = potentialTarget;
+            }
+        }
+        return bestTarget;
+    }
 
     private void OnBackButtonClicked()
     {
-        // TODO: Pause 씬과 CardReward 씬에서 각각 다른 동작을 하도록 연결 필요
-        // 예: UIManager.ShowPanel("PauseMenu"); 또는 cardRewardUIManager.HideInventory();
+        // 현재 게임 상태에 따라 돌아갈 UI가 달라질 수 있습니다.
+        // CardReward 상태일 경우 CardRewardUIManager를 다시 활성화합니다.
+        var gameManager = ServiceLocator.Get<GameManager>();
+        if (gameManager != null && gameManager.CurrentState == GameManager.GameState.Reward)
+        {
+            ServiceLocator.Get<CardRewardUIManager>()?.Show();
+        }
+        // TODO: 만약 게임 상태가 Pause라면, Pause UI를 다시 활성화하는 코드를 추가해야 합니다.
+        // else if (gameManager.CurrentState == GameManager.GameState.Pause) { ... }
+
+        // 자신의 인벤토리 패널은 항상 숨깁니다.
         Hide();
     }
-
     public void RefreshAllUI()
     {
         if (cardManager == null || playerStats == null) return;
@@ -181,57 +254,85 @@ public class InventoryController : MonoBehaviour
         critDamageValueText.text = $"{playerStats.FinalCritDamage:F0}%";
     }
 
-    private void OnSlotClicked(bool isEquipped, int index)
+    private void OnSlotClicked(bool isEquippedSlot, int slotIndex)
     {
         if (!isEditable) return;
 
-        if (lockedInCard == null) // 첫 번째 카드 선택
+        // 1. 클릭된 슬롯의 카드 인스턴스를 가져옵니다. (없으면 null)
+        CardInstance clickedCard = null;
+        if (isEquippedSlot)
         {
-            CardInstance cardToLock = null;
-            if (isEquipped)
-            {
-                if (index < cardManager.equippedCards.Count)
-                    cardToLock = cardManager.equippedCards[index];
-            }
-            else
-            {
-                List<CardInstance> unequipped = cardManager.ownedCards.Except(cardManager.equippedCards).ToList();
-                if (index < unequipped.Count)
-                    cardToLock = unequipped[index];
-            }
-
-            if (cardToLock != null)
-            {
-                lockedInCard = cardToLock;
-                lockedInSlotInfo = (isEquipped, index);
-                // TODO: 시각적 하이라이트 효과 적용
-                Debug.Log($"카드 락인: {lockedInCard.CardData.basicInfo.cardName}");
-            }
+            // 장착 슬롯에서 클릭된 카드 찾기
+            if (slotIndex < cardManager.equippedCards.Count)
+                clickedCard = cardManager.equippedCards[slotIndex];
         }
-        else // 두 번째 카드(또는 빈 슬롯) 선택
+        else
         {
-            // TODO: CardManager에 카드 교체 함수를 만들고 호출
-            Debug.Log($"교체 시도: {lockedInCard.CardData.basicInfo.cardName} 와 (isEquipped: {isEquipped}, index: {index}) 슬롯");
-            // cardManager.SwapCards(lockedInSlotInfo, (isEquipped, index));
+            // 소유 슬롯에서 클릭된 카드 찾기 (장착된 카드 제외)
+            var unequippedOwnedCards = cardManager.ownedCards.Except(cardManager.equippedCards).ToList();
+            if (slotIndex < unequippedOwnedCards.Count)
+                clickedCard = unequippedOwnedCards[slotIndex];
+        }
 
+
+        // 2. 락인된 카드가 없을 때 (첫 번째 클릭)
+        if (lockedInCard == null)
+        {
+            if (clickedCard != null)
+            {
+                // 클릭된 슬롯에 카드가 있으면 락인 상태로 전환
+                lockedInCard = clickedCard;
+                lockedInSlotInfo = (isEquippedSlot, slotIndex);
+                // TODO: lockedInCard에 해당하는 CardDisplay에 하이라이트 시각 효과 적용
+                Debug.Log($"[Inventory] 락인: '{lockedInCard.CardData.basicInfo.cardName}'");
+            }
+            // 빈 슬롯을 처음 클릭한 경우는 아무것도 하지 않음
+        }
+        // 3. 락인된 카드가 있을 때 (두 번째 클릭)
+        else
+        {
+            // 3-1. 같은 카드를 다시 클릭한 경우: 락인 취소
+            if (lockedInCard == clickedCard)
+            {
+                CancelLockIn();
+                return;
+            }
+
+            // 3-2. 다른 카드를 클릭한 경우: 카드 교체(Swap)
+            if (clickedCard != null)
+            {
+                cardManager.SwapCards(lockedInCard, clickedCard);
+            }
+            // 3-3. 빈 장착 슬롯을 클릭한 경우: 카드 이동(Move)
+            else if (isEquippedSlot) // clickedCard가 null이고, 장착 슬롯을 클릭했다면 빈 슬롯임
+            {
+                cardManager.MoveCardToEmptyEquipSlot(lockedInCard, slotIndex);
+            }
+            // 3-4. 빈 소유 슬롯을 클릭한 경우: 카드 장착 해제(Unequip)
+            else // isEquippedSlot이 false이고 clickedCard가 null
+            {
+                // 락인된 카드가 장착된 카드일 때만 의미가 있음
+                if (lockedInSlotInfo.isEquipped)
+                {
+                    cardManager.Unequip(lockedInCard);
+                }
+            }
+
+            // 모든 상호작용 후 상태 초기화 및 UI 새로고침
             CancelLockIn();
-            RefreshAllUI(); // 교체 후 UI 새로고침
+            RefreshAllUI();
         }
     }
-
     private void CancelLockIn()
     {
-        if (lockedInCard != null)
-        {
-            // TODO: 시각적 하이라이트 효과 해제
-            Debug.Log("락인 취소");
-        }
         lockedInCard = null;
+        // TODO: 모든 카드 UI의 하이라이트 시각 효과 제거
+        Debug.Log("[Inventory] 락인 상태 해제.");
     }
 
+    // Update 함수는 제안하신 내용과 동일하게 유지합니다.
     void Update()
     {
-        // ESC 키로 락인 취소
         if (isEditable && Input.GetKeyDown(KeyCode.Escape))
         {
             if (lockedInCard != null)
@@ -240,8 +341,10 @@ public class InventoryController : MonoBehaviour
             }
             else
             {
+                // Pause 메뉴 혹은 CardReward 씬의 이전 UI로 돌아가는 로직
                 OnBackButtonClicked();
             }
         }
     }
+
 }

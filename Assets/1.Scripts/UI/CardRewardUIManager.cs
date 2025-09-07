@@ -15,6 +15,9 @@ public class CardRewardUIManager : MonoBehaviour
     [SerializeField] private Button skipButton;
     [SerializeField] private Button mapButton;
     [SerializeField] private SynthesisPopup synthesisPopup;
+    [Header("외부 UI 컨트롤러")]
+    [SerializeField] private InventoryController inventoryController; // << [1. 추가] Inspector에서 InventoryCanvas를 연결할 변수
+
 
     private CardDisplay selectedDisplay;
     private List<CardDisplay> spawnedCardDisplays = new List<CardDisplay>();
@@ -62,6 +65,24 @@ public class CardRewardUIManager : MonoBehaviour
     {
         TransitionToMap();
     }
+
+    public void OpenInventory()
+    {
+        if (inventoryController != null)
+        {
+            // 인벤토리를 "수정 가능(true)" 모드로 엽니다.
+            inventoryController.Show(true);
+            // 자신의 카드 보상 UI는 숨깁니다.
+            Hide();
+        }
+        else
+        {
+            Debug.LogError("[CardRewardUIManager] InventoryController 참조가 설정되지 않았습니다!");
+        }
+
+
+    }
+
 
     public void Initialize(List<NewCardDataSO> cardChoices)
     {
@@ -155,7 +176,7 @@ public class CardRewardUIManager : MonoBehaviour
         {
             cardManager.SynthesizeCard(selectedDisplay.CurrentCard, materialCard);
         }
-        
+
         ServiceLocator.Get<RewardManager>()?.CompleteRewardSelection();
         TransitionToMap();
     }
@@ -200,6 +221,8 @@ public class CardRewardUIManager : MonoBehaviour
     }
     private void TransitionToMap()
     {
+        inventoryController?.Hide();
+
         ServiceLocator.Get<RouteSelectionController>()?.Show();
         Hide();
     }
@@ -213,12 +236,16 @@ public class CardRewardUIManager : MonoBehaviour
             EventSystem.current.SetSelectedGameObject(lastSelectedCardObject);
         }
         else if (spawnedCardDisplays.Count > 0)
-        { 
+        {
             lastSelectedCardObject = spawnedCardDisplays[0].gameObject;
             EventSystem.current.SetSelectedGameObject(lastSelectedCardObject);
         }
     }
 
-    public void Show() { gameObject.SetActive(true); StartCoroutine(SetFocusToFirstCard()); }
-    public void Hide() { gameObject.SetActive(false); }
+    public void Show()
+    {
+        gameObject.SetActive(true);
+        StartCoroutine(SetFocusToFirstCard());
     }
+    public void Hide() { gameObject.SetActive(false); }
+}
