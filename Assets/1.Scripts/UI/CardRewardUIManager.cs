@@ -70,18 +70,14 @@ public class CardRewardUIManager : MonoBehaviour
     {
         if (inventoryController != null)
         {
-            inventoryController.gameObject.SetActive(true);
-
-            inventoryController.Show(true);
-
-            Hide();
+            Hide(); 
+            ServiceLocator.Get<RouteSelectionController>()?.Show();
         }
         else
         {
             Debug.LogError("[CardRewardUIManager] InventoryController 참조가 설정되지 않았습니다!");
         }
     }
-
     public void Initialize(List<NewCardDataSO> cardChoices)
     {
         foreach (Transform child in cardSlotsParent) Destroy(child.gameObject);
@@ -219,7 +215,6 @@ public class CardRewardUIManager : MonoBehaviour
     }
     private void TransitionToMap()
     {
-        inventoryController?.Hide();
 
         ServiceLocator.Get<RouteSelectionController>()?.Show();
         Hide();

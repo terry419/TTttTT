@@ -40,12 +40,18 @@ public class InventoryController : MonoBehaviour
 
     private CardManager cardManager;
     private PlayerDataManager playerDataManager;
+    private CanvasGroup canvasGroup;
+    private Action onBackAction;
 
     void Awake()
     {
         mainPanel.SetActive(false);
+        canvasGroup = mainPanel.GetComponent<CanvasGroup>(); 
+        if (canvasGroup == null)
+        {
+            canvasGroup = mainPanel.AddComponent<CanvasGroup>(); 
+        }
     }
-
     private void OnEnable()
     {
         var pdm = ServiceLocator.Get<PlayerDataManager>();
@@ -86,19 +92,20 @@ public class InventoryController : MonoBehaviour
         foreach (var button in ownedEmptySlotButtons) button.onClick.RemoveAllListeners();
     }
 
-    public void Show(bool editable)
+public void Show(bool editable, Action onBack)
     {
         this.isEditable = editable;
+        this.onBackAction = onBack; // 전달받은 뒤로가기 동작을 저장
+
         cardManager = ServiceLocator.Get<CardManager>();
         playerDataManager = ServiceLocator.Get<PlayerDataManager>();
 
         if (cardManager == null || playerDataManager == null)
         {
-            Debug.LogError("[InventoryController] 핵심 매니저를 찾을 수 없습니다!");
+            Debug.LogError("[InventoryController] 필수 매니저를 찾을 수 없습니다!");
             return;
         }
 
-        // mainPanel 활성화를 StartCoroutine보다 먼저 호출해야 합니다.
         mainPanel.SetActive(true);
         RefreshAllUI();
         StartCoroutine(SetupNavigationAndFocus());
@@ -107,6 +114,8 @@ public class InventoryController : MonoBehaviour
     public void Hide()
     {
         CancelLockIn();
+        canvasGroup.interactable = false;
+        canvasGroup.blocksRaycasts = false; 
         mainPanel.SetActive(false);
     }
 
@@ -192,7 +201,7 @@ public class InventoryController : MonoBehaviour
     {
         yield return null; // UI가 완전히 그려질 때까지 한 프레임 대기
 
-        //SetupNavigation(); // 네비게이션 설정 로직 (필요시 주석 해제)
+        SetupNavigation(); // 네비게이션 설정 로직 (필요시 주석 해제)
 
         EventSystem.current.SetSelectedGameObject(null);
         yield return new WaitForEndOfFrame(); // 더 안정적인 포커스 설정을 위해 프레임 끝까지 대기
@@ -208,6 +217,7 @@ public class InventoryController : MonoBehaviour
     private void OnSlotClicked(bool isEquippedSlot, int slotIndex)
     {
         if (!isEditable) return;
+
         CardInstance clickedCard = null;
         if (isEquippedSlot)
         {
@@ -220,38 +230,40 @@ public class InventoryController : MonoBehaviour
             if (slotIndex < unequipped.Count) clickedCard = unequipped[slotIndex];
         }
 
+        // --- 첫 번째 카드 선택 (Lock-in) ---
         if (lockedInCard == null)
         {
-            if (clickedCard != null)
+            if (clickedCard != null) // 카드가 있는 슬롯을 처음 클릭했다면
             {
                 lockedInCard = clickedCard;
                 lockedInSlotInfo = (isEquippedSlot, slotIndex);
-                // TODO: 하이라이트 UI 적용
+                // TODO: 선택된 카드 UI에 하이라이트 효과 추가
+                Debug.Log($"[Inventory] Lock-in: {lockedInCard.CardData.basicInfo.cardName}");
             }
+            // 빈 슬롯을 처음 클릭한 경우는 아무것도 하지 않음
         }
+        // --- 두 번째 슬롯 선택 (교체 또는 이동) ---
         else
         {
-            if (lockedInCard == clickedCard)
+            // 1. 락인된 카드와 다른 '카드가 있는 슬롯'을 클릭한 경우 -> Swap
+            if (clickedCard != null && lockedInCard != clickedCard)
             {
-                CancelLockIn();
-                return;
-            }
-
-            if (clickedCard != null)
-            {
+                Debug.Log($"[Inventory] Swap: {lockedInCard.CardData.basicInfo.cardName} <-> {clickedCard.CardData.basicInfo.cardName}");
                 cardManager.SwapCards(lockedInCard, clickedCard);
             }
-            else if (isEquippedSlot)
+            // 2. '빈 장착 슬롯'을 클릭한 경우 -> Move
+            else if (clickedCard == null && isEquippedSlot)
             {
+                Debug.Log($"[Inventory] Move: {lockedInCard.CardData.basicInfo.cardName} -> Equipped Slot {slotIndex}");
                 cardManager.MoveCardToEmptyEquipSlot(lockedInCard, slotIndex);
             }
+            // 3. 락인된 카드와 '같은 카드'를 다시 클릭하거나, 그 외의 경우 -> Lock-in 취소
             else
             {
-                if (lockedInSlotInfo.isEquipped)
-                {
-                    cardManager.Unequip(lockedInCard);
-                }
+                Debug.Log($"[Inventory] Lock-in Canceled.");
             }
+
+            // 어떤 경우든 작업 후에는 락인을 해제합니다.
             CancelLockIn();
         }
     }
@@ -279,8 +291,40 @@ public class InventoryController : MonoBehaviour
 
     private void OnBackButtonClicked()
     {
-        // CardReward 씬에서는 CardRewardUIManager를 다시 활성화
-        ServiceLocator.Get<CardRewardUIManager>()?.Show();
         Hide();
+        onBackAction?.Invoke(); // 저장해둔 뒤로가기 동작을 실행
+    }
+
+    private void SetupNavigation()
+    {
+        // 모든 상호작용 가능한 UI 요소를 리스트에 담습니다.
+        var selectables = new List<Selectable>();
+        selectables.AddRange(equippedCardDisplays.Where(d => d.gameObject.activeSelf).Select(d => d.selectButton));
+        selectables.AddRange(equippedEmptySlotButtons.Where(b => b.gameObject.activeSelf));
+        selectables.AddRange(ownedCardDisplays.Where(d => d.gameObject.activeSelf).Select(d => d.selectButton));
+        selectables.AddRange(ownedEmptySlotButtons.Where(b => b.gameObject.activeSelf));
+
+        if (backButton.interactable)
+        {
+            selectables.Add(backButton);
+        }
+
+        if (selectables.Count <= 1) return;
+
+        for (int i = 0; i < selectables.Count; i++)
+        {
+            var currentSelectable = selectables[i];
+            Navigation nav = currentSelectable.navigation;
+            nav.mode = Navigation.Mode.Explicit;
+
+            // 간단한 좌우 순환 내비게이션 설정
+            nav.selectOnLeft = selectables[(i - 1 + selectables.Count) % selectables.Count];
+            nav.selectOnRight = selectables[(i + 1) % selectables.Count];
+
+            // TODO: 필요하다면 더 정교한 상하좌우 그리드 네비게이션을 구현할 수 있습니다.
+            // 현재는 간단한 좌우 순환으로 포커스 이탈을 막는 데 중점을 둡니다.
+
+            currentSelectable.navigation = nav;
+        }
     }
 }
