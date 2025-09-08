@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 7200811282296667083}
   - component: {fileID: 8316207956928458650}
   - component: {fileID: 5646410245154572944}
-  - component: {fileID: 7967408473692417681}
+  - component: {fileID: 2653824689693978225}
   m_Layer: 0
   m_Name: EmptySlot_Visual_1
   m_TagString: Untagged
@@ -76,7 +76,7 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &7967408473692417681
+--- !u!114 &2653824689693978225
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -629,7 +629,7 @@ GameObject:
   - component: {fileID: 4238711635438350115}
   - component: {fileID: 7214852319351436864}
   - component: {fileID: 5496954923239654141}
-  - component: {fileID: 7645887256438461056}
+  - component: {fileID: 6628747607523939474}
   m_Layer: 0
   m_Name: EmptySlot_Visual_1
   m_TagString: Untagged
@@ -694,7 +694,7 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &7645887256438461056
+--- !u!114 &6628747607523939474
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1642,7 +1642,7 @@ GameObject:
   - component: {fileID: 5756521248951888354}
   - component: {fileID: 5788813273342925727}
   - component: {fileID: 4157319728445761129}
-  - component: {fileID: 1652656464645001303}
+  - component: {fileID: 1420445410072648661}
   m_Layer: 0
   m_Name: EmptySlot_Visual_5
   m_TagString: Untagged
@@ -1707,7 +1707,7 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &1652656464645001303
+--- !u!114 &1420445410072648661
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -5165,7 +5165,6 @@ GameObject:
   - component: {fileID: 8027530540196561939}
   - component: {fileID: 5570965056889534049}
   - component: {fileID: 3104274728738632838}
-  - component: {fileID: 1424555842703854117}
   m_Layer: 5
   m_Name: InventoryCanvas
   m_TagString: Untagged
@@ -5256,56 +5255,6 @@ MonoBehaviour:
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
---- !u!114 &1424555842703854117
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3898583526339060128}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a05b55fec7657e444b0d762832fd4f24, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  mainPanel: {fileID: 7418742848480192849}
-  equippedCardDisplays:
-  - {fileID: 886689866602718914}
-  - {fileID: 3853054471897773488}
-  - {fileID: 6069827881514183081}
-  - {fileID: 7351109176335999178}
-  - {fileID: 4501148920074387080}
-  equippedEmptyVisuals:
-  - {fileID: 587549606065078891}
-  - {fileID: 6305137925384595826}
-  - {fileID: 9017678711568888144}
-  - {fileID: 6794251653622410346}
-  - {fileID: 1408318815189673081}
-  equippedEmptySlotButtons:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  ownedCardDisplays:
-  - {fileID: 7745500382032026572}
-  - {fileID: 5368570289302758283}
-  ownedEmptyVisuals:
-  - {fileID: 201486123106756901}
-  - {fileID: 4319433625411792557}
-  ownedEmptySlotButtons:
-  - {fileID: 0}
-  - {fileID: 0}
-  ownedSlotLocks:
-  - {fileID: 920525690238980139}
-  - {fileID: 8127558091470509587}
-  attackValueText: {fileID: 5101095673824628001}
-  healthValueText: {fileID: 7733669828549491040}
-  attackSpeedValueText: {fileID: 1481889581757488300}
-  critRateValueText: {fileID: 2501506173298438563}
-  moveSpeedValueText: {fileID: 4697494980970253829}
-  critDamageValueText: {fileID: 5969542388193207010}
-  backButton: {fileID: 986807792299282887}
 --- !u!1 &3955740408113311775
 GameObject:
   m_ObjectHideFlags: 0
@@ -5878,7 +5827,7 @@ GameObject:
   - component: {fileID: 3314086185340341282}
   - component: {fileID: 2185805578640828086}
   - component: {fileID: 339277251108244212}
-  - component: {fileID: 586787219072307865}
+  - component: {fileID: 8805178516628105130}
   m_Layer: 0
   m_Name: EmptySlot_Visual_2
   m_TagString: Untagged
@@ -5943,7 +5892,7 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &586787219072307865
+--- !u!114 &8805178516628105130
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -7981,7 +7930,7 @@ GameObject:
   - component: {fileID: 2634732127769769139}
   - component: {fileID: 9160300111978116355}
   - component: {fileID: 381975412297794475}
-  - component: {fileID: 2098102141516769247}
+  - component: {fileID: 496026859312296261}
   m_Layer: 0
   m_Name: EmptySlot_Visual_2
   m_TagString: Untagged
@@ -8046,7 +7995,7 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &2098102141516769247
+--- !u!114 &496026859312296261
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8486,7 +8435,7 @@ GameObject:
   - component: {fileID: 3681645401951864382}
   - component: {fileID: 3076495492432868377}
   - component: {fileID: 4481264836679547950}
-  - component: {fileID: 7018139191829640}
+  - component: {fileID: 6142602141777640312}
   m_Layer: 0
   m_Name: EmptySlot_Visual_4
   m_TagString: Untagged
@@ -8551,7 +8500,7 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &7018139191829640
+--- !u!114 &6142602141777640312
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -11280,7 +11229,7 @@ GameObject:
   - component: {fileID: 3106748438017470855}
   - component: {fileID: 3075440118588304522}
   - component: {fileID: 1491942350820122993}
-  - component: {fileID: 4728408907105467289}
+  - component: {fileID: 6664505829560701267}
   m_Layer: 0
   m_Name: EmptySlot_Visual_3
   m_TagString: Untagged
@@ -11345,7 +11294,7 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &4728408907105467289
+--- !u!114 &6664505829560701267
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}

@@ -1,15 +1,12 @@
-// SceneTransitionManager.cs - 수정된 최종본
-
+// 파일명: SceneTransitionManager.cs (리팩토링 완료)
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using System.Collections;
-using System.Collections.Generic; // Stack 사용을 위해 추가
 
 public class SceneTransitionManager : MonoBehaviour
 {
     private Image fadeOverlay;
-    private readonly Stack<string> sceneStack = new Stack<string>(); // 씬 기록을 위한 스택
 
     private void Awake()
     {
@@ -50,38 +47,13 @@ public class SceneTransitionManager : MonoBehaviour
         fadeOverlay.gameObject.SetActive(false);
     }
 
-    // --- 기존 함수 수정 ---
     public void LoadScene(string sceneName)
     {
-        Debug.Log($"[SceneTransition] Loading new scene: {sceneName}");
-        sceneStack.Clear(); // 씬을 완전히 새로 로드하므로, 스택을 비웁니다.
+        Debug.Log($"[INPUT TRACE ⑩] SceneTransitionManager.LoadScene: '{sceneName}' 씬 로드를 위한 FadeOut 코루틴 시작.");
         StopAllCoroutines();
         StartCoroutine(FadeOutAndLoad(sceneName));
     }
 
-    // --- 새 함수 추가 ---
-    public void LoadSceneAdditive(string sceneName)
-    {
-        SceneManager.LoadScene(sceneName, LoadSceneMode.Additive);
-        sceneStack.Push(sceneName);
-        Debug.Log($"[SceneTransition] Loaded '{sceneName}' additively. Stack count: {sceneStack.Count}");
-    }
-
-    public void UnloadTopScene()
-    {
-        if (sceneStack.Count > 0)
-        {
-            string sceneToUnload = sceneStack.Pop();
-            SceneManager.UnloadSceneAsync(sceneToUnload);
-            Debug.Log($"[SceneTransition] Unloaded '{sceneToUnload}'. Stack count: {sceneStack.Count}");
-        }
-        else
-        {
-            Debug.LogWarning("[SceneTransition] Scene stack is empty. Cannot go back.");
-        }
-    }
-
-    // --- 기존 코루틴 ---
     private IEnumerator FadeIn()
     {
         fadeOverlay.gameObject.SetActive(true);

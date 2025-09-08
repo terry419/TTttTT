@@ -9,13 +9,13 @@ public class CardRewardUIManager : MonoBehaviour
 {
     [SerializeField] private GameObject cardDisplayPrefab;
     [SerializeField] private Transform cardSlotsParent;
+    [SerializeField] private CanvasGroup cardRewardCanvasGroup;
     [SerializeField] private Button acquireButton;
     [SerializeField] private Button synthesizeButton;
     [SerializeField] private Button skipButton;
     [SerializeField] private Button mapButton;
     [SerializeField] private SynthesisPopup synthesisPopup;
     [Header("외부 UI 컨트롤러")]
-    [SerializeField] private InventoryController inventoryController; // << [1. 추가] Inspector에서 InventoryCanvas를 연결할 변수
 
 
     private CardDisplay selectedDisplay;
@@ -65,24 +65,6 @@ public class CardRewardUIManager : MonoBehaviour
         TransitionToMap();
     }
 
-    public void OpenInventoryScene()
-    {
-        // [로그 추가]
-        Debug.Log("[[ 1. CardRewardUIManager ]] OpenInventoryScene() 메서드 시작.");
-
-        // 1. 자신의 UI를 먼저 비활성화합니다.
-        Hide();
-
-        // 2. 게임 시간을 멈춥니다.
-        // [로그 추가]
-        Debug.Log("[[ 2. CardRewardUIManager ]] Time.timeScale을 0으로 설정합니다.");
-        Time.timeScale = 0f;
-
-        // 3. Inventory 씬을 추가로 로드합니다.
-        // [로그 추가]
-        Debug.Log("[[ 3. CardRewardUIManager ]] Inventory 씬 Additive 로드를 요청합니다.");
-        ServiceLocator.Get<SceneTransitionManager>()?.LoadSceneAdditive("Inventory");
-    }
 
     public void Initialize(List<NewCardDataSO> cardChoices)
     {
@@ -99,7 +81,6 @@ public class CardRewardUIManager : MonoBehaviour
                 cardDisplay.Setup(tempInstance);
                 cardDisplay.OnCardSelected.AddListener(HandleCardSelection);
                 spawnedCardDisplays.Add(cardDisplay);
-                cardDisplay.SetHighlight(true);
             }
         }
 
@@ -112,7 +93,6 @@ public class CardRewardUIManager : MonoBehaviour
         selectedDisplay = null;
         UpdateButtonsState();
         StartCoroutine(SetFocusToFirstCard());
-
     }
 
     private void HandleCardSelection(CardDisplay display)
@@ -229,7 +209,7 @@ public class CardRewardUIManager : MonoBehaviour
 
     private IEnumerator SetFocusToFirstCard()
     {
-        yield return null; 
+        yield return null;
         EventSystem.current.SetSelectedGameObject(null);
         if (lastSelectedCardObject != null && lastSelectedCardObject.activeInHierarchy)
         {
@@ -244,16 +224,8 @@ public class CardRewardUIManager : MonoBehaviour
 
     public void Show()
     {
-        // [로그 추가]
-        Debug.Log("[[ CardRewardUIManager ]] Show()가 호출되어 UI를 다시 활성화합니다.");
         gameObject.SetActive(true);
         StartCoroutine(SetFocusToFirstCard());
     }
-
-    public void Hide()
-    {
-        // [로그 추가]
-        Debug.Log("[[ CardRewardUIManager ]] Hide()가 호출되어 UI를 비활성화합니다.");
-        gameObject.SetActive(false);
-    }
+    public void Hide() { gameObject.SetActive(false); }
 }
