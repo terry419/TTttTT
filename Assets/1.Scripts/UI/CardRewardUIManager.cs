@@ -16,6 +16,7 @@ public class CardRewardUIManager : MonoBehaviour
     [SerializeField] private Button mapButton;
     [SerializeField] private SynthesisPopup synthesisPopup;
     [Header("외부 UI 컨트롤러")]
+    [SerializeField] private GameObject inventoryPanel; // InventoryCanvas 프리팹을 연결할 변수
 
 
     private CardDisplay selectedDisplay;
@@ -57,6 +58,10 @@ public class CardRewardUIManager : MonoBehaviour
 
     void Start()
     {
+        if (inventoryPanel != null)
+        {
+            inventoryPanel.SetActive(false);
+        }
         ServiceLocator.Get<RewardManager>()?.ProcessNextReward();
     }
 
@@ -179,6 +184,18 @@ public class CardRewardUIManager : MonoBehaviour
     {
         TransitionToMap();
     }
+    public void OpenInventory()
+    {
+        if (inventoryPanel != null)
+        {
+            Debug.Log("[CardRewardUIManager] 인벤토리 패널을 엽니다.");
+            inventoryPanel.SetActive(true);
+            // TODO: 인벤토리 패널의 초기 포커스 설정 로직 추가 필요
+            // 예: EventSystem.current.SetSelectedGameObject(inventoryPanel.GetComponentInChildren<Button>().gameObject);
+        }
+        Hide(); // CardRewardPanel 숨기기
+    }
+
 
     private void UpdateButtonsState()
     {

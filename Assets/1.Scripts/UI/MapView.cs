@@ -111,7 +111,7 @@ public class MapView : MonoBehaviour
     /// <summary>
     /// [변경됨] 모든 노드의 네비게이션을 요구사항에 맞게 설정합니다.
     /// </summary>
-    public void SetupAllNodeNavigations(Button backButton)
+    public void SetupAllNodeNavigations(Button backButton, Button inventoryButton)
     {
         foreach (var pair in nodeUiMap)
         {
@@ -132,7 +132,7 @@ public class MapView : MonoBehaviour
 
             // Up Navigation
             var upCandidates = nodeUiMap.Where(p => p.Key.Position.y == currentNodeData.Position.y + 1);
-            if (upCandidates.Any()) 
+            if (upCandidates.Any())
             {
                 var targetUp = upCandidates.OrderBy(p => Mathf.Abs(p.Value.transform.position.x - currentNodeObj.transform.position.x)).First();
                 nav.selectOnUp = targetUp.Value.GetComponent<Button>();
@@ -155,17 +155,36 @@ public class MapView : MonoBehaviour
             }
             else
             {
-                if (backButton != null && backButton.interactable)
+                if (backButton != null && backButton.gameObject.activeInHierarchy)
                 {
                     nav.selectOnLeft = backButton;
                 }
             }
 
+            // Right Navigation (수정된 로직)
             var rightCandidates = nodeUiMap.Where(p => p.Key.Position.y == currentNodeData.Position.y && p.Key.Position.x > currentNodeData.Position.x);
+
             if (rightCandidates.Any())
             {
+                // 오른쪽에 다른 노드가 있는 경우
                 var targetRight = rightCandidates.OrderBy(p => p.Key.Position.x).First();
                 nav.selectOnRight = targetRight.Value.GetComponent<Button>();
+                Debug.Log($"[네비게이션 설정] 노드 {currentNodeData.Position}의 오른쪽 타겟: 노드 {targetRight.Key.Position}");
+            }
+            else
+            {
+                // 오른쪽에 더 이상 노드가 없는 경우 (가장 오른쪽 노드)
+                Debug.Log($"[네비게이션 설정] 노드 {currentNodeData.Position}는 가장 오른쪽 노드입니다. InventoryButton으로 연결을 시도합니다.");
+                if (inventoryButton != null && inventoryButton.gameObject.activeInHierarchy)
+                {
+                    nav.selectOnRight = inventoryButton;
+                    Debug.Log($"<color=lime>[네비게이션 설정] 성공: 노드 {currentNodeData.Position}의 오른쪽 타겟을 InventoryButton으로 설정했습니다.</color>");
+                }
+                else
+                {
+                    nav.selectOnRight = null; // 연결할 버튼이 없으면 null로 설정
+                    Debug.LogWarning($"[네비게이션 설정] InventoryButton이 비활성화 상태이거나 null이어서 노드 {currentNodeData.Position}의 오른쪽 네비게이션을 설정하지 못했습니다.");
+                }
             }
 
             currentBtn.navigation = nav;
@@ -210,6 +229,20 @@ public class MapView : MonoBehaviour
         {
             return nodeUiMap[leftmostNode];
         }
+        return null;
+    }
+    public GameObject GetNodeUIObject(Vector2Int position)
+    {
+        Debug.Log($"[네비게이션 디버그] MapView: GetNodeUIObject 호출됨. 찾는 좌표: {position}");
+        // 딕셔너리에서 해당 좌표를 가진 MapNode 데이터를 찾습니다.
+        MapNode targetNodeData = nodeUiMap.Keys.FirstOrDefault(node => node.Position == position);
+        if (targetNodeData != null && nodeUiMap.TryGetValue(targetNodeData, out GameObject nodeObject))
+        {
+            Debug.Log($"<color=lime>[네비게이션 디버그] MapView: {position} 좌표의 노드 UI '{nodeObject.name}'를 찾았습니다.</color>");
+            return nodeObject;
+        }
+        // 해당 노드를 찾지 못하면 null을 반환합니다.
+        Debug.LogWarning($"[네비게이션 디버그] MapView: {position} 좌표에 해당하는 노드를 찾지 못했습니다!");
         return null;
     }
 }
