@@ -9,7 +9,6 @@ public class CardRewardUIManager : MonoBehaviour
 {
     [SerializeField] private GameObject cardDisplayPrefab;
     [SerializeField] private Transform cardSlotsParent;
-    [SerializeField] private CanvasGroup cardRewardCanvasGroup;
     [SerializeField] private Button acquireButton;
     [SerializeField] private Button synthesizeButton;
     [SerializeField] private Button skipButton;
@@ -66,23 +65,24 @@ public class CardRewardUIManager : MonoBehaviour
         TransitionToMap();
     }
 
-    public void OpenInventory()
+    public void OpenInventoryScene()
     {
-        if (inventoryController != null)
-        {
-            // 인벤토리를 "수정 가능(true)" 모드로 엽니다.
-            inventoryController.Show(true);
-            // 자신의 카드 보상 UI는 숨깁니다.
-            Hide();
-        }
-        else
-        {
-            Debug.LogError("[CardRewardUIManager] InventoryController 참조가 설정되지 않았습니다!");
-        }
+        // [로그 추가]
+        Debug.Log("[[ 1. CardRewardUIManager ]] OpenInventoryScene() 메서드 시작.");
 
+        // 1. 자신의 UI를 먼저 비활성화합니다.
+        Hide();
 
+        // 2. 게임 시간을 멈춥니다.
+        // [로그 추가]
+        Debug.Log("[[ 2. CardRewardUIManager ]] Time.timeScale을 0으로 설정합니다.");
+        Time.timeScale = 0f;
+
+        // 3. Inventory 씬을 추가로 로드합니다.
+        // [로그 추가]
+        Debug.Log("[[ 3. CardRewardUIManager ]] Inventory 씬 Additive 로드를 요청합니다.");
+        ServiceLocator.Get<SceneTransitionManager>()?.LoadSceneAdditive("Inventory");
     }
-
 
     public void Initialize(List<NewCardDataSO> cardChoices)
     {
@@ -223,8 +223,6 @@ public class CardRewardUIManager : MonoBehaviour
     }
     private void TransitionToMap()
     {
-        inventoryController?.Hide();
-
         ServiceLocator.Get<RouteSelectionController>()?.Show();
         Hide();
     }
@@ -246,8 +244,16 @@ public class CardRewardUIManager : MonoBehaviour
 
     public void Show()
     {
+        // [로그 추가]
+        Debug.Log("[[ CardRewardUIManager ]] Show()가 호출되어 UI를 다시 활성화합니다.");
         gameObject.SetActive(true);
         StartCoroutine(SetFocusToFirstCard());
     }
-    public void Hide() { gameObject.SetActive(false); }
+
+    public void Hide()
+    {
+        // [로그 추가]
+        Debug.Log("[[ CardRewardUIManager ]] Hide()가 호출되어 UI를 비활성화합니다.");
+        gameObject.SetActive(false);
+    }
 }
