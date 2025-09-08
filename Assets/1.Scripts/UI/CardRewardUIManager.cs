@@ -99,6 +99,7 @@ public class CardRewardUIManager : MonoBehaviour
                 cardDisplay.Setup(tempInstance);
                 cardDisplay.OnCardSelected.AddListener(HandleCardSelection);
                 spawnedCardDisplays.Add(cardDisplay);
+                cardDisplay.SetHighlight(true);
             }
         }
 
@@ -111,6 +112,7 @@ public class CardRewardUIManager : MonoBehaviour
         selectedDisplay = null;
         UpdateButtonsState();
         StartCoroutine(SetFocusToFirstCard());
+
     }
 
     private void HandleCardSelection(CardDisplay display)
@@ -229,7 +231,7 @@ public class CardRewardUIManager : MonoBehaviour
 
     private IEnumerator SetFocusToFirstCard()
     {
-        yield return null;
+        yield return null; 
         EventSystem.current.SetSelectedGameObject(null);
         if (lastSelectedCardObject != null && lastSelectedCardObject.activeInHierarchy)
         {

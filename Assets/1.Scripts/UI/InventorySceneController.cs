@@ -1,4 +1,4 @@
-// InventoryController.cs - 수정된 최종본
+// InventorySceneController.cs - 새로운 씬 기반 컨트롤러
 
 using System.Collections;
 using System.Collections.Generic;
@@ -8,10 +8,13 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class InventoryController : MonoBehaviour
+public class InventorySceneController : MonoBehaviour
 {
+    // 이 씬을 로드하기 전에 외부에서 설정해주어야 하는 값입니다.
+    public static bool IsEditable { get; set; } = false;
+
     [Header("UI Panels")]
-    [SerializeField] private GameObject mainPanel;
+    [SerializeField] private GameObject mainPanel; // 씬의 최상위 패널
 
     [Header("Equipped Slots")]
     [SerializeField] private List<CardDisplay> equippedCardDisplays;
@@ -35,27 +38,50 @@ public class InventoryController : MonoBehaviour
     [Header("Buttons")]
     [SerializeField] private Button backButton;
 
-    // 현재 상태 저장용 변수
+    // 상태 저장용 변수
     private CardInstance lockedInCard;
     private (bool isEquipped, int index) lockedInSlotInfo;
-    private bool isEditable;
     private CardManager cardManager;
     private CharacterStats playerStats;
 
-    void Awake()
+    void Start()
     {
-        mainPanel.SetActive(false); // 시작시 비활성화
+        // 서비스 및 데이터 로드
+        cardManager = ServiceLocator.Get<CardManager>();
+        if (cardManager != null)
+        {
+            playerStats = cardManager.PlayerStats;
+        }
+
+        if (playerStats == null)
+        {
+            Debug.LogError("[InventorySceneController] CharacterStats를 찾을 수 없습니다!");
+            // 이 경우, 씬을 바로 닫아버리는 것도 좋은 방법입니다.
+            OnBackButtonClicked();
+            return;
+        }
+
+        // 이벤트 리스너 연결
+        SetupButtonListeners();
+
+        // UI 새로고침 및 내비게이션 설정
+        RefreshAllUI();
+        StartCoroutine(SetupNavigationAndFocus());
     }
 
-    private void OnEnable()
+    private void OnDestroy()
     {
-        // 뒤로가기 버튼 이벤트 연결
+        // 씬이 언로드될 때 리스너 해제
+        RemoveButtonListeners();
+    }
+
+    private void SetupButtonListeners()
+    {
         backButton.onClick.AddListener(OnBackButtonClicked);
 
-        // 모든 슬롯 버튼에 이벤트 리스너 연결
         for (int i = 0; i < equippedCardDisplays.Count; i++)
         {
-            int index = i; // 클로저 문제 방지
+            int index = i;
             equippedCardDisplays[i].selectButton.onClick.AddListener(() => OnSlotClicked(true, index));
             equippedEmptySlotButtons[i].onClick.AddListener(() => OnSlotClicked(true, index));
         }
@@ -68,9 +94,8 @@ public class InventoryController : MonoBehaviour
         }
     }
 
-    private void OnDisable()
+    private void RemoveButtonListeners()
     {
-        // 이벤트 리스너 해제 (메모리 누수 방지)
         backButton.onClick.RemoveAllListeners();
         foreach (var display in equippedCardDisplays) display.selectButton.onClick.RemoveAllListeners();
         foreach (var button in equippedEmptySlotButtons) button.onClick.RemoveAllListeners();
@@ -78,63 +103,41 @@ public class InventoryController : MonoBehaviour
         foreach (var button in ownedEmptySlotButtons) button.onClick.RemoveAllListeners();
     }
 
-    public void Show(bool editable)
+    private void OnBackButtonClicked()
     {
-        this.isEditable = editable;
-        cardManager = ServiceLocator.Get<CardManager>();
-
-        if (cardManager != null)
-        {
-            playerStats = cardManager.PlayerStats;
-        }
-
-        if (playerStats == null)
-        {
-            Debug.LogError("[InventoryController] CardManager를 통해서 CharacterStats를 찾을 수 없습니다!");
-            return;
-        }
-
-        mainPanel.SetActive(true);
-        RefreshAllUI();
-        StartCoroutine(SetupNavigationAndFocus());
+        // 수정된 SceneTransitionManager의 뒤로가기 함수를 호출합니다.
+        ServiceLocator.Get<SceneTransitionManager>()?.UnloadTopScene();
     }
-    public void Hide()
-    {
-        CancelLockIn();
-        mainPanel.SetActive(false);
-    }
+
+    // --- 기존 InventoryController의 로직 대부분 재사용 ---
+
     private IEnumerator SetupNavigationAndFocus()
     {
         yield return null;
-
         SetupNavigation();
-
         EventSystem.current.SetSelectedGameObject(null);
         yield return null;
-
         if (backButton != null && backButton.interactable)
         {
             EventSystem.current.SetSelectedGameObject(backButton.gameObject);
         }
     }
+
     private void SetupNavigation()
     {
         List<Button> allButtons = new List<Button>();
         allButtons.AddRange(equippedCardDisplays.Select((display, i) => display.gameObject.activeSelf ? display.selectButton : equippedEmptySlotButtons[i]));
         allButtons.AddRange(ownedCardDisplays.Select((display, i) => display.gameObject.activeSelf ? display.selectButton : ownedEmptySlotButtons[i]));
         allButtons.Add(backButton);
-
         List<Button> interactableButtons = allButtons.Where(b => b != null && b.gameObject.activeInHierarchy && b.interactable).ToList();
 
         foreach (var button in interactableButtons)
         {
             Navigation nav = new Navigation { mode = Navigation.Mode.Explicit };
-
             nav.selectOnUp = FindNextSelectable(button, Vector2.up, interactableButtons);
             nav.selectOnDown = FindNextSelectable(button, Vector2.down, interactableButtons);
             nav.selectOnLeft = FindNextSelectable(button, Vector2.left, interactableButtons);
             nav.selectOnRight = FindNextSelectable(button, Vector2.right, interactableButtons);
-
             button.navigation = nav;
         }
     }
@@ -144,19 +147,12 @@ public class InventoryController : MonoBehaviour
         RectTransform currentRect = current.GetComponent<RectTransform>();
         Button bestTarget = null;
         float minDistance = float.MaxValue;
-
         foreach (var potentialTarget in allButtons)
         {
             if (potentialTarget == current) continue;
-
             RectTransform targetRect = potentialTarget.GetComponent<RectTransform>();
             Vector2 toTargetVector = targetRect.position - currentRect.position;
-
-            if (Vector2.Dot(direction, toTargetVector.normalized) < 0.2f)
-            {
-                continue;
-            }
-
+            if (Vector2.Dot(direction, toTargetVector.normalized) < 0.2f) { continue; }
             float distance = toTargetVector.magnitude;
             if (distance < minDistance)
             {
@@ -167,68 +163,44 @@ public class InventoryController : MonoBehaviour
         return bestTarget;
     }
 
-    private void OnBackButtonClicked()
-    {
-        var gameManager = ServiceLocator.Get<GameManager>();
-        if (gameManager != null && gameManager.CurrentState == GameManager.GameState.Reward)
-        {
-            ServiceLocator.Get<CardRewardUIManager>()?.Show();
-        }
-        // TODO: 현재 게임 상태가 Pause일때, Pause UI를 다시 활성화하는 코드를 추가해야 합니다.
-        // else if (gameManager.CurrentState == GameManager.GameState.Pause) { ... }
-
-        Hide();
-    }
     public void RefreshAllUI()
     {
         if (cardManager == null || playerStats == null) return;
-
         UpdateCardSlots();
         UpdateStatsUI();
     }
 
     private void UpdateCardSlots()
     {
-        // 장착 슬롯 업데이트
         for (int i = 0; i < equippedCardDisplays.Count; i++)
         {
-            if (i < cardManager.equippedCards.Count)
+            bool isSlotFilled = i < cardManager.equippedCards.Count;
+            equippedCardDisplays[i].gameObject.SetActive(isSlotFilled);
+            equippedEmptyVisuals[i].SetActive(!isSlotFilled);
+            if (isSlotFilled)
             {
-                equippedCardDisplays[i].gameObject.SetActive(true);
-                equippedEmptyVisuals[i].SetActive(false);
                 equippedCardDisplays[i].Setup(cardManager.equippedCards[i]);
-                equippedCardDisplays[i].selectButton.interactable = isEditable;
             }
-            else
-            {
-                equippedCardDisplays[i].gameObject.SetActive(false);
-                equippedEmptyVisuals[i].SetActive(true);
-                equippedEmptySlotButtons[i].interactable = isEditable;
-            }
+            equippedCardDisplays[i].selectButton.interactable = IsEditable;
+            equippedEmptySlotButtons[i].interactable = IsEditable;
         }
 
-        // 소유 슬롯 업데이트
         List<CardInstance> unequippedOwnedCards = cardManager.ownedCards.Except(cardManager.equippedCards).ToList();
         for (int i = 0; i < ownedCardDisplays.Count; i++)
         {
             bool isSlotUnlocked = i < (cardManager.maxOwnedSlots - cardManager.maxEquipSlots);
             ownedSlotLocks[i].SetActive(!isSlotUnlocked);
-
             if (isSlotUnlocked)
             {
-                if (i < unequippedOwnedCards.Count)
+                bool isSlotFilled = i < unequippedOwnedCards.Count;
+                ownedCardDisplays[i].gameObject.SetActive(isSlotFilled);
+                ownedEmptyVisuals[i].SetActive(!isSlotFilled);
+                if (isSlotFilled)
                 {
-                    ownedCardDisplays[i].gameObject.SetActive(true);
-                    ownedEmptyVisuals[i].SetActive(false);
                     ownedCardDisplays[i].Setup(unequippedOwnedCards[i]);
-                    ownedCardDisplays[i].selectButton.interactable = isEditable;
                 }
-                else
-                {
-                    ownedCardDisplays[i].gameObject.SetActive(false);
-                    ownedEmptyVisuals[i].SetActive(true);
-                    ownedEmptySlotButtons[i].interactable = isEditable;
-                }
+                ownedCardDisplays[i].selectButton.interactable = IsEditable;
+                ownedEmptySlotButtons[i].interactable = IsEditable;
             }
             else
             {
@@ -250,19 +222,17 @@ public class InventoryController : MonoBehaviour
 
     private void OnSlotClicked(bool isEquippedSlot, int slotIndex)
     {
-        if (!isEditable) return;
+        if (!IsEditable) return;
 
         CardInstance clickedCard = null;
         if (isEquippedSlot)
         {
-            if (slotIndex < cardManager.equippedCards.Count)
-                clickedCard = cardManager.equippedCards[slotIndex];
+            if (slotIndex < cardManager.equippedCards.Count) clickedCard = cardManager.equippedCards[slotIndex];
         }
         else
         {
             var unequippedOwnedCards = cardManager.ownedCards.Except(cardManager.equippedCards).ToList();
-            if (slotIndex < unequippedOwnedCards.Count)
-                clickedCard = unequippedOwnedCards[slotIndex];
+            if (slotIndex < unequippedOwnedCards.Count) clickedCard = unequippedOwnedCards[slotIndex];
         }
 
         if (lockedInCard == null)
@@ -272,7 +242,6 @@ public class InventoryController : MonoBehaviour
                 lockedInCard = clickedCard;
                 lockedInSlotInfo = (isEquippedSlot, slotIndex);
                 GetCardDisplay(isEquippedSlot, slotIndex)?.SetLockIn(true);
-                Debug.Log($"[Inventory] 락인: '{lockedInCard.CardData.basicInfo.cardName}'");
             }
         }
         else
@@ -282,27 +251,14 @@ public class InventoryController : MonoBehaviour
                 CancelLockIn();
                 return;
             }
-
-            if (clickedCard != null)
-            {
-                cardManager.SwapCards(lockedInCard, clickedCard);
-            }
-            else if (isEquippedSlot)
-            {
-                cardManager.MoveCardToEmptyEquipSlot(lockedInCard, slotIndex);
-            }
-            else
-            {
-                if (lockedInSlotInfo.isEquipped)
-                {
-                    cardManager.Unequip(lockedInCard);
-                }
-            }
-
+            if (clickedCard != null) { cardManager.SwapCards(lockedInCard, clickedCard); }
+            else if (isEquippedSlot) { cardManager.MoveCardToEmptyEquipSlot(lockedInCard, slotIndex); }
+            else { if (lockedInSlotInfo.isEquipped) { cardManager.Unequip(lockedInCard); } }
             CancelLockIn();
             RefreshAllUI();
         }
     }
+
     private void CancelLockIn()
     {
         if (lockedInCard != null)
@@ -310,36 +266,21 @@ public class InventoryController : MonoBehaviour
             GetCardDisplay(lockedInSlotInfo.isEquipped, lockedInSlotInfo.index)?.SetLockIn(false);
         }
         lockedInCard = null;
-        Debug.Log("[Inventory] 락인 취소.");
     }
 
     private CardDisplay GetCardDisplay(bool isEquipped, int index)
     {
-        if (isEquipped)
-        {
-            if (index < equippedCardDisplays.Count)
-                return equippedCardDisplays[index];
-        }
-        else
-        {
-            if (index < ownedCardDisplays.Count)
-                return ownedCardDisplays[index];
-        }
+        if (isEquipped) { if (index < equippedCardDisplays.Count) return equippedCardDisplays[index]; }
+        else { if (index < ownedCardDisplays.Count) return ownedCardDisplays[index]; }
         return null;
     }
 
     void Update()
     {
-        if (isEditable && Input.GetKeyDown(KeyCode.Escape))
+        if (IsEditable && Input.GetKeyDown(KeyCode.Escape))
         {
-            if (lockedInCard != null)
-            {
-                CancelLockIn();
-            }
-            else
-            {
-                OnBackButtonClicked();
-            }
+            if (lockedInCard != null) { CancelLockIn(); }
+            else { OnBackButtonClicked(); }
         }
     }
 }

@@ -152,7 +152,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   rewardCardCount: 4
-  ownedCardCount: 3
+  ownedCardCount: 7
 --- !u!4 &4122038
 Transform:
   m_ObjectHideFlags: 0
@@ -490,9 +490,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 650833219}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: CardRewardUIManager, Assembly-CSharp
-        m_MethodName: OpenInventory
+        m_MethodName: 
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -1637,7 +1637,7 @@ MonoBehaviour:
   skipButton: {fileID: 534470766}
   mapButton: {fileID: 2067260731}
   synthesisPopup: {fileID: 1283870954}
-  inventoryController: {fileID: 1026580960}
+  inventoryController: {fileID: 0}
 --- !u!225 &650833220
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -2030,17 +2030,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1006730460}
   m_CullTransparentMesh: 1
---- !u!114 &1026580960 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1424555842703854117, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
-  m_PrefabInstance: {fileID: 1489686837}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a05b55fec7657e444b0d762832fd4f24, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &1114104735
 GameObject:
   m_ObjectHideFlags: 0
