@@ -10,7 +10,6 @@ public class InventoryManager : MonoBehaviour
     [Header("포커스 관리")]
     [Tooltip("인벤토리가 열릴 때 처음으로 포커스될 UI 요소")]
     [SerializeField] private GameObject firstSelectedItem;
-
     private Action onInventoryClosed;
 
     void Awake()
@@ -26,9 +25,18 @@ public class InventoryManager : MonoBehaviour
     public void Show(Action onClosedCallback)
     {
         this.onInventoryClosed = onClosedCallback;
-        gameObject.SetActive(true);
 
-        // TODO: 여기에 PlayerDataManager의 데이터를 이용해 UI를 표시하는 로직을 추가해야 합니다.
+        // ▼▼▼ [추가] 콜백 등록 디버그 로그 ▼▼▼
+        if (this.onInventoryClosed != null)
+        {
+            Debug.Log($"[InventoryManager] Show 호출됨. 닫기 콜백이 성공적으로 등록되었습니다.");
+        }
+        else
+        {
+            Debug.LogWarning($"[InventoryManager] Show 호출됨. 하지만 닫기 콜백이 null입니다.");
+        }
+
+        gameObject.SetActive(true);
 
         if (firstSelectedItem != null)
         {
@@ -41,7 +49,18 @@ public class InventoryManager : MonoBehaviour
     /// </summary>
     public void Close()
     {
+        // ▼▼▼ [수정] 콜백 호출 디버그 로그 추가 ▼▼▼
+        Debug.Log($"[InventoryManager] Close 호출됨. 등록된 콜백을 실행합니다.");
         gameObject.SetActive(false);
-        onInventoryClosed?.Invoke();
+
+        if (onInventoryClosed != null)
+        {
+            Debug.Log($"[InventoryManager] onInventoryClosed.Invoke() 실행 직전.");
+            onInventoryClosed?.Invoke();
+        }
+        else
+        {
+            Debug.LogWarning($"[InventoryManager] onInventoryClosed 콜백이 null이라 실행할 수 없습니다.");
+        }
     }
 }

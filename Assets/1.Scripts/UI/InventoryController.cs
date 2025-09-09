@@ -3,17 +3,17 @@ using TMPro;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System;
+using UnityEngine.EventSystems;
 
 public class InventoryController : MonoBehaviour
 {
     [Header("UI 요소")]
     [Tooltip("카드 선택 시 고정될 커서 UI 오브젝트")]
     [SerializeField] private GameObject fixedCursor;
-
     [Header("슬롯 참조")]
     [SerializeField] private List<CardSlot> equippedSlots;
     [SerializeField] private List<CardSlot> ownedSlots;
-
     [Header("능력치 텍스트 참조")]
     [SerializeField] private TextMeshProUGUI attackText;
     [SerializeField] private TextMeshProUGUI attackSpeedText;
@@ -27,6 +27,8 @@ public class InventoryController : MonoBehaviour
     private CardSlot firstSelectedSlot = null;
     private bool isSubscribed = false;
 
+    private InventoryManager inventoryManager;
+
     void Awake()
     {
         foreach (var slot in equippedSlots.Concat(ownedSlots))
@@ -34,6 +36,15 @@ public class InventoryController : MonoBehaviour
             slot.OnSlotClicked += HandleSlotClick;
         }
         if (fixedCursor != null) fixedCursor.SetActive(false);
+    }
+
+    void Start()
+    {
+        inventoryManager = GetComponentInParent<InventoryManager>();
+        if (inventoryManager == null)
+        {
+            Debug.LogError("[InventoryController] 부모 오브젝트에서 InventoryManager를 찾을 수 없습니다!");
+        }
     }
 
     void OnEnable()
@@ -73,9 +84,10 @@ public class InventoryController : MonoBehaviour
         UpdateStatsPanel();
     }
 
+    // ▼▼▼ [수정] HandleSlotClick 메서드 전체 교체 ▼▼▼
     private void HandleSlotClick(CardSlot clickedSlot)
     {
-        Debug.Log($"-- [인벤토리 상호작용] 슬롯 클릭: {clickedSlot.gameObject.name} --");
+        Debug.Log($"-- [인벤토리 상호작용] 슬롯 클릭: {clickedSlot.gameObject.name}, 상태: {clickedSlot.currentState} --");
 
         if (clickedSlot.currentState == CardSlot.SlotState.Locked)
         {
@@ -85,58 +97,89 @@ public class InventoryController : MonoBehaviour
 
         if (firstSelectedSlot == null)
         {
-            if (clickedSlot.currentState == CardSlot.SlotState.Empty)
-            {
-                Debug.Log("[인벤토리] 빈 슬롯은 첫 번째로 선택할 수 없습니다.");
-                return;
-            }
             firstSelectedSlot = clickedSlot;
-
             if (fixedCursor != null)
             {
                 fixedCursor.SetActive(true);
                 fixedCursor.transform.position = firstSelectedSlot.transform.position;
             }
-            Debug.Log($"[인벤토리] 카드 선택됨 (Lock-in): {firstSelectedSlot.currentCard.CardData.basicInfo.cardName}");
+            string cardName = (firstSelectedSlot.currentState == CardSlot.SlotState.Empty) ? "빈 슬롯" : firstSelectedSlot.currentCard.CardData.basicInfo.cardName;
+            Debug.Log($"[인벤토리] 1차 선택(Lock-in): {cardName}");
         }
         else
         {
+            Debug.Log($"[인벤토리] 2차 선택: {clickedSlot.gameObject.name}");
             if (firstSelectedSlot == clickedSlot)
             {
                 CancelSelection();
                 return;
             }
 
-            if (clickedSlot.currentState == CardSlot.SlotState.Empty)
+            CardSlot sourceSlot = null;
+            CardSlot targetSlot = null;
+
+            if (firstSelectedSlot.currentState != CardSlot.SlotState.Empty)
             {
-                MoveToEmptySlot(clickedSlot);
+                sourceSlot = firstSelectedSlot;
+                targetSlot = clickedSlot;
+            }
+            else if (clickedSlot.currentState != CardSlot.SlotState.Empty)
+            {
+                sourceSlot = clickedSlot;
+                targetSlot = firstSelectedSlot;
             }
             else
             {
-                SwapWithFilledSlot(clickedSlot);
+                Debug.Log("[인벤토리] 빈 슬롯끼리는 상호작용할 수 없습니다. 선택을 취소합니다.");
+                CancelSelection();
+                return;
+            }
+
+            Debug.Log($"[인벤토리] Source: '{sourceSlot.gameObject.name}', Target: '{targetSlot.gameObject.name}'로 결정됨");
+
+            if (targetSlot.currentState == CardSlot.SlotState.Empty)
+            {
+                Debug.Log($"[인벤토리] Target이 비어있으므로 'MoveToEmptySlot' 호출");
+                firstSelectedSlot = sourceSlot;
+                MoveToEmptySlot(targetSlot);
+            }
+            else
+            {
+                Debug.Log($"[인벤토리] Target에 카드가 있으므로 'SwapWithFilledSlot' 호출");
+                firstSelectedSlot = sourceSlot;
+                SwapWithFilledSlot(targetSlot);
             }
 
             FinalizeSelection();
         }
     }
 
+    // ▼▼▼ [수정] MoveToEmptySlot 메서드에 로그 추가 ▼▼▼
     private void MoveToEmptySlot(CardSlot emptySlot)
     {
         CardInstance cardToMove = firstSelectedSlot.currentCard;
-        Debug.Log($"[인벤토리] 이동 시도: '{cardToMove.CardData.basicInfo.cardName}' -> 빈 슬롯 '{emptySlot.gameObject.name}'");
+        Debug.Log($"[인벤토리] 이동 시도: '{cardToMove.CardData.basicInfo.cardName}' ({firstSelectedSlot.gameObject.name}) -> 빈 슬롯 '{emptySlot.gameObject.name}'");
 
-        // 1. 원래 위치에서 카드를 데이터상으로만 제거합니다.
-        cardManager.Unequip(cardToMove);
+        bool isSourceEquipped = equippedSlots.Contains(firstSelectedSlot);
+        Debug.Log($"[인벤토리] Source는 장착 슬롯인가? {isSourceEquipped}");
 
-        // 2. 목표 위치가 장착 슬롯이라면, 해당 위치에 카드를 데이터상으로 추가합니다.
+        // 장착 슬롯에 있던 카드라면 Unequip을 먼저 호출해야 함
+        if (isSourceEquipped)
+        {
+            cardManager.Unequip(cardToMove);
+        }
+
         bool isTargetEquip = equippedSlots.Contains(emptySlot);
+        Debug.Log($"[인벤토리] Target은 장착 슬롯인가? {isTargetEquip}");
+
         if (isTargetEquip)
         {
             int targetIndex = equippedSlots.IndexOf(emptySlot);
+            Debug.Log($"[인벤토리] Target이 장착 슬롯이므로 Equip 호출 (인덱스: {targetIndex})");
             cardManager.Equip(cardToMove, targetIndex);
         }
 
-        // 3. 데이터 변경이 완료되었음을 모든 UI에 알립니다.
+        Debug.Log("[인벤토리] 데이터 변경 완료. UI 새로고침(NotifyRunDataChanged) 요청.");
         playerDataManager.NotifyRunDataChanged(RunDataChangeType.Cards);
     }
 
@@ -191,13 +234,11 @@ public class InventoryController : MonoBehaviour
     private void UpdateStatsPanel()
     {
         if (playerDataManager == null) return;
-
         var oldStats = new Dictionary<string, string>
         {
             { "공격력", attackText.text }, { "공격속도", attackSpeedText.text }, { "이동속도", moveSpeedText.text },
             { "체력", healthText.text }, { "치명타 확률", critRateText.text }, { "치명타 피해", critDamageText.text }
         };
-
         BaseStats previewStats = playerDataManager.CalculatePreviewStats();
 
         if (previewStats == null) return;
@@ -208,14 +249,12 @@ public class InventoryController : MonoBehaviour
         string newHealth = $"{playerDataManager.CurrentRunData.currentHealth:F0} / {previewStats.baseHealth:F0}";
         string newCritRate = $"{previewStats.baseCritRate:F1}%";
         string newCritDamage = $"{previewStats.baseCritDamage:F0}%";
-
         attackText.text = newAttack;
         attackSpeedText.text = newAttackSpeed;
         moveSpeedText.text = newMoveSpeed;
         healthText.text = newHealth;
         critRateText.text = newCritRate;
         critDamageText.text = newCritDamage;
-
         StringBuilder logBuilder = new StringBuilder();
         if (oldStats["공격력"] != newAttack) logBuilder.AppendLine($"공격력: {oldStats["공격력"]} -> {newAttack}");
         if (oldStats["공격속도"] != newAttackSpeed) logBuilder.AppendLine($"공격속도: {oldStats["공격속도"]} -> {newAttackSpeed}");
@@ -223,26 +262,33 @@ public class InventoryController : MonoBehaviour
         if (oldStats["체력"] != newHealth) logBuilder.AppendLine($"체력: {oldStats["체력"]} -> {newHealth}");
         if (oldStats["치명타 확률"] != newCritRate) logBuilder.AppendLine($"치명타 확률: {oldStats["치명타 확률"]} -> {newCritRate}");
         if (oldStats["치명타 피해"] != newCritDamage) logBuilder.AppendLine($"치명타 피해: {oldStats["치명타 피해"]} -> {newCritDamage}");
-
         if (logBuilder.Length > 0)
         {
             logBuilder.Insert(0, "--- [스탯 패널 업데이트] ---\n");
             Debug.Log(logBuilder.ToString());
         }
     }
+
     public void OnBackButtonPressed()
     {
         Debug.Log("[인벤토리] 뒤로가기 버튼 눌림.");
         if (firstSelectedSlot != null)
         {
-            // 선택된 카드가 있으면, 선택을 취소합니다.
+            Debug.Log("[인벤토리] 선택된 카드가 있어 선택을 취소합니다.");
             CancelSelection();
         }
         else
         {
-            // 선택된 카드가 없으면, 인벤토리를 닫습니다.
-            Debug.Log("[인벤토리] 선택된 카드가 없으므로 인벤토리를 닫습니다.");
-            gameObject.SetActive(false);
+            Debug.Log("[인벤토리] 선택된 카드가 없으므로 인벤토리를 닫습니다. InventoryManager.Close() 호출 시도.");
+            if (inventoryManager != null)
+            {
+                inventoryManager.Close();
+            }
+            else
+            {
+                Debug.LogWarning("[인벤토리] InventoryManager가 없어 gameObject를 직접 비활성화합니다. 콜백이 실행되지 않습니다.");
+                gameObject.SetActive(false);
+            }
         }
     }
 }

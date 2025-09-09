@@ -3901,6 +3901,22 @@ PrefabInstance:
       propertyPath: lockedStateObject
       value: 
       objectReference: {fileID: 1948611016}
+    - target: {fileID: 339277251108244212, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+      propertyPath: m_RaycastTarget
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 381975412297794475, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+      propertyPath: m_RaycastTarget
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 886689866602718914, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+      propertyPath: selectButton
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 918215701319812104, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+      propertyPath: m_RaycastTarget
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 986807792299282887, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
       value: 1
@@ -3928,6 +3944,18 @@ PrefabInstance:
     - target: {fileID: 986807792299282887, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
       value: UnityEngine.Object, UnityEngine
+      objectReference: {fileID: 0}
+    - target: {fileID: 1297751545708531242, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+      propertyPath: m_RaycastTarget
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1491942350820122993, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+      propertyPath: m_RaycastTarget
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2322367235221276489, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+      propertyPath: m_RaycastTarget
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2611438666674181580, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
       propertyPath: emptyStateObject
@@ -4021,9 +4049,21 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3261553790782422095, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+      propertyPath: m_RaycastTarget
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3853054471897773488, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+      propertyPath: selectButton
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 3898583526339060128, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
       propertyPath: m_Name
       value: InventoryCanvas
+      objectReference: {fileID: 0}
+    - target: {fileID: 4157319728445761129, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+      propertyPath: m_RaycastTarget
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4254306964603175929, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
       propertyPath: emptyStateObject
@@ -4033,6 +4073,14 @@ PrefabInstance:
       propertyPath: cardDisplayObject
       value: 
       objectReference: {fileID: 1948611013}
+    - target: {fileID: 4481264836679547950, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+      propertyPath: m_RaycastTarget
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4501148920074387080, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+      propertyPath: selectButton
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 4548677541087511834, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
       propertyPath: emptyStateObject
       value: 
@@ -4049,6 +4097,30 @@ PrefabInstance:
       propertyPath: cardDisplayObject
       value: 
       objectReference: {fileID: 1948611011}
+    - target: {fileID: 5364053063680835905, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+      propertyPath: m_RaycastTarget
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5368570289302758283, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+      propertyPath: selectButton
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 5496954923239654141, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+      propertyPath: m_RaycastTarget
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5646410245154572944, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+      propertyPath: m_RaycastTarget
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6069827881514183081, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+      propertyPath: selectButton
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 6556409847320970116, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+      propertyPath: m_RaycastTarget
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6868290856065343880, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
       propertyPath: emptyStateObject
       value: 
@@ -4057,6 +4129,10 @@ PrefabInstance:
       propertyPath: cardDisplayObject
       value: 
       objectReference: {fileID: 1948611015}
+    - target: {fileID: 7351109176335999178, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+      propertyPath: selectButton
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 7595087823162896184, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
       propertyPath: attackText
       value: 
@@ -4117,14 +4193,30 @@ PrefabInstance:
       propertyPath: equippedSlots.Array.data[4]
       value: 
       objectReference: {fileID: 1948611030}
+    - target: {fileID: 7745500382032026572, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+      propertyPath: selectButton
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 8214604623324334061, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
       propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8306356024268526131, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+      propertyPath: m_RaycastTarget
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8547575781420819173, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
       propertyPath: firstSelectedItem
       value: 
       objectReference: {fileID: 1948611022}
+    - target: {fileID: 8586668634622457136, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+      propertyPath: m_RaycastTarget
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8667632075298003211, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+      propertyPath: m_RaycastTarget
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 9116305945071834309, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
       propertyPath: emptyStateObject
       value: 
@@ -4133,7 +4225,21 @@ PrefabInstance:
       propertyPath: cardDisplayObject
       value: 
       objectReference: {fileID: 1948611007}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 6940899599880477734, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+    - {fileID: 6628747607523939474, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+    - {fileID: 6441814831526809428, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+    - {fileID: 496026859312296261, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+    - {fileID: 4044650940033651533, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+    - {fileID: 6664505829560701267, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+    - {fileID: 727685434721884718, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+    - {fileID: 6142602141777640312, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+    - {fileID: 5938677586894210156, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+    - {fileID: 1420445410072648661, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+    - {fileID: 531613160724373800, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+    - {fileID: 2653824689693978225, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+    - {fileID: 2782625261954701679, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
+    - {fileID: 8805178516628105130, guid: 8c281aeb56f87404180e97be89ffd057, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
