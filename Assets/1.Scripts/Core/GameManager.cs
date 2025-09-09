@@ -15,7 +15,6 @@ public class GameManager : MonoBehaviour
     public int AllocatedPoints { get; set; }
 
     private float? lastPlayerHealth = null;
-    private bool isRunCleanupAfterGameOver = false;
 
     public event System.Action<GameState> OnGameStateChanged;
 
@@ -101,16 +100,17 @@ public class GameManager : MonoBehaviour
         if (CurrentState == newState && CurrentState != GameState.Gameplay) return;
         Debug.Log($"[GameManager] 상태 변경: {CurrentState} -> {newState}");
 
+        // 제안해주신 초기화 순서 보장 로직입니다.
         if (newState == GameState.PointAllocation)
         {
+            // isFirstRound는 이제 PlayerDataManager가 관리하므로 GameManager는 신경쓰지 않아도 됩니다.
+            // 바로 새 런 데이터를 초기화하도록 요청합니다.
             var playerDataManager = ServiceLocator.Get<PlayerDataManager>();
             if (playerDataManager != null && SelectedCharacter != null)
             {
-                Debug.Log($"[GameManager] 새 런 시작. '{SelectedCharacter.characterName}' 데이터로 초기화합니다.");
                 playerDataManager.ResetRunData(SelectedCharacter);
             }
         }
-
         if (newState == GameState.Reward)
         {
             var rewardManager = ServiceLocator.Get<RewardManager>();
@@ -153,7 +153,6 @@ public class GameManager : MonoBehaviour
         {
             Debug.Log("[GameManager] 게임 승리! 엔딩 씬을 재생해야 하지만, 현재는 메인 메뉴로 바로 이동합니다.");
             // 나중에 엔딩 씬이 추가되면 아래 로직을 수정하여 엔딩 씬으로 이동시키세요.
-            ResetSavedHealth();
             ChangeState(GameState.MainMenu);
             return;
         }
@@ -204,6 +203,7 @@ public class GameManager : MonoBehaviour
         var poolManager = ServiceLocator.Get<PoolManager>();
         var playerDataManager = ServiceLocator.Get<PlayerDataManager>();
         var resourceManager = ServiceLocator.Get<ResourceManager>();
+
         var preloadTasks = new List<UniTask>();
         var preloadRequests = new Dictionary<string, int>();
 
@@ -219,16 +219,19 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        foreach (var card in playerDataManager.EquippedCards)
+        if (playerDataManager != null && playerDataManager.CurrentRunData != null)
         {
-            foreach (var moduleEntry in card.CardData.modules)
+            foreach (var card in playerDataManager.CurrentRunData.equippedCards) 
             {
-                if (moduleEntry.moduleReference.RuntimeKeyIsValid())
+                foreach (var moduleEntry in card.CardData.modules)
                 {
-                    CardEffectSO module = await resourceManager.LoadAsync<CardEffectSO>(moduleEntry.moduleReference.AssetGUID);
-                    if (module is ProjectileEffectSO pModule)
+                    if (moduleEntry.moduleReference.RuntimeKeyIsValid())
                     {
-                        AddOrUpdatePreloadRequest(pModule.bulletPrefabReference, card.CardData.preloadCount);
+                        CardEffectSO module = await resourceManager.LoadAsync<CardEffectSO>(moduleEntry.moduleReference.AssetGUID);
+                        if (module is ProjectileEffectSO pModule)
+                        {
+                            AddOrUpdatePreloadRequest(pModule.bulletPrefabReference, card.CardData.preloadCount);
+                        }
                     }
                 }
             }
@@ -246,8 +249,6 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator GameOverRoutine()
     {
-        isRunCleanupAfterGameOver = true;
-
         var poolManager = ServiceLocator.Get<PoolManager>();
         if (poolManager != null)
         {
@@ -273,8 +274,6 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator StartRoundAfterSceneLoad()
     {
-        isRunCleanupAfterGameOver = false;
-
         Debug.Log("--- [GameManager] StartRoundAfterSceneLoad 코루틴 시작 ---");
 
         var mapManager = ServiceLocator.Get<MapManager>();
@@ -335,21 +334,7 @@ public class GameManager : MonoBehaviour
 
     #region 체력 관리 메서드
 
-    public float? GetCurrentHealth()
-    {
-        return lastPlayerHealth;
-    }
 
-    public void SetCurrentHealth(float health)
-    {
-        if (isRunCleanupAfterGameOver)
-        {
-            Debug.Log($"[DEBUG-HEALTH] GameManager.SetCurrentHealth: 게임오버 후 정리 중이므로 체력({health}) 저장을 무시합니다.");
-            return;
-        }
-        lastPlayerHealth = health;
-        Debug.Log($"[DEBUG-HEALTH] GameManager.SetCurrentHealth: 체력 저장 요청을 받았습니다. 저장된 체력: {lastPlayerHealth}");
-    }
 
     public void ModifyHealth(float amount)
     {
@@ -364,10 +349,6 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public void ResetSavedHealth()
-    {
-        lastPlayerHealth = null;
-    }
 
     #endregion
 }

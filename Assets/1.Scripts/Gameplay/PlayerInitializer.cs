@@ -42,16 +42,18 @@ public class PlayerInitializer : MonoBehaviour
 
         if (playerDataManager.IsRunInitialized)
         {
+            // [수정] CardManager와 ArtifactManager가 PlayerDataManager의 빈 리스트를 먼저 참조하도록 순서 변경
+            if (cardManager != null) cardManager.LinkToNewPlayer(playerStats);
+            if (artifactManager != null) artifactManager.LinkToNewPlayer(playerStats);
+
             var progressionManager = ServiceLocator.Get<ProgressionManager>();
             CharacterPermanentStats permanentStats = progressionManager.GetPermanentStatsFor(characterToLoad.characterId);
             playerStats.ApplyPermanentStats(permanentStats);
             playerStats.ApplyAllocatedPoints(gameManager.AllocatedPoints, permanentStats);
 
-            // [v9.0 수정] 시작 카드 로직: CharacterDataSO 우선, 없으면 Initializer의 테스트 카드 사용
             List<NewCardDataSO> cardsToEquip = characterToLoad.startingCards;
             if (cardsToEquip == null || cardsToEquip.Count == 0)
             {
-                Debug.Log("[PlayerInitializer] CharacterData에 시작 카드가 없어 테스트용 시작 카드를 사용합니다.");
                 cardsToEquip = testStartingNewCards;
             }
 
@@ -62,10 +64,7 @@ public class PlayerInitializer : MonoBehaviour
                     if (cardData != null)
                     {
                         CardInstance instance = cardManager.AddCard(cardData);
-                        if (instance != null)
-                        {
-                            cardManager.Equip(instance);
-                        }
+                        if (instance != null) cardManager.Equip(instance);
                     }
                 }
             }
@@ -78,34 +77,19 @@ public class PlayerInitializer : MonoBehaviour
                 }
             }
 
+            // [추가] 모든 시작 아이템 지급이 끝났음을 PlayerDataManager에 알림
             playerDataManager.CompleteRunInitialization();
         }
         else
         {
+            // 새 게임이 아닌 경우 (예: 테스트 씬 직접 실행)
             if (cardManager != null) cardManager.LinkToNewPlayer(playerStats);
             if (artifactManager != null) artifactManager.LinkToNewPlayer(playerStats);
         }
-        /*
-        // 저장된 체력 정보가 있는지 확인하고, 없으면(첫 라운드) 최대 체력으로 설정
-        float? savedHealth = gameManager.GetCurrentHealth();
-        Debug.Log($"[DEBUG-HEALTH] PlayerInitializer: GameManager로부터 저장된 체력을 가져옵니다. 가져온 값: {(savedHealth.HasValue ? savedHealth.Value.ToString() : "NULL")}");
 
-        if (savedHealth.HasValue)
-        {
-            playerStats.currentHealth = savedHealth.Value;
-        }
-        else
-        {
-            playerStats.currentHealth = playerStats.FinalHealth;
-        }
-        Debug.Log($"[DEBUG-HEALTH] PlayerInitializer: 플레이어 체력 설정 완료: {playerStats.currentHealth}/{playerStats.FinalHealth}");
-        */
-        // 모든 카드 장착 및 스탯 계산이 끝난 후, 카드 선택 루프를 시작합니다.
-
-        cardManager.LinkToNewPlayer(playerStats);
-        artifactManager.LinkToNewPlayer(playerStats);
         playerStats.CalculateFinalStats();
-        if (cardManager != null) 
+
+        if (cardManager != null)
         {
             cardManager.StartCardSelectionLoop();
         }

@@ -137,11 +137,11 @@ public class CardRewardUIManager : MonoBehaviour
 
         var baseCardData = selectedDisplay.CurrentCard;
         var cardManager = ServiceLocator.Get<CardManager>();
-        var playerDataManager = ServiceLocator.Get<PlayerDataManager>();
-        if (cardManager == null || synthesisPopup == null || playerDataManager == null) return;
+        var playerDataManager = ServiceLocator.Get<PlayerDataManager>(); // 참조 추가
+        if (cardManager == null || synthesisPopup == null || playerDataManager?.CurrentRunData == null) return;
 
-        // 재료 카드 필터링: 등급과 속성이 같고, 자기 자신은 아닌 카드
-        List<CardInstance> materialChoices = playerDataManager.OwnedCards
+        // [핵심 수정] PlayerDataManager.CurrentRunData.ownedCards에서 재료 카드를 찾습니다.
+        List<CardInstance> materialChoices = playerDataManager.CurrentRunData.ownedCards
            .Where(card => card.CardData.basicInfo.rarity == baseCardData.basicInfo.rarity &&
                            card.CardData.basicInfo.type == baseCardData.basicInfo.type)
             .ToList();
@@ -149,11 +149,9 @@ public class CardRewardUIManager : MonoBehaviour
         if (materialChoices.Count == 0)
         {
             Debug.LogWarning("합성 재료로 사용할 수 있는 카드가 없습니다.");
-            // TODO: 사용자에게 알림을 주는 UI 로직 (예: 팝업 메시지)
             return;
         }
 
-        // 팝업 초기화 및 콜백 설정
         synthesisPopup.Initialize(baseCardData, materialChoices, HandleSynthesisConfirm, HandleSynthesisCancel);
     }
 
@@ -206,20 +204,19 @@ public class CardRewardUIManager : MonoBehaviour
         bool canSynthesize = false;
         if (canAcquire)
         {
-            var cardManager = ServiceLocator.Get<CardManager>();
             var playerDataManager = ServiceLocator.Get<PlayerDataManager>();
-            if (cardManager != null)
+            if (playerDataManager?.CurrentRunData != null)
             {
                 var baseCardData = selectedDisplay.CurrentCard;
-                canSynthesize = playerDataManager.OwnedCards.Any(card =>
-                card.CardData.basicInfo.rarity == baseCardData.basicInfo.rarity &&
+                // [핵심 수정] PlayerDataManager.CurrentRunData.ownedCards에서 합성 가능 여부를 확인합니다.
+                canSynthesize = playerDataManager.CurrentRunData.ownedCards.Any(card =>
+                    card.CardData.basicInfo.rarity == baseCardData.basicInfo.rarity &&
                     card.CardData.basicInfo.type == baseCardData.basicInfo.type);
             }
         }
-
-        synthesizeButton.gameObject.SetActive(true);
         synthesizeButton.interactable = canSynthesize;
     }
+
     private void TransitionToMap()
     {
         ServiceLocator.Get<RouteSelectionController>()?.Show();

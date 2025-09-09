@@ -1,9 +1,10 @@
 // 경로: ./TTttTT/Assets/1/Scripts/Gameplay/CharacterStats.cs
 
-using UnityEngine;
-using UnityEngine.Events;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
+using UnityEngine.Events;
 
 [RequireComponent(typeof(PlayerHealthBar))]
 public class CharacterStats : MonoBehaviour, IStatHolder
@@ -49,21 +50,42 @@ public class CharacterStats : MonoBehaviour, IStatHolder
             statModifiers[type] = new List<StatModifier>();
         }
         playerDataManager = ServiceLocator.Get<PlayerDataManager>();
+        if (playerDataManager == null)
+        {
+            Debug.LogError($"[{GetType().Name}] CRITICAL: PlayerDataManager를 찾을 수 없습니다! 게임이 정상 동작하지 않을 수 있습니다.");
+        }
     }
 
     void Start()
     {
-        if (playerDataManager != null)
-        {
-            // UI가 현재 체력으로 초기화될 수 있도록 방송을 보냅니다.
-            playerDataManager.UpdateHealth(playerDataManager.CurrentHealth);
-        }
+        // 제안해주신 '준비될 때까지 기다리는' 안전한 초기화 로직입니다.
+        StartCoroutine(InitializeWhenReady());
     }
+
+    private IEnumerator InitializeWhenReady()
+    {
+        // PlayerDataManager의 런 데이터가 준비될 때까지 안전하게 대기합니다.
+        while (playerDataManager == null || playerDataManager.CurrentRunData == null)
+        {
+            // PlayerDataManager가 아직 Awake되지 않았을 수 있으므로, 매 프레임 다시 찾아봅니다.
+            if (playerDataManager == null) playerDataManager = ServiceLocator.Get<PlayerDataManager>();
+
+            Debug.LogWarning("[CharacterStats] PlayerDataManager 또는 RunData가 아직 준비되지 않아 대기합니다...");
+            yield return null;
+        }
+
+        Debug.Log("[CharacterStats] PlayerDataManager 준비 완료. 체력 초기화를 진행합니다.");
+
+        // PlayerInitializer에서 모든 스탯 보너스(카드, 유물 등)가 적용된 후,
+        // 최종 최대 체력으로 현재 체력을 설정하고 UI에 알립니다.
+        CalculateFinalStats();
+        playerDataManager.UpdateHealth(FinalHealth, FinalHealth);
+    }
+
     void OnDestroy()
     {
-        // 체력은 TakeDamage/Heal에서 실시간으로 PlayerDataManager에 업데이트되므로,
-        // 파괴 시점에 별도로 저장할 필요가 없습니다.
-
+        // 이제 OnDestroy에서 체력을 저장할 필요가 없습니다.
+        // TakeDamage/Heal 함수에서 실시간으로 PlayerDataManager에 업데이트하기 때문입니다.
         var debugManager = ServiceLocator.Get<DebugManager>();
         if (debugManager != null)
         {
@@ -100,20 +122,14 @@ public class CharacterStats : MonoBehaviour, IStatHolder
     public void TakeDamage(float damage)
     {
         if (playerDataManager == null) return;
+        if (isInvulnerable) return;
 
-        Debug.Log($"[DAMAGE-DEBUG 4/4] TakeDamage 호출됨. 데미지: {damage}, 현재 체력: {playerDataManager.CurrentHealth}");
-        if (isInvulnerable)
+        float newHealth = playerDataManager.CurrentRunData.currentHealth - damage;
+        // 체력 변경을 PlayerDataManager에게 위임하고, 변경된 값을 UI에 방송하도록 요청합니다.
+        playerDataManager.UpdateHealth(newHealth, FinalHealth);
+
+        if (playerDataManager.CurrentRunData.currentHealth <= 0)
         {
-            Debug.Log("[DAMAGE-DEBUG] 무적 상태이므로 데미지를 받지 않습니다.");
-            return;
-        }
-
-        float newHealth = playerDataManager.CurrentHealth - damage;
-        playerDataManager.UpdateHealth(newHealth);
-
-        if (playerDataManager.CurrentHealth <= 0)
-        {
-            playerDataManager.CurrentHealth = 0;
             Die();
         }
     }
@@ -128,13 +144,9 @@ public class CharacterStats : MonoBehaviour, IStatHolder
     public void Heal(float amount)
     {
         if (playerDataManager == null) return;
-
-        float newHealth = playerDataManager.CurrentHealth + amount;
-        if (newHealth > FinalHealth)
-        {
-            newHealth = FinalHealth;
-        }
-        playerDataManager.UpdateHealth(newHealth);
+        float newHealth = playerDataManager.CurrentRunData.currentHealth + amount;
+        // 체력 변경을 PlayerDataManager에게 위임합니다.
+        playerDataManager.UpdateHealth(newHealth, FinalHealth);
     }
 
     public void ApplyPermanentStats(CharacterPermanentStats permanentStats)
@@ -170,8 +182,9 @@ public class CharacterStats : MonoBehaviour, IStatHolder
 
     public float GetCurrentHealth()
     {
-        return playerDataManager != null ? playerDataManager.CurrentHealth : 0f;
+        return playerDataManager != null ? playerDataManager.CurrentRunData.currentHealth : 0f;
     }
+
     public static BaseStats CalculatePreviewStats(BaseStats baseStats, int allocatedPoints)
     {
         BaseStats previewStats = new BaseStats();

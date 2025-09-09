@@ -80,41 +80,41 @@ public class RoundManager : MonoBehaviour
 
         var cardManager = ServiceLocator.Get<CardManager>();
         var playerDataManager = ServiceLocator.Get<PlayerDataManager>();
-        if (cardManager != null && playerDataManager != null)
+        if (cardManager != null && playerDataManager != null && playerDataManager.CurrentRunData != null)
         {
             StringBuilder cardSb = new StringBuilder();
             cardSb.AppendLine("--- 라운드 시작 카드 정보 ---");
-            cardSb.AppendLine($"소유 카드: {playerDataManager.OwnedCards.Count}장 / {cardManager.maxOwnedSlots}슬롯");
-            cardSb.AppendLine($"장착 카드: {playerDataManager.EquippedCards.Count}장 / {cardManager.maxEquipSlots}슬롯");
+            // [핵심 수정] PlayerDataManager.CurrentRunData를 통해 카드 목록 정보를 가져옵니다.
+            cardSb.AppendLine($"소유 카드: {playerDataManager.CurrentRunData.ownedCards.Count}장 / {cardManager.maxOwnedSlots}슬롯");
+            cardSb.AppendLine($"장착 카드: {playerDataManager.CurrentRunData.equippedCards.Count}장 / {cardManager.maxEquipSlots}슬롯");
             cardSb.AppendLine("--- 소유 카드 목록 ---");
 
-            if (playerDataManager.OwnedCards.Count == 0)
+            if (playerDataManager.CurrentRunData.ownedCards.Count == 0)
             {
                 cardSb.AppendLine("없음");
             }
             else
             {
-                foreach (var card in playerDataManager.OwnedCards)
+                foreach (var card in playerDataManager.CurrentRunData.ownedCards)
                 {
                     cardSb.AppendLine($"- {card.CardData.basicInfo.cardName} (Lv.{card.EnhancementLevel + 1})");
                 }
             }
 
             cardSb.AppendLine("--- 장착 카드 목록 ---");
-            if (playerDataManager.EquippedCards.Count == 0)
+            if (playerDataManager.CurrentRunData.equippedCards.Count == 0)
             {
                 cardSb.AppendLine("없음");
             }
             else
             {
-                foreach (var card in playerDataManager.EquippedCards)
+                foreach (var card in playerDataManager.CurrentRunData.equippedCards)
                 {
                     cardSb.AppendLine($"- {card.CardData.basicInfo.cardName} (Lv.{card.EnhancementLevel + 1})");
                 }
             }
             Debug.Log(cardSb.ToString());
         }
-
 
 
         // --- 플레이어 스탯 로그 (라운드 시작) ---

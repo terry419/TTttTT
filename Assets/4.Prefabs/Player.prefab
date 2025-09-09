@@ -357,7 +357,7 @@ Rigidbody2D:
   m_Interpolate: 0
   m_SleepingMode: 1
   m_CollisionDetection: 0
-  m_Constraints: 0
+  m_Constraints: 4
 --- !u!114 &3041038567765411624
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -404,7 +404,6 @@ MonoBehaviour:
     baseHealth: 0
     baseCritRate: 0
     baseCritDamage: 0
-  currentHealth: 0
   isInvulnerable: 0
   OnFinalStatsCalculated:
     m_PersistentCalls:

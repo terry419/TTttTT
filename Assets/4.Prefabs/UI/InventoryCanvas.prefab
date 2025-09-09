@@ -7816,6 +7816,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 339138717411000155}
+  - component: {fileID: 5829240259573655803}
   m_Layer: 5
   m_Name: OwnedSlot
   m_TagString: Untagged
@@ -7844,6 +7845,23 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 150}
   m_SizeDelta: {x: 650, y: 350}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &5829240259573655803
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6157604928150151334}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe311538974fdda4ea4cbb649fb1cccd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  cardImage: {fileID: 0}
+  emptyStateUI: {fileID: 0}
+  lockedStateUI: {fileID: 0}
+  highlightBorder: {fileID: 0}
+  isEquipSlot: 0
 --- !u!1 &6210805489678676112
 GameObject:
   m_ObjectHideFlags: 0

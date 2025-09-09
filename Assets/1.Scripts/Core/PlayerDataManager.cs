@@ -1,37 +1,38 @@
-// 파일 경로: Assets/1.Scripts/Core/PlayerDataManager.cs
 using UnityEngine;
+using System;
 using System.Collections.Generic;
+using System.Linq; // [추가] Sum()과 같은 Linq 함수를 사용하기 위해 필요합니다.
 
 /// <summary>
-/// 게임의 한 세션(런) 동안 유지되는 플레이어의 모든 데이터를 관리합니다.
-/// 이 데이터는 씬 전환 시에도 파괴되지 않습니다. (예: 보유 카드, 스탯 등)
+/// 게임의 한 세션(런) 동안 유지되는 플레이어의 모든 데이터를 관리하는 중앙 허브입니다.
+/// [3단계 수정] 현재 데이터 기반으로 최종 스탯을 계산하는 미리보기 기능이 추가되었습니다.
 /// </summary>
 public class PlayerDataManager : MonoBehaviour
 {
-    public static event System.Action<float, float> OnHealthChanged;
+#if UNITY_EDITOR
+    [Serializable]
+    public class PlayerDataDebugInfo
+    {
+        public string characterName;
+        public float currentHealth;
+        public int ownedCardCount;
+        public int equippedCardCount;
+        public bool isRunDataValid;
+    }
+    [SerializeField] private PlayerDataDebugInfo debugInfo = new PlayerDataDebugInfo();
+#endif
 
-    // --- 데이터 ---
-    // [1단계] 체력 및 스탯 데이터
-    public BaseStats BaseStats { get; set; }
+    public static event Action<float, float> OnHealthChanged;
 
-    private float _currentHealth;
-    public float CurrentHealth { get; set; }
-    // [2단계] 카드 데이터
-    public List<CardInstance> OwnedCards { get; private set; } = new List<CardInstance>();
-    public List<CardInstance> EquippedCards { get; private set; } = new List<CardInstance>();
+    public PlayerRunData CurrentRunData { get; private set; }
+    public bool IsRunInitialized { get; private set; } = false;
 
-    // [3단계] 유물 데이터
-    public List<ArtifactDataSO> OwnedArtifacts { get; private set; } = new List<ArtifactDataSO>();
-    public bool IsRunInitialized { get; private set; }
-
-
-    private void Awake()
+    void Awake()
     {
         if (!ServiceLocator.IsRegistered<PlayerDataManager>())
         {
             ServiceLocator.Register<PlayerDataManager>(this);
             DontDestroyOnLoad(this.gameObject);
-            Initialize(); // 초기화 함수 호출
         }
         else
         {
@@ -39,53 +40,108 @@ public class PlayerDataManager : MonoBehaviour
         }
     }
 
-    // 데이터 초기화 함수
-    private void Initialize()
+#if UNITY_EDITOR
+    private void Update()
     {
-        Debug.Log("[PlayerDataManager] 초기화 완료 및 데이터 영속성 활성화.");
+        if (CurrentRunData != null && CurrentRunData.IsValid())
+        {
+            debugInfo.characterName = CurrentRunData.characterData?.characterName ?? "N/A";
+            debugInfo.currentHealth = CurrentRunData.currentHealth;
+            debugInfo.ownedCardCount = CurrentRunData.ownedCards.Count;
+            debugInfo.equippedCardCount = CurrentRunData.equippedCards.Count;
+            debugInfo.isRunDataValid = CurrentRunData.IsValid();
+        }
     }
+#endif
 
-    /// <summary>
-    /// 새로운 런(Run)을 시작할 때 모든 데이터를 초기 상태로 리셋합니다.
-    /// </summary>
     public void ResetRunData(CharacterDataSO characterData)
     {
-        // 1. 스탯 및 체력 초기화
-        BaseStats = characterData.baseStats; // 선택한 캐릭터의 기본 스탯으로 설정
-        CurrentHealth = BaseStats.baseHealth; // 체력은 최대로
+        CurrentRunData = new PlayerRunData
+        {
+            characterData = characterData,
+            baseStats = characterData.baseStats,
+            currentHealth = characterData.baseStats.baseHealth
+        };
 
-        // 2. 카드 및 유물 초기화
-        OwnedCards.Clear();
-        EquippedCards.Clear();
-        OwnedArtifacts.Clear();
-
-        Debug.Log($"[PlayerDataManager] '{characterData.characterName}'으로 새 런 데이터 초기화 완료.");
-
+        CurrentRunData.ownedCards.Clear();
+        CurrentRunData.equippedCards.Clear();
+        CurrentRunData.ownedArtifacts.Clear();
         IsRunInitialized = true;
-        Debug.Log($"[PlayerDataManager] IsRunInitialized 플래그를 true로 설정했습니다.");
-
     }
+
     public void CompleteRunInitialization()
     {
         IsRunInitialized = false;
-        Debug.Log($"[PlayerDataManager] IsRunInitialized 플래그를 false로 설정했습니다.");
     }
-    public void UpdateHealth(float newHealth)
+
+    public void UpdateHealth(float newHealth, float maxHealth)
     {
-        // 체력 값을 갱신하고
-        CurrentHealth = newHealth;
+        if (CurrentRunData == null || !CurrentRunData.IsValid()) return;
 
-        // FinalHealth를 계산할 수 있는 CharacterStats를 찾아 이벤트를 발생시킵니다.
-        // 이 방식은 임시적이며, 다음 단계에서 더 개선될 수 있습니다.
-        var player = ServiceLocator.Get<PlayerController>();
-        if (player != null)
-        {
-            var playerStats = player.GetComponent<CharacterStats>();
-            if (playerStats != null)
-            {
-                OnHealthChanged?.Invoke(CurrentHealth, playerStats.FinalHealth);
-            }
-        }
+        if (newHealth < 0) newHealth = 0;
+        if (newHealth > maxHealth) newHealth = maxHealth;
+
+        float oldHealth = CurrentRunData.currentHealth;
+        CurrentRunData.currentHealth = newHealth;
+
+        OnHealthChanged?.Invoke(CurrentRunData.currentHealth, maxHealth);
+        if (Mathf.Approximately(oldHealth, CurrentRunData.currentHealth) == false)
+            Debug.Log($"[PlayerDataManager] 플레이어 체력 변경: {oldHealth:F1} -> {CurrentRunData.currentHealth:F1} (최대: {maxHealth:F1})");
     }
 
+    /// <summary>
+    /// [신규] 현재 장착된 아이템들을 기반으로 최종 능력치를 계산하여 반환하는 '미리보기' 함수입니다.
+    /// CharacterStats가 없는 씬에서도 스탯을 확인할 수 있게 해줍니다.
+    /// </summary>
+    /// <returns>계산된 최종 능력치가 담긴 BaseStats 객체. 계산할 수 없는 경우 null을 반환합니다.</returns>
+    public BaseStats CalculatePreviewStats()
+    {
+        if (CurrentRunData == null || !CurrentRunData.IsValid())
+        {
+            Debug.LogError("[PlayerDataManager] 런 데이터가 유효하지 않아 미리보기 스탯을 계산할 수 없습니다.");
+            return null;
+        }
+
+        // 1. 모든 스탯 타입에 대한 보너스 합계를 저장할 딕셔너리를 생성합니다.
+        var totalBonuses = new Dictionary<StatType, float>();
+        foreach (StatType type in Enum.GetValues(typeof(StatType)))
+        {
+            totalBonuses[type] = 0f;
+        }
+
+        // 2. 장착된 모든 카드를 순회하며 스탯 보너스를 누적합니다.
+        foreach (var card in CurrentRunData.equippedCards)
+        {
+            totalBonuses[StatType.Attack] += card.GetFinalDamageMultiplier();
+            totalBonuses[StatType.AttackSpeed] += card.GetFinalAttackSpeedMultiplier();
+            totalBonuses[StatType.MoveSpeed] += card.GetFinalMoveSpeedMultiplier();
+            totalBonuses[StatType.Health] += card.GetFinalHealthMultiplier();
+            totalBonuses[StatType.CritRate] += card.GetFinalCritRateMultiplier();
+            totalBonuses[StatType.CritMultiplier] += card.GetFinalCritDamageMultiplier();
+        }
+
+        // 3. 소유한 모든 유물을 순회하며 스탯 보너스를 누적합니다.
+        foreach (var artifact in CurrentRunData.ownedArtifacts)
+        {
+            totalBonuses[StatType.Attack] += artifact.attackBoostRatio;
+            totalBonuses[StatType.Health] += artifact.healthBoostRatio;
+            totalBonuses[StatType.MoveSpeed] += artifact.moveSpeedBoostRatio;
+            totalBonuses[StatType.CritRate] += artifact.critChanceBoostRatio;
+            totalBonuses[StatType.CritMultiplier] += artifact.critDamageBoostRatio;
+        }
+
+        // 4. 기본 스탯에 누적된 보너스를 적용하여 최종 스탯을 계산합니다.
+        BaseStats finalStats = new BaseStats();
+        BaseStats baseStats = CurrentRunData.baseStats;
+
+        // CharacterStats의 계산 로직과 동일한 공식을 사용합니다.
+        finalStats.baseDamage = baseStats.baseDamage + totalBonuses[StatType.Attack]; // 공격력은 합연산 보너스
+        finalStats.baseAttackSpeed = baseStats.baseAttackSpeed * (1 + totalBonuses[StatType.AttackSpeed] / 100f);
+        finalStats.baseMoveSpeed = baseStats.baseMoveSpeed * (1 + totalBonuses[StatType.MoveSpeed] / 100f);
+        finalStats.baseHealth = baseStats.baseHealth * (1 + totalBonuses[StatType.Health] / 100f);
+        finalStats.baseCritRate = baseStats.baseCritRate + totalBonuses[StatType.CritRate]; // 치명타 확률은 합연산
+        finalStats.baseCritDamage = baseStats.baseCritDamage + totalBonuses[StatType.CritMultiplier]; // 치명타 피해도 합연산
+
+        return finalStats;
+    }
 }
