@@ -3,6 +3,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq; // [추가] Sum()과 같은 Linq 함수를 사용하기 위해 필요합니다.
 
+// [개선안 #5 적용] 이벤트가 어떤 종류의 데이터 변경을 알릴지 enum으로 정의합니다.
+public enum RunDataChangeType
+{
+    Cards,      // 카드 목록(소유/장착)이 변경되었을 때
+    Artifacts,  // 유물 목록이 변경되었을 때
+    Health,     // 체력이 변경되었을 때
+    All         // 전체 데이터 리셋 등 모든 UI가 새로고침되어야 할 때
+}
+
 /// <summary>
 /// 게임의 한 세션(런) 동안 유지되는 플레이어의 모든 데이터를 관리하는 중앙 허브입니다.
 /// [3단계 수정] 현재 데이터 기반으로 최종 스탯을 계산하는 미리보기 기능이 추가되었습니다.
@@ -22,6 +31,8 @@ public class PlayerDataManager : MonoBehaviour
     [SerializeField] private PlayerDataDebugInfo debugInfo = new PlayerDataDebugInfo();
 #endif
 
+    // [개선안 #5 적용] 이벤트가 이제 RunDataChangeType 정보를 함께 전달합니다.
+    public static event Action<RunDataChangeType> OnRunDataChanged;
     public static event Action<float, float> OnHealthChanged;
 
     public PlayerRunData CurrentRunData { get; private set; }
@@ -143,5 +154,12 @@ public class PlayerDataManager : MonoBehaviour
         finalStats.baseCritDamage = baseStats.baseCritDamage + totalBonuses[StatType.CritMultiplier]; // 치명타 피해도 합연산
 
         return finalStats;
+    }
+
+    // [개선안 #1, #5 적용] 외부에서 이벤트를 호출할 때, 어떤 데이터가 변경되었는지 명시하도록 변경합니다.
+    public void NotifyRunDataChanged(RunDataChangeType changeType)
+    {
+        Debug.Log($"[PlayerDataManager] OnRunDataChanged 이벤트를 '{changeType}' 타입으로 방송합니다.");
+        OnRunDataChanged?.Invoke(changeType);
     }
 }

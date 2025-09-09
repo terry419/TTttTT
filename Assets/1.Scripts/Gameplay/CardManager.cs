@@ -4,10 +4,6 @@ using System.Linq;
 using System.Threading;
 using UnityEngine;
 
-/// <summary>
-/// 카드의 '동작' (획득, 장착, 합성, 사용)을 관리합니다.
-/// [2단계 리팩토링] 이제 카드 '데이터'(목록)는 PlayerDataManager가 소유합니다.
-/// </summary>
 public class CardManager : MonoBehaviour
 {
     [Header("슬롯 설정")]
@@ -19,8 +15,6 @@ public class CardManager : MonoBehaviour
 
     private CharacterStats playerStats;
     private CancellationTokenSource _cardSelectionCts;
-
-    // PlayerDataManager의 데이터를 사용하기 위한 참조 속성
     private PlayerDataManager _playerDataManager;
     private PlayerDataManager PlayerDataManager
     {
@@ -63,19 +57,16 @@ public class CardManager : MonoBehaviour
             {
                 int randomIndex = Random.Range(0, PlayerDataManager.CurrentRunData.equippedCards.Count);
                 CardInstance cardToRemove = PlayerDataManager.CurrentRunData.equippedCards[randomIndex];
-                Debug.Log($"[CardManager] 카드 슬롯 가득 참. '{cardToRemove.CardData.basicInfo.cardName}' 제거.");
                 Unequip(cardToRemove);
                 PlayerDataManager.CurrentRunData.ownedCards.Remove(cardToRemove);
             }
             else
             {
-                Debug.LogWarning("[CardManager] 카드 슬롯이 가득 찼지만, 장착된 카드가 없어 새 카드를 추가할 수 없습니다.");
                 return null;
             }
         }
         CardInstance newInstance = new CardInstance(newCardData);
         PlayerDataManager.CurrentRunData.ownedCards.Add(newInstance);
-        Debug.Log($"[CardManager] 새 카드 인스턴스 추가: {newInstance.CardData.name}");
         return newInstance;
     }
 
@@ -110,25 +101,64 @@ public class CardManager : MonoBehaviour
         return removed;
     }
 
+    // [복원된 함수] 카드 합성 기능
     public void SynthesizeCard(NewCardDataSO rewardCardData, CardInstance materialCard)
     {
-        if (rewardCardData == null || materialCard == null) return;
+        if (rewardCardData == null || materialCard == null)
+        {
+            Debug.LogError("[CardManager] 합성 오류: 유효하지 않은 카드 데이터입니다.");
+            return;
+        }
+
+        Debug.Log($"[CardManager] 합성 시작: 보상 카드({rewardCardData.basicInfo.cardName}), 재료 카드({materialCard.CardData.basicInfo.cardName}) / 재료 레벨: {materialCard.EnhancementLevel}");
 
         int equippedIndex = PlayerDataManager.CurrentRunData.equippedCards.IndexOf(materialCard);
         Unequip(materialCard);
         PlayerDataManager.CurrentRunData.ownedCards.Remove(materialCard);
 
         var baseSO = (Random.Range(0, 2) == 0) ? rewardCardData : materialCard.CardData;
-        CardInstance newEnhancedCard = new CardInstance(baseSO) { EnhancementLevel = materialCard.EnhancementLevel + 1 };
+
+        CardInstance newEnhancedCard = new CardInstance(baseSO)
+        {
+            EnhancementLevel = materialCard.EnhancementLevel + 1
+        };
+
+        Debug.Log($"[CardManager] 새로운 강화 카드 생성: {newEnhancedCard.CardData.basicInfo.cardName}, 강화 레벨: {newEnhancedCard.EnhancementLevel}");
 
         PlayerDataManager.CurrentRunData.ownedCards.Add(newEnhancedCard);
         Equip(newEnhancedCard, equippedIndex);
     }
 
+    public void SwapCards(CardInstance cardA, CardInstance cardB)
+    {
+        var runData = PlayerDataManager.CurrentRunData;
+        if (runData == null || cardA == null || cardB == null || cardA == cardB) return;
+
+        bool isA_Equipped = runData.equippedCards.Contains(cardA);
+        int indexA = isA_Equipped ? runData.equippedCards.IndexOf(cardA) : -1;
+        bool isB_Equipped = runData.equippedCards.Contains(cardB);
+        int indexB = isB_Equipped ? runData.equippedCards.IndexOf(cardB) : -1;
+
+        if (isA_Equipped && isB_Equipped)
+        {
+            playerStats.RemoveModifiersFromSource(cardA);
+            playerStats.RemoveModifiersFromSource(cardB);
+            (runData.equippedCards[indexA], runData.equippedCards[indexB]) = (runData.equippedCards[indexB], runData.equippedCards[indexA]);
+            AddCardStats(cardA);
+            AddCardStats(cardB);
+        }
+        else
+        {
+            Unequip(isA_Equipped ? cardA : cardB);
+            Equip(isA_Equipped ? cardB : cardA, isA_Equipped ? indexA : indexB);
+        }
+
+        if (playerStats != null) playerStats.CalculateFinalStats();
+        PlayerDataManager.NotifyRunDataChanged(RunDataChangeType.Cards);
+    }
     private void RecalculateCardStats()
     {
         if (playerStats == null) return;
-
         var allOwned = new List<CardInstance>(PlayerDataManager.CurrentRunData.ownedCards);
         foreach (var card in allOwned) playerStats.RemoveModifiersFromSource(card);
 
@@ -166,7 +196,7 @@ public class CardManager : MonoBehaviour
                 SelectActiveCard();
             }
         }
-        catch (System.OperationCanceledException) { /* 루프 정상 종료 */ }
+        catch (System.OperationCanceledException) { }
     }
 
     private void SelectActiveCard()
@@ -204,45 +234,6 @@ public class CardManager : MonoBehaviour
         activeCard = null;
     }
 
-    public void SwapCards(CardInstance cardA, CardInstance cardB)
-    {
-        if (cardA == null && cardB == null) return;
-
-        bool isA_Equipped = cardA != null && PlayerDataManager.CurrentRunData.equippedCards.Contains(cardA);
-        int indexA = isA_Equipped ? PlayerDataManager.CurrentRunData.equippedCards.IndexOf(cardA) : -1;
-        bool isB_Equipped = cardB != null && PlayerDataManager.CurrentRunData.equippedCards.Contains(cardB);
-        int indexB = isB_Equipped ? PlayerDataManager.CurrentRunData.equippedCards.IndexOf(cardB) : -1;
-
-        if (isA_Equipped && isB_Equipped)
-        {
-            playerStats.RemoveModifiersFromSource(cardA);
-            playerStats.RemoveModifiersFromSource(cardB);
-            (PlayerDataManager.CurrentRunData.equippedCards[indexA], PlayerDataManager.CurrentRunData.equippedCards[indexB]) = (PlayerDataManager.CurrentRunData.equippedCards[indexB], PlayerDataManager.CurrentRunData.equippedCards[indexA]);
-            AddCardStats(cardA);
-            AddCardStats(cardB);
-        }
-        else if (isA_Equipped && !isB_Equipped)
-        {
-            Unequip(cardA);
-            Equip(cardB, indexA);
-        }
-        else if (!isA_Equipped && isB_Equipped)
-        {
-            Unequip(cardB);
-            Equip(cardA, indexB);
-        }
-        else if (cardA != null && cardB == null) // A(소유) -> B(빈 장착칸)
-        {
-            Equip(cardA, indexB);
-        }
-        else if (cardA == null && cardB != null) // A(빈 장착칸) -> B(소유)
-        {
-            Equip(cardB, indexA);
-        }
-
-        if (playerStats != null) playerStats.CalculateFinalStats();
-    }
-
     private void AddCardStats(CardInstance cardInstance)
     {
         if (playerStats == null || cardInstance == null) return;
@@ -254,3 +245,4 @@ public class CardManager : MonoBehaviour
         playerStats.AddModifier(StatType.CritMultiplier, new StatModifier(cardInstance.GetFinalCritDamageMultiplier(), cardInstance));
     }
 }
+

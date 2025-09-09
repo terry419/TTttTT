@@ -2,74 +2,52 @@ using UnityEngine;
 using UnityEngine.UI;
 using System;
 
-/// <summary>
-/// 인벤토리의 개별 카드 슬롯 하나하나를 제어하는 컴포넌트입니다.
-/// [3단계 리팩토링] 이제 CardDisplay 프리팹을 생성하고 관리하는 역할만 담당합니다.
-/// </summary>
 public class CardSlot : MonoBehaviour
 {
     public enum SlotState { Occupied, Empty, Locked }
 
-    [Header("프리팹 부모")]
-    [SerializeField] private Transform cardParent; // 생성된 CardDisplay 프리팹이 위치할 부모 Transform
+    [Header("상태별 게임 오브젝트")]
+    [SerializeField] private GameObject cardDisplayObject;
+    [SerializeField] private GameObject emptyStateObject;
+    [SerializeField] private GameObject lockedStateObject;
 
-    [Header("상태 UI")]
-    [SerializeField] private GameObject emptyStateUI;
-    [SerializeField] private GameObject lockedStateUI;
-    [SerializeField] private Image highlightBorder;
+    // [수정] HighlightBorder 관련 필드와 함수를 모두 제거했습니다.
+    // [SerializeField] private Image highlightBorder; 
 
-    [Header("슬롯 정보")]
     public CardInstance currentCard { get; private set; }
     public SlotState currentState { get; private set; }
-    public bool isEquipSlot;
-
-    // 생성된 CardDisplay 프리팹의 인스턴스를 저장해둘 변수
-    private CardDisplay currentCardDisplay;
-
-    public event Action<CardSlot> OnSlotClicked;
+    private CardDisplay cardDisplay;
     private Button button;
+    public event Action<CardSlot> OnSlotClicked;
 
     void Awake()
     {
         button = GetComponent<Button>();
+        // [로그 추가] 버튼 컴포넌트를 찾았는지, 리스너를 추가하는지 확인
         if (button != null)
         {
-            button.onClick.AddListener(() => OnSlotClicked?.Invoke(this));
+            Debug.Log($"[{gameObject.name}] CardSlot.Awake(): Button 컴포넌트를 찾았으며, 클릭 리스너를 추가합니다.");
+            button.onClick.AddListener(() =>
+            {
+                // [로그 추가] 버튼이 실제로 클릭되었을 때 이벤트가 발생하는지 확인
+                Debug.Log($"[{gameObject.name}] Button clicked! OnSlotClicked 이벤트를 발생시킵니다.");
+                OnSlotClicked?.Invoke(this);
+            });
         }
-        SetHighlight(false);
-    }
+        else
+        {
+            Debug.LogError($"[{gameObject.name}] CardSlot.Awake(): Button 컴포넌트를 찾지 못했습니다! Inspector를 확인해주세요.");
+        }
 
-    /// <summary>
-    /// 카드 인스턴스 데이터로 슬롯을 설정합니다. CardDisplay 프리팹을 생성하거나 제거합니다.
-    /// </summary>
-    /// <param name="card">표시할 카드 데이터. 없으면 null</param>
-    /// <param name="cardPrefab">생성할 CardDisplay 프리팹</param>
-    public void Setup(CardInstance card, GameObject cardPrefab)
+        if (cardDisplayObject != null) cardDisplay = cardDisplayObject.GetComponent<CardDisplay>();
+    }
+    public void Setup(CardInstance card)
     {
         currentCard = card;
-
-        // 1. 기존에 있던 카드 프리팹이 있다면 먼저 파괴합니다.
-        if (currentCardDisplay != null)
-        {
-            Destroy(currentCardDisplay.gameObject);
-            currentCardDisplay = null;
-        }
-
-        // 2. 표시할 카드가 있는지 확인합니다.
         if (card != null)
         {
             SetState(SlotState.Occupied);
-            if (cardPrefab != null)
-            {
-                // CardDisplay 프리팹을 cardParent 아래에 생성합니다.
-                GameObject cardGO = Instantiate(cardPrefab, cardParent);
-                currentCardDisplay = cardGO.GetComponent<CardDisplay>();
-                if (currentCardDisplay != null)
-                {
-                    // 생성된 프리팹에 카드 데이터를 넘겨 UI를 채우도록 합니다.
-                    currentCardDisplay.Setup(card);
-                }
-            }
+            if (cardDisplay != null) cardDisplay.Setup(card);
         }
         else
         {
@@ -80,21 +58,9 @@ public class CardSlot : MonoBehaviour
     public void SetState(SlotState newState)
     {
         currentState = newState;
-
-        if (emptyStateUI != null) emptyStateUI.SetActive(newState == SlotState.Empty);
-        if (lockedStateUI != null) lockedStateUI.SetActive(newState == SlotState.Locked);
-
-        if (button != null)
-        {
-            button.interactable = (newState != SlotState.Locked);
-        }
-    }
-
-    public void SetHighlight(bool show)
-    {
-        if (highlightBorder != null)
-        {
-            highlightBorder.gameObject.SetActive(show);
-        }
+        if (cardDisplayObject != null) cardDisplayObject.SetActive(newState == SlotState.Occupied);
+        if (emptyStateObject != null) emptyStateObject.SetActive(newState == SlotState.Empty);
+        if (lockedStateObject != null) lockedStateObject.SetActive(newState == SlotState.Locked);
+        if (button != null) button.interactable = (newState != SlotState.Locked);
     }
 }

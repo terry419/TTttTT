@@ -2,22 +2,19 @@ using UnityEngine;
 using TMPro;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
-/// <summary>
-/// ÀÎº¥Åä¸® UIÀÇ ¸ğµç µ¿ÀÛ(½½·Ô ¾÷µ¥ÀÌÆ®, ½ºÅÈ Ç¥½Ã, Ä«µå ±³È¯)À» ÃÑ°ıÇÏ´Â ÄÁÆ®·Ñ·¯ÀÔ´Ï´Ù.
-/// [3´Ü°è ¼öÁ¤] ÀÌÁ¦ CharacterStats¿¡ Á÷Á¢ ÀÇÁ¸ÇÏÁö ¾Ê°í, PlayerDataManagerÀÇ ¹Ì¸®º¸±â ±â´ÉÀ» »ç¿ëÇÕ´Ï´Ù.
-/// </summary>
 public class InventoryController : MonoBehaviour
 {
-    [Header("UI ÇÁ¸®ÆÕ")]
-    [Tooltip("½½·Ô¿¡ »ı¼ºµÉ Ä«µå UI ÇÁ¸®ÆÕÀÔ´Ï´Ù.")]
-    [SerializeField] private GameObject cardDisplayPrefab; // [½Å±Ô] »ı¼ºÇÒ ÇÁ¸®ÆÕ ÂüÁ¶
+    [Header("UI ìš”ì†Œ")]
+    [Tooltip("ì¹´ë“œ ì„ íƒ ì‹œ ê³ ì •ë  ì»¤ì„œ UI ì˜¤ë¸Œì íŠ¸")]
+    [SerializeField] private GameObject fixedCursor;
 
-    [Header("½½·Ô ÂüÁ¶")]
+    [Header("ìŠ¬ë¡¯ ì°¸ì¡°")]
     [SerializeField] private List<CardSlot> equippedSlots;
     [SerializeField] private List<CardSlot> ownedSlots;
 
-    [Header("´É·ÂÄ¡ ÅØ½ºÆ® ÂüÁ¶")]
+    [Header("ëŠ¥ë ¥ì¹˜ í…ìŠ¤íŠ¸ ì°¸ì¡°")]
     [SerializeField] private TextMeshProUGUI attackText;
     [SerializeField] private TextMeshProUGUI attackSpeedText;
     [SerializeField] private TextMeshProUGUI moveSpeedText;
@@ -28,6 +25,7 @@ public class InventoryController : MonoBehaviour
     private CardManager cardManager;
     private PlayerDataManager playerDataManager;
     private CardSlot firstSelectedSlot = null;
+    private bool isSubscribed = false;
 
     void Awake()
     {
@@ -35,26 +33,134 @@ public class InventoryController : MonoBehaviour
         {
             slot.OnSlotClicked += HandleSlotClick;
         }
+        if (fixedCursor != null) fixedCursor.SetActive(false);
     }
 
     void OnEnable()
     {
+        if (!isSubscribed)
+        {
+            PlayerDataManager.OnRunDataChanged += OnRunDataChanged;
+            isSubscribed = true;
+        }
         InitializeAndRefresh();
+    }
+
+    void OnDisable()
+    {
+        if (isSubscribed)
+        {
+            PlayerDataManager.OnRunDataChanged -= OnRunDataChanged;
+            isSubscribed = false;
+        }
+    }
+
+    private void OnRunDataChanged(RunDataChangeType changeType)
+    {
+        if (changeType == RunDataChangeType.Cards || changeType == RunDataChangeType.All)
+        {
+            UpdateAllSlots();
+            UpdateStatsPanel();
+        }
     }
 
     private void InitializeAndRefresh()
     {
         cardManager = ServiceLocator.Get<CardManager>();
         playerDataManager = ServiceLocator.Get<PlayerDataManager>();
+        if (cardManager == null || playerDataManager == null) return;
+        UpdateAllSlots();
+        UpdateStatsPanel();
+    }
 
-        if (cardManager == null || playerDataManager == null || cardDisplayPrefab == null)
+    private void HandleSlotClick(CardSlot clickedSlot)
+    {
+        Debug.Log($"-- [ì¸ë²¤í† ë¦¬ ìƒí˜¸ì‘ìš©] ìŠ¬ë¡¯ í´ë¦­: {clickedSlot.gameObject.name} --");
+
+        if (clickedSlot.currentState == CardSlot.SlotState.Locked)
         {
-            Debug.LogError("[InventoryController] ÇÊ¼ö ¸Å´ÏÀú ¶Ç´Â Ä«µå ÇÁ¸®ÆÕÀÌ ¿¬°áµÇÁö ¾Ê¾Ò½À´Ï´Ù!");
+            Debug.Log("[ì¸ë²¤í† ë¦¬] ì ê¸´ ìŠ¬ë¡¯ì€ ì„ íƒí•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
             return;
         }
 
-        UpdateAllSlots();
-        UpdateStatsPanel();
+        if (firstSelectedSlot == null)
+        {
+            if (clickedSlot.currentState == CardSlot.SlotState.Empty)
+            {
+                Debug.Log("[ì¸ë²¤í† ë¦¬] ë¹ˆ ìŠ¬ë¡¯ì€ ì²« ë²ˆì§¸ë¡œ ì„ íƒí•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
+                return;
+            }
+            firstSelectedSlot = clickedSlot;
+
+            if (fixedCursor != null)
+            {
+                fixedCursor.SetActive(true);
+                fixedCursor.transform.position = firstSelectedSlot.transform.position;
+            }
+            Debug.Log($"[ì¸ë²¤í† ë¦¬] ì¹´ë“œ ì„ íƒë¨ (Lock-in): {firstSelectedSlot.currentCard.CardData.basicInfo.cardName}");
+        }
+        else
+        {
+            if (firstSelectedSlot == clickedSlot)
+            {
+                CancelSelection();
+                return;
+            }
+
+            if (clickedSlot.currentState == CardSlot.SlotState.Empty)
+            {
+                MoveToEmptySlot(clickedSlot);
+            }
+            else
+            {
+                SwapWithFilledSlot(clickedSlot);
+            }
+
+            FinalizeSelection();
+        }
+    }
+
+    private void MoveToEmptySlot(CardSlot emptySlot)
+    {
+        CardInstance cardToMove = firstSelectedSlot.currentCard;
+        Debug.Log($"[ì¸ë²¤í† ë¦¬] ì´ë™ ì‹œë„: '{cardToMove.CardData.basicInfo.cardName}' -> ë¹ˆ ìŠ¬ë¡¯ '{emptySlot.gameObject.name}'");
+
+        // 1. ì›ë˜ ìœ„ì¹˜ì—ì„œ ì¹´ë“œë¥¼ ë°ì´í„°ìƒìœ¼ë¡œë§Œ ì œê±°í•©ë‹ˆë‹¤.
+        cardManager.Unequip(cardToMove);
+
+        // 2. ëª©í‘œ ìœ„ì¹˜ê°€ ì¥ì°© ìŠ¬ë¡¯ì´ë¼ë©´, í•´ë‹¹ ìœ„ì¹˜ì— ì¹´ë“œë¥¼ ë°ì´í„°ìƒìœ¼ë¡œ ì¶”ê°€í•©ë‹ˆë‹¤.
+        bool isTargetEquip = equippedSlots.Contains(emptySlot);
+        if (isTargetEquip)
+        {
+            int targetIndex = equippedSlots.IndexOf(emptySlot);
+            cardManager.Equip(cardToMove, targetIndex);
+        }
+
+        // 3. ë°ì´í„° ë³€ê²½ì´ ì™„ë£Œë˜ì—ˆìŒì„ ëª¨ë“  UIì— ì•Œë¦½ë‹ˆë‹¤.
+        playerDataManager.NotifyRunDataChanged(RunDataChangeType.Cards);
+    }
+
+    private void SwapWithFilledSlot(CardSlot targetSlot)
+    {
+        string cardAName = firstSelectedSlot.currentCard.CardData.basicInfo.cardName;
+        string cardBName = targetSlot.currentCard.CardData.basicInfo.cardName;
+        Debug.Log($"[ì¸ë²¤í† ë¦¬] ìŠ¤ì™‘ ì‹œë„: '{cardAName}' <-> '{cardBName}'");
+
+        cardManager.SwapCards(firstSelectedSlot.currentCard, targetSlot.currentCard);
+    }
+
+    private void CancelSelection()
+    {
+        if (firstSelectedSlot == null) return;
+        if (fixedCursor != null) fixedCursor.SetActive(false);
+        Debug.Log($"[ì¸ë²¤í† ë¦¬] ì¹´ë“œ ì„ íƒ í•´ì œ (Unlock): {firstSelectedSlot.currentCard.CardData.basicInfo.cardName}");
+        firstSelectedSlot = null;
+    }
+
+    private void FinalizeSelection()
+    {
+        if (fixedCursor != null) fixedCursor.SetActive(false);
+        firstSelectedSlot = null;
     }
 
     private void UpdateAllSlots()
@@ -64,14 +170,8 @@ public class InventoryController : MonoBehaviour
 
         for (int i = 0; i < equippedSlots.Count; i++)
         {
-            if (i < runData.equippedCards.Count)
-            {
-                equippedSlots[i].Setup(runData.equippedCards[i], cardDisplayPrefab);
-            }
-            else
-            {
-                equippedSlots[i].Setup(null, cardDisplayPrefab);
-            }
+            if (i < runData.equippedCards.Count) equippedSlots[i].Setup(runData.equippedCards[i]);
+            else equippedSlots[i].Setup(null);
         }
 
         var ownedOnlyCards = runData.ownedCards.Except(runData.equippedCards).ToList();
@@ -83,71 +183,66 @@ public class InventoryController : MonoBehaviour
                 continue;
             }
 
-            if (i < ownedOnlyCards.Count)
-            {
-                ownedSlots[i].Setup(ownedOnlyCards[i], cardDisplayPrefab);
-            }
-            else
-            {
-                ownedSlots[i].Setup(null, cardDisplayPrefab);
-            }
+            if (i < ownedOnlyCards.Count) ownedSlots[i].Setup(ownedOnlyCards[i]);
+            else ownedSlots[i].Setup(null);
         }
     }
+
     private void UpdateStatsPanel()
     {
         if (playerDataManager == null) return;
 
-        // [ÇÙ½É ¼öÁ¤] PlayerDataManagerÀÇ ¹Ì¸®º¸±â ÇÔ¼ö¸¦ È£ÃâÇÏ¿© ÃÖÁ¾ ½ºÅÈÀ» °¡Á®¿É´Ï´Ù.
+        var oldStats = new Dictionary<string, string>
+        {
+            { "ê³µê²©ë ¥", attackText.text }, { "ê³µê²©ì†ë„", attackSpeedText.text }, { "ì´ë™ì†ë„", moveSpeedText.text },
+            { "ì²´ë ¥", healthText.text }, { "ì¹˜ëª…íƒ€ í™•ë¥ ", critRateText.text }, { "ì¹˜ëª…íƒ€ í”¼í•´", critDamageText.text }
+        };
+
         BaseStats previewStats = playerDataManager.CalculatePreviewStats();
 
-        if (previewStats == null)
+        if (previewStats == null) return;
+
+        string newAttack = $"{previewStats.baseDamage:F1}";
+        string newAttackSpeed = $"{previewStats.baseAttackSpeed:F2}";
+        string newMoveSpeed = $"{previewStats.baseMoveSpeed:F1}";
+        string newHealth = $"{playerDataManager.CurrentRunData.currentHealth:F0} / {previewStats.baseHealth:F0}";
+        string newCritRate = $"{previewStats.baseCritRate:F1}%";
+        string newCritDamage = $"{previewStats.baseCritDamage:F0}%";
+
+        attackText.text = newAttack;
+        attackSpeedText.text = newAttackSpeed;
+        moveSpeedText.text = newMoveSpeed;
+        healthText.text = newHealth;
+        critRateText.text = newCritRate;
+        critDamageText.text = newCritDamage;
+
+        StringBuilder logBuilder = new StringBuilder();
+        if (oldStats["ê³µê²©ë ¥"] != newAttack) logBuilder.AppendLine($"ê³µê²©ë ¥: {oldStats["ê³µê²©ë ¥"]} -> {newAttack}");
+        if (oldStats["ê³µê²©ì†ë„"] != newAttackSpeed) logBuilder.AppendLine($"ê³µê²©ì†ë„: {oldStats["ê³µê²©ì†ë„"]} -> {newAttackSpeed}");
+        if (oldStats["ì´ë™ì†ë„"] != newMoveSpeed) logBuilder.AppendLine($"ì´ë™ì†ë„: {oldStats["ì´ë™ì†ë„"]} -> {newMoveSpeed}");
+        if (oldStats["ì²´ë ¥"] != newHealth) logBuilder.AppendLine($"ì²´ë ¥: {oldStats["ì²´ë ¥"]} -> {newHealth}");
+        if (oldStats["ì¹˜ëª…íƒ€ í™•ë¥ "] != newCritRate) logBuilder.AppendLine($"ì¹˜ëª…íƒ€ í™•ë¥ : {oldStats["ì¹˜ëª…íƒ€ í™•ë¥ "]} -> {newCritRate}");
+        if (oldStats["ì¹˜ëª…íƒ€ í”¼í•´"] != newCritDamage) logBuilder.AppendLine($"ì¹˜ëª…íƒ€ í”¼í•´: {oldStats["ì¹˜ëª…íƒ€ í”¼í•´"]} -> {newCritDamage}");
+
+        if (logBuilder.Length > 0)
         {
-            attackText.text = "N/A";
-            attackSpeedText.text = "N/A";
-            moveSpeedText.text = "N/A";
-            healthText.text = "N/A";
-            critRateText.text = "N/A";
-            critDamageText.text = "N/A";
-            return;
+            logBuilder.Insert(0, "--- [ìŠ¤íƒ¯ íŒ¨ë„ ì—…ë°ì´íŠ¸] ---\n");
+            Debug.Log(logBuilder.ToString());
         }
-
-        // ¹Ì¸®º¸±â ½ºÅÈÀ¸·Î UI ÅØ½ºÆ®¸¦ ¾÷µ¥ÀÌÆ®ÇÕ´Ï´Ù.
-        attackText.text = $"{previewStats.baseDamage:F1}";
-        attackSpeedText.text = $"{previewStats.baseAttackSpeed:F2}";
-        moveSpeedText.text = $"{previewStats.baseMoveSpeed:F1}";
-        // ÇöÀç Ã¼·ÂÀº PlayerRunData¿¡¼­ Á÷Á¢ °¡Á®¿À°í, ÃÖ´ë Ã¼·ÂÀº ¹Ì¸®º¸±â ½ºÅÈÀ» »ç¿ëÇÕ´Ï´Ù.
-        healthText.text = $"{playerDataManager.CurrentRunData.currentHealth:F0} / {previewStats.baseHealth:F0}";
-        critRateText.text = $"{previewStats.baseCritRate:F1}%";
-        critDamageText.text = $"{previewStats.baseCritDamage:F0}%";
     }
-
-    private void HandleSlotClick(CardSlot clickedSlot)
+    public void OnBackButtonPressed()
     {
-        if (firstSelectedSlot == null)
+        Debug.Log("[ì¸ë²¤í† ë¦¬] ë’¤ë¡œê°€ê¸° ë²„íŠ¼ ëˆŒë¦¼.");
+        if (firstSelectedSlot != null)
         {
-            if (clickedSlot.currentState == CardSlot.SlotState.Empty) return;
-
-            firstSelectedSlot = clickedSlot;
-            firstSelectedSlot.SetHighlight(true);
+            // ì„ íƒëœ ì¹´ë“œê°€ ìˆìœ¼ë©´, ì„ íƒì„ ì·¨ì†Œí•©ë‹ˆë‹¤.
+            CancelSelection();
         }
         else
         {
-            if (firstSelectedSlot == clickedSlot)
-            {
-                firstSelectedSlot.SetHighlight(false);
-                firstSelectedSlot = null;
-                return;
-            }
-
-            // cardB°¡ nullÀÏ ¼ö ÀÖ´Â ºó ½½·Ô°úÀÇ ±³È¯µµ Ã³¸®ÇÕ´Ï´Ù.
-            cardManager.SwapCards(firstSelectedSlot.currentCard, clickedSlot.currentCard);
-
-            firstSelectedSlot.SetHighlight(false);
-            firstSelectedSlot = null;
-
-            // Ä«µå »óÅÂ°¡ º¯°æµÇ¾úÀ¸¹Ç·Î, ¸ğµç UI¸¦ Áï½Ã »õ·Î°íÄ§ÇÕ´Ï´Ù.
-            UpdateAllSlots();
-            UpdateStatsPanel(); // [Áß¿ä] ½ºÅÈ ÆĞ³Îµµ ÇÔ²² »õ·Î°íÄ§
+            // ì„ íƒëœ ì¹´ë“œê°€ ì—†ìœ¼ë©´, ì¸ë²¤í† ë¦¬ë¥¼ ë‹«ìŠµë‹ˆë‹¤.
+            Debug.Log("[ì¸ë²¤í† ë¦¬] ì„ íƒëœ ì¹´ë“œê°€ ì—†ìœ¼ë¯€ë¡œ ì¸ë²¤í† ë¦¬ë¥¼ ë‹«ìŠµë‹ˆë‹¤.");
+            gameObject.SetActive(false);
         }
     }
 }

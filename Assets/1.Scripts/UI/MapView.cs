@@ -169,16 +169,13 @@ public class MapView : MonoBehaviour
                 // 오른쪽에 다른 노드가 있는 경우
                 var targetRight = rightCandidates.OrderBy(p => p.Key.Position.x).First();
                 nav.selectOnRight = targetRight.Value.GetComponent<Button>();
-                Debug.Log($"[네비게이션 설정] 노드 {currentNodeData.Position}의 오른쪽 타겟: 노드 {targetRight.Key.Position}");
             }
             else
             {
                 // 오른쪽에 더 이상 노드가 없는 경우 (가장 오른쪽 노드)
-                Debug.Log($"[네비게이션 설정] 노드 {currentNodeData.Position}는 가장 오른쪽 노드입니다. InventoryButton으로 연결을 시도합니다.");
                 if (inventoryButton != null && inventoryButton.gameObject.activeInHierarchy)
                 {
                     nav.selectOnRight = inventoryButton;
-                    Debug.Log($"<color=lime>[네비게이션 설정] 성공: 노드 {currentNodeData.Position}의 오른쪽 타겟을 InventoryButton으로 설정했습니다.</color>");
                 }
                 else
                 {
