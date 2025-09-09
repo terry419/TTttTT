@@ -79,34 +79,35 @@ public class RoundManager : MonoBehaviour
         Debug.Log($"[{GetType().Name}] 새로운 라운드 시작: '{currentRoundData.name}' (목표 킬: {currentRoundData.killGoal}, 제한 시간: {currentRoundData.roundDuration}초)");
 
         var cardManager = ServiceLocator.Get<CardManager>();
-        if (cardManager != null)
+        var playerDataManager = ServiceLocator.Get<PlayerDataManager>();
+        if (cardManager != null && playerDataManager != null)
         {
             StringBuilder cardSb = new StringBuilder();
             cardSb.AppendLine("--- 라운드 시작 카드 정보 ---");
-            cardSb.AppendLine($"소유 카드: {cardManager.ownedCards.Count}장 / {cardManager.maxOwnedSlots}슬롯");
-            cardSb.AppendLine($"장착 카드: {cardManager.equippedCards.Count}장 / {cardManager.maxEquipSlots}슬롯");
-
+            cardSb.AppendLine($"소유 카드: {playerDataManager.OwnedCards.Count}장 / {cardManager.maxOwnedSlots}슬롯");
+            cardSb.AppendLine($"장착 카드: {playerDataManager.EquippedCards.Count}장 / {cardManager.maxEquipSlots}슬롯");
             cardSb.AppendLine("--- 소유 카드 목록 ---");
-            if (cardManager.ownedCards.Count == 0)
+
+            if (playerDataManager.OwnedCards.Count == 0)
             {
                 cardSb.AppendLine("없음");
             }
             else
             {
-                foreach (var card in cardManager.ownedCards)
+                foreach (var card in playerDataManager.OwnedCards)
                 {
                     cardSb.AppendLine($"- {card.CardData.basicInfo.cardName} (Lv.{card.EnhancementLevel + 1})");
                 }
             }
 
             cardSb.AppendLine("--- 장착 카드 목록 ---");
-            if (cardManager.equippedCards.Count == 0)
+            if (playerDataManager.EquippedCards.Count == 0)
             {
                 cardSb.AppendLine("없음");
             }
             else
             {
-                foreach (var card in cardManager.equippedCards)
+                foreach (var card in playerDataManager.EquippedCards)
                 {
                     cardSb.AppendLine($"- {card.CardData.basicInfo.cardName} (Lv.{card.EnhancementLevel + 1})");
                 }
@@ -127,7 +128,7 @@ public class RoundManager : MonoBehaviour
             {
                 System.Text.StringBuilder sb = new System.Text.StringBuilder();
                 sb.AppendLine("--- 라운드 시작 플레이어 스탯 ---");
-                sb.AppendLine($"체력: {playerStats.currentHealth:F1} / {playerStats.FinalHealth:F1}");
+                sb.AppendLine($"체력: {playerStats.GetCurrentHealth():F1} / {playerStats.FinalHealth:F1}");
                 sb.AppendLine($"공격력 보너스: {playerStats.FinalDamageBonus:F2}%");
                 sb.AppendLine($"공격 속도: {playerStats.FinalAttackSpeed:F2}");
                 sb.AppendLine($"이동 속도: {playerStats.FinalMoveSpeed:F2}");
@@ -197,7 +198,7 @@ public class RoundManager : MonoBehaviour
             {
                 System.Text.StringBuilder sb = new System.Text.StringBuilder();
                 sb.AppendLine("--- 라운드 종료 플레이어 스탯 ---");
-                sb.AppendLine($"체력: {playerStats.currentHealth:F1} / {playerStats.FinalHealth:F1}");
+                sb.AppendLine($"체력: {playerStats.GetCurrentHealth():F1} / {playerStats.FinalHealth:F1}");
                 sb.AppendLine($"공격력 보너스: {playerStats.FinalDamageBonus:F2}%");
                 sb.AppendLine($"공격 속도: {playerStats.FinalAttackSpeed:F2}");
                 sb.AppendLine($"이동 속도: {playerStats.FinalMoveSpeed:F2}");

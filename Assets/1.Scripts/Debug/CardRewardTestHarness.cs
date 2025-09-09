@@ -100,7 +100,8 @@ public class CardRewardTestHarness : MonoBehaviour
             CardInstance instance = cardManager.AddCard(randomCardData);
             if (instance != null) cardManager.Equip(instance);
         }
-        Debug.Log($"[TestHarness] {cardManager.ownedCards.Count}개의 보유 카드를 생성했습니다.");
+        var playerDataManager = ServiceLocator.Get<PlayerDataManager>();
+        Debug.Log($"[TestHarness] {playerDataManager.OwnedCards.Count}개의 보유 카드를 생성했습니다.");
 
         List<NewCardDataSO> rewardChoices = rewardGenerationService.GenerateRewards(rewardCardCount);
         Debug.Log($"[TestHarness] {rewardChoices.Count}개의 보상 카드를 생성했습니다.");

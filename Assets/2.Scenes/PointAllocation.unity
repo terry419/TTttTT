@@ -1292,6 +1292,10 @@ MonoBehaviour:
   backButton: {fileID: 2117017319}
   totalPointsText: {fileID: 1136470270}
   mapGenerator: {fileID: 497011238}
+  gameManager: {fileID: 8024140829926087348, guid: a602ec76f14044241926f95fff3a8cfb, type: 3}
+  progressionManager: {fileID: 2300824433032312223, guid: a602ec76f14044241926f95fff3a8cfb, type: 3}
+  mapManager: {fileID: 8357709887526590436, guid: a602ec76f14044241926f95fff3a8cfb, type: 3}
+  campaignManager: {fileID: 6847162976572293575, guid: a602ec76f14044241926f95fff3a8cfb, type: 3}
 --- !u!114 &497011238
 MonoBehaviour:
   m_ObjectHideFlags: 0

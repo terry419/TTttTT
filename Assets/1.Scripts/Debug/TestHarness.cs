@@ -19,6 +19,7 @@ public class TestHarness : MonoBehaviour
         var mapManager = ServiceLocator.Get<MapManager>();
         var campaignManager = ServiceLocator.Get<CampaignManager>();
         var sceneTransitionManager = ServiceLocator.Get<SceneTransitionManager>();
+        var playerDataManager = ServiceLocator.Get<PlayerDataManager>();
 
         if (mapGenerator == null)
         {
@@ -37,7 +38,7 @@ public class TestHarness : MonoBehaviour
         // 3. GameManager에 테스트 데이터 설정
         gameManager.SelectedCharacter = dataManager.GetCharacter(characterId);
         gameManager.AllocatedPoints = 0; // 테스트 시에는 0으로 고정하거나, UI InputField로 값을 받도록 확장할 수 있습니다.
-        gameManager.isFirstRound = true;
+        playerDataManager.ResetRunData(dataManager.GetCharacter(characterId));
 
         // 4. Gameplay 씬으로 전환
         sceneTransitionManager.LoadScene(SceneNames.GamePlay);

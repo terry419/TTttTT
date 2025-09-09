@@ -137,11 +137,12 @@ public class CardRewardUIManager : MonoBehaviour
 
         var baseCardData = selectedDisplay.CurrentCard;
         var cardManager = ServiceLocator.Get<CardManager>();
-        if (cardManager == null || synthesisPopup == null) return;
+        var playerDataManager = ServiceLocator.Get<PlayerDataManager>();
+        if (cardManager == null || synthesisPopup == null || playerDataManager == null) return;
 
         // 재료 카드 필터링: 등급과 속성이 같고, 자기 자신은 아닌 카드
-        List<CardInstance> materialChoices = cardManager.ownedCards
-            .Where(card => card.CardData.basicInfo.rarity == baseCardData.basicInfo.rarity &&
+        List<CardInstance> materialChoices = playerDataManager.OwnedCards
+           .Where(card => card.CardData.basicInfo.rarity == baseCardData.basicInfo.rarity &&
                            card.CardData.basicInfo.type == baseCardData.basicInfo.type)
             .ToList();
 
@@ -206,11 +207,12 @@ public class CardRewardUIManager : MonoBehaviour
         if (canAcquire)
         {
             var cardManager = ServiceLocator.Get<CardManager>();
+            var playerDataManager = ServiceLocator.Get<PlayerDataManager>();
             if (cardManager != null)
             {
                 var baseCardData = selectedDisplay.CurrentCard;
-                canSynthesize = cardManager.ownedCards.Any(card =>
-                    card.CardData.basicInfo.rarity == baseCardData.basicInfo.rarity &&
+                canSynthesize = playerDataManager.OwnedCards.Any(card =>
+                card.CardData.basicInfo.rarity == baseCardData.basicInfo.rarity &&
                     card.CardData.basicInfo.type == baseCardData.basicInfo.type);
             }
         }

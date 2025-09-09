@@ -10,9 +10,10 @@ public class PlayerInitializer : MonoBehaviour
     {
 
         var playerStats = GetComponent<CharacterStats>();
-        GetComponent<SpriteRenderer>().sortingOrder = 20; // [추가] 플레이어 렌더링 순서 설정
+        GetComponent<SpriteRenderer>().sortingOrder = 20;
         var playerController = GetComponent<PlayerController>();
         var gameManager = ServiceLocator.Get<GameManager>();
+        var playerDataManager = ServiceLocator.Get<PlayerDataManager>();
 
         CharacterDataSO characterToLoad = gameManager.SelectedCharacter ?? ServiceLocator.Get<DataManager>().GetCharacter(CharacterIDs.Warrior);
         if (characterToLoad == null)
@@ -39,15 +40,8 @@ public class PlayerInitializer : MonoBehaviour
         var cardManager = ServiceLocator.Get<CardManager>();
         var artifactManager = ServiceLocator.Get<ArtifactManager>();
 
-        if (gameManager.isFirstRound)
+        if (playerDataManager.IsRunInitialized)
         {
-            if (cardManager != null)
-            {
-                cardManager.ClearAndResetDeck(); // [v9.0 수정] 새 게임 시작 시 카드 목록을 완전히 초기화
-                cardManager.LinkToNewPlayer(playerStats);
-            }
-            if (artifactManager != null) artifactManager.LinkToNewPlayer(playerStats);
-
             var progressionManager = ServiceLocator.Get<ProgressionManager>();
             CharacterPermanentStats permanentStats = progressionManager.GetPermanentStatsFor(characterToLoad.characterId);
             playerStats.ApplyPermanentStats(permanentStats);
@@ -84,16 +78,14 @@ public class PlayerInitializer : MonoBehaviour
                 }
             }
 
-            gameManager.isFirstRound = false;
+            playerDataManager.CompleteRunInitialization();
         }
         else
         {
             if (cardManager != null) cardManager.LinkToNewPlayer(playerStats);
             if (artifactManager != null) artifactManager.LinkToNewPlayer(playerStats);
         }
-
-        playerStats.CalculateFinalStats();
-
+        /*
         // 저장된 체력 정보가 있는지 확인하고, 없으면(첫 라운드) 최대 체력으로 설정
         float? savedHealth = gameManager.GetCurrentHealth();
         Debug.Log($"[DEBUG-HEALTH] PlayerInitializer: GameManager로부터 저장된 체력을 가져옵니다. 가져온 값: {(savedHealth.HasValue ? savedHealth.Value.ToString() : "NULL")}");
@@ -107,8 +99,12 @@ public class PlayerInitializer : MonoBehaviour
             playerStats.currentHealth = playerStats.FinalHealth;
         }
         Debug.Log($"[DEBUG-HEALTH] PlayerInitializer: 플레이어 체력 설정 완료: {playerStats.currentHealth}/{playerStats.FinalHealth}");
-
+        */
         // 모든 카드 장착 및 스탯 계산이 끝난 후, 카드 선택 루프를 시작합니다.
+
+        cardManager.LinkToNewPlayer(playerStats);
+        artifactManager.LinkToNewPlayer(playerStats);
+        playerStats.CalculateFinalStats();
         if (cardManager != null) 
         {
             cardManager.StartCardSelectionLoop();

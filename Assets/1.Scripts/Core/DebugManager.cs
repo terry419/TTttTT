@@ -85,7 +85,7 @@ public class DebugManager : MonoBehaviour
         if (playerStats != null)
         {
             infoBuilder.AppendLine("--- Player Stats ---");
-            infoBuilder.AppendLine($"Health: {playerStats.currentHealth:F1} / {playerStats.FinalHealth:F1}");
+            infoBuilder.AppendLine($"Health: {playerStats.GetCurrentHealth():F1} / {playerStats.FinalHealth:F1}");
             infoBuilder.AppendLine($"Is Invulnerable: {playerStats.isInvulnerable}");
             infoBuilder.AppendLine($"Damage: {playerStats.FinalDamageBonus:F2}");
             infoBuilder.AppendLine($"Attack Speed: {playerStats.FinalAttackSpeed:F2}");

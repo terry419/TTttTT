@@ -13,7 +13,6 @@ public class GameManager : MonoBehaviour
     public GameState CurrentState { get; private set; }
     public CharacterDataSO SelectedCharacter { get; set; }
     public int AllocatedPoints { get; set; }
-    public bool isFirstRound = true;
 
     private float? lastPlayerHealth = null;
     private bool isRunCleanupAfterGameOver = false;
@@ -95,13 +94,22 @@ public class GameManager : MonoBehaviour
         Debug.Log($"[GameManager] 테스트 모드 설정: Character={character.characterId}, Points={allocatedPoints}");
         SelectedCharacter = character;
         AllocatedPoints = allocatedPoints;
-        isFirstRound = true;
     }
 
     public void ChangeState(GameState newState)
     {
         if (CurrentState == newState && CurrentState != GameState.Gameplay) return;
         Debug.Log($"[GameManager] 상태 변경: {CurrentState} -> {newState}");
+
+        if (newState == GameState.PointAllocation)
+        {
+            var playerDataManager = ServiceLocator.Get<PlayerDataManager>();
+            if (playerDataManager != null && SelectedCharacter != null)
+            {
+                Debug.Log($"[GameManager] 새 런 시작. '{SelectedCharacter.characterName}' 데이터로 초기화합니다.");
+                playerDataManager.ResetRunData(SelectedCharacter);
+            }
+        }
 
         if (newState == GameState.Reward)
         {
@@ -145,7 +153,6 @@ public class GameManager : MonoBehaviour
         {
             Debug.Log("[GameManager] 게임 승리! 엔딩 씬을 재생해야 하지만, 현재는 메인 메뉴로 바로 이동합니다.");
             // 나중에 엔딩 씬이 추가되면 아래 로직을 수정하여 엔딩 씬으로 이동시키세요.
-            isFirstRound = true;
             ResetSavedHealth();
             ChangeState(GameState.MainMenu);
             return;
@@ -195,9 +202,8 @@ public class GameManager : MonoBehaviour
     {
         Debug.Log("--- [GameManager] v9.0 프리로딩 시작 ---");
         var poolManager = ServiceLocator.Get<PoolManager>();
-        var cardManager = ServiceLocator.Get<CardManager>();
+        var playerDataManager = ServiceLocator.Get<PlayerDataManager>();
         var resourceManager = ServiceLocator.Get<ResourceManager>();
-
         var preloadTasks = new List<UniTask>();
         var preloadRequests = new Dictionary<string, int>();
 
@@ -213,7 +219,7 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        foreach (var card in cardManager.equippedCards)
+        foreach (var card in playerDataManager.EquippedCards)
         {
             foreach (var moduleEntry in card.CardData.modules)
             {
@@ -262,8 +268,6 @@ public class GameManager : MonoBehaviour
             cardManager.ClearAndResetDeck();
         }
         
-        isFirstRound = true;
-        ResetSavedHealth();
         ChangeState(GameState.MainMenu);
     }
 

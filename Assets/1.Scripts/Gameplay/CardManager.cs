@@ -6,9 +6,6 @@ using UnityEngine;
 
 public class CardManager : MonoBehaviour
 {
-    [Header("카드 인스턴스 목록")]
-    public List<CardInstance> ownedCards = new List<CardInstance>();
-    public List<CardInstance> equippedCards = new List<CardInstance>();
 
     [Header("슬롯 설정")]
     public int maxOwnedSlots = 7;
@@ -18,23 +15,32 @@ public class CardManager : MonoBehaviour
     public CardInstance activeCard;
 
     public CharacterStats PlayerStats => playerStats;
-
     private CharacterStats playerStats;
     private CancellationTokenSource _cardSelectionCts;
+    private PlayerDataManager _playerDataManager;
+    private PlayerDataManager PlayerDataManager
+    {
+        get
+        {
+            if (_playerDataManager == null)
+            {
+                _playerDataManager = ServiceLocator.Get<PlayerDataManager>();
+            }
+            return _playerDataManager;
+        }
+    }
 
     void Awake()
     {
         if (!ServiceLocator.IsRegistered<CardManager>())
         {
             ServiceLocator.Register<CardManager>(this);
-            DontDestroyOnLoad(gameObject);
         }
         else
         {
             Destroy(gameObject);
         }
     }
-
     void OnEnable() { RoundManager.OnRoundEnded += HandleRoundEnd; }
     void OnDisable()
     {
@@ -57,52 +63,45 @@ public class CardManager : MonoBehaviour
 
     public CardInstance AddCard(NewCardDataSO newCardData)
     {
-        if (ownedCards.Count >= maxOwnedSlots)
+        if (PlayerDataManager.OwnedCards.Count >= maxOwnedSlots)
         {
-            if (equippedCards.Count > 0)
+            if (PlayerDataManager.EquippedCards.Count > 0)
             {
-                // 1. 무작위로 장착된 카드 선택
-                int randomIndex = Random.Range(0, equippedCards.Count);
-                CardInstance cardToRemove = equippedCards[randomIndex];
-
-                Debug.Log($"[CardManager] 카드 슬롯이 가득 찼습니다. 장착된 카드 '{cardToRemove.CardData.basicInfo.cardName}'(을)를 제거합니다.");
-
-                // 2. 해당 카드 장착 해제 및 소유 목록에서 제거
+                int randomIndex = Random.Range(0, PlayerDataManager.EquippedCards.Count);
+                CardInstance cardToRemove = PlayerDataManager.EquippedCards[randomIndex];
+                Debug.Log($"[CardManager] 카드 슬롯 가득 참. '{cardToRemove.CardData.basicInfo.cardName}' 제거.");
                 Unequip(cardToRemove);
-                ownedCards.Remove(cardToRemove);
+                PlayerDataManager.OwnedCards.Remove(cardToRemove);
             }
             else
             {
-                // 소유 슬롯은 가득 찼지만 장착된 카드가 없어 제거할 수 없는 경우
                 Debug.LogWarning("[CardManager] 카드 슬롯이 가득 찼지만, 장착된 카드가 없어 새 카드를 추가할 수 없습니다.");
                 return null;
             }
         }
 
-        // 새 카드 인스턴스 생성 및 추가
         CardInstance newInstance = new CardInstance(newCardData);
-        ownedCards.Add(newInstance);
-        Debug.Log($"[CardManager] 새 카드 인스턴스 추가: {newInstance.CardData.name} ({newInstance.InstanceId})");
+        PlayerDataManager.OwnedCards.Add(newInstance);
+        Debug.Log($"[CardManager] 새 카드 인스턴스 추가: {newInstance.CardData.name}");
         return newInstance;
     }
 
     // [수정] 특정 위치에 카드를 장착할 수 있도록 index 파라미터 추가
     public bool Equip(CardInstance cardInstance, int index = -1)
     {
-        if (cardInstance == null || equippedCards.Count >= maxEquipSlots || !ownedCards.Contains(cardInstance) || equippedCards.Contains(cardInstance))
+        if (cardInstance == null || PlayerDataManager.EquippedCards.Count >= maxEquipSlots || !PlayerDataManager.OwnedCards.Contains(cardInstance) || PlayerDataManager.EquippedCards.Contains(cardInstance))
         {
             return false;
         }
 
-        if (index != -1 && index < equippedCards.Count)
+        if (index != -1 && index < PlayerDataManager.EquippedCards.Count)
         {
-            equippedCards.Insert(index, cardInstance);
+            PlayerDataManager.EquippedCards.Insert(index, cardInstance);
         }
         else
         {
-            equippedCards.Add(cardInstance);
+            PlayerDataManager.EquippedCards.Add(cardInstance);
         }
-
         if (playerStats != null)
         {
             // [수정] CardData의 기본 수치 대신, 강화 레벨이 적용된 CardInstance의 최종 수치를 사용
@@ -119,7 +118,7 @@ public class CardManager : MonoBehaviour
     public bool Unequip(CardInstance cardInstance)
     {
         if (cardInstance == null) return false;
-        bool removed = equippedCards.Remove(cardInstance);
+        bool removed = PlayerDataManager.EquippedCards.Remove(cardInstance);
         if (removed && playerStats != null)
         {
             playerStats.RemoveModifiersFromSource(cardInstance);
@@ -139,9 +138,9 @@ public class CardManager : MonoBehaviour
         Debug.Log($"[CardManager] 합성 시작: 보상 카드({rewardCardData.basicInfo.cardName}), 재료 카드({materialCard.CardData.basicInfo.cardName}) / 재료 레벨: {materialCard.EnhancementLevel}");
 
         // 1. 재료 카드의 장착 위치 확인 및 제거
-        int equippedIndex = equippedCards.IndexOf(materialCard);
+        int equippedIndex = PlayerDataManager.EquippedCards.IndexOf(materialCard);
         Unequip(materialCard);
-        ownedCards.Remove(materialCard);
+        PlayerDataManager.OwnedCards.Remove(materialCard);
 
         // 2. 보상 카드와 재료 카드 중 하나를 무작위로 선택
         var baseSO = (Random.Range(0, 2) == 0) ? rewardCardData : materialCard.CardData;
@@ -153,7 +152,7 @@ public class CardManager : MonoBehaviour
         Debug.Log($"[CardManager] 새로운 강화 카드 생성: {newEnhancedCard.CardData.basicInfo.cardName}, 강화 레벨: {newEnhancedCard.EnhancementLevel}");
 
         // 4. 새 카드를 소유 목록에 추가하고, 재료가 있던 위치에 장착
-        ownedCards.Add(newEnhancedCard);
+        PlayerDataManager.OwnedCards.Add(newEnhancedCard);
         Equip(newEnhancedCard, equippedIndex);
     }
 
@@ -161,11 +160,11 @@ public class CardManager : MonoBehaviour
     {
         if (playerStats == null) return;
 
-        var allOwned = new List<CardInstance>(ownedCards);
+        var allOwned = new List<CardInstance>(PlayerDataManager.OwnedCards);
         foreach (var card in allOwned) playerStats.RemoveModifiersFromSource(card);
 
-        var currentEquipped = new List<CardInstance>(equippedCards);
-        equippedCards.Clear();
+        var currentEquipped = new List<CardInstance>(PlayerDataManager.EquippedCards);
+        PlayerDataManager.EquippedCards.Clear();
         foreach (var card in currentEquipped) Equip(card);
     }
 
@@ -209,17 +208,17 @@ public class CardManager : MonoBehaviour
 
     private void SelectActiveCard()
     {
-        if (equippedCards.Count == 0)
+        if (PlayerDataManager.EquippedCards.Count == 0)
         {
             Debug.LogWarning("[CARD SELECT] 활성 카드를 선택하지 못했습니다. (장착된 카드가 없습니다)");
             return;
         }
 
-        var selectableCards = equippedCards.Where(c => c.CardData.selectionWeight > 0).ToList();
+        var selectableCards = PlayerDataManager.EquippedCards.Where(c => c.CardData.selectionWeight > 0).ToList();
         if (selectableCards.Count == 0)
         {
             // 가중치가 모두 0이면, 그냥 장착된 카드 중 하나를 무작위로 선택합니다.
-            activeCard = equippedCards[Random.Range(0, equippedCards.Count)];
+            activeCard = PlayerDataManager.EquippedCards[Random.Range(0, PlayerDataManager.EquippedCards.Count)];
         }
         else
         {
@@ -256,8 +255,14 @@ public class CardManager : MonoBehaviour
 
     public void ClearAndResetDeck()
     {
-        ownedCards.Clear();
-        equippedCards.Clear();
+        if (PlayerDataManager == null)
+        {
+            Debug.LogError($"[{GetType().Name}] ClearAndResetDeck 실패: PlayerDataManager가 없습니다.");
+            return;
+        }
+
+        PlayerDataManager.OwnedCards.Clear();
+        PlayerDataManager.EquippedCards.Clear();
         activeCard = null;
     }
 
@@ -271,11 +276,11 @@ public class CardManager : MonoBehaviour
         if (cardA == null || cardB == null || cardA == cardB) return;
 
         // 각 카드의 장착 여부와 인덱스를 미리 파악합니다.
-        bool isA_Equipped = equippedCards.Contains(cardA);
-        int indexA = isA_Equipped ? equippedCards.IndexOf(cardA) : -1;
+        bool isA_Equipped = PlayerDataManager.EquippedCards.Contains(cardA);
+        int indexA = isA_Equipped ? PlayerDataManager.EquippedCards.IndexOf(cardA) : -1;
 
-        bool isB_Equipped = equippedCards.Contains(cardB);
-        int indexB = isB_Equipped ? equippedCards.IndexOf(cardB) : -1;
+        bool isB_Equipped = PlayerDataManager.EquippedCards.Contains(cardB);
+        int indexB = isB_Equipped ? PlayerDataManager.EquippedCards.IndexOf(cardB) : -1;
 
         // --- 경우의 수에 따른 처리 ---
 
@@ -288,7 +293,7 @@ public class CardManager : MonoBehaviour
             playerStats.RemoveModifiersFromSource(cardB);
 
             // 리스트 내에서 위치를 교환합니다.
-            (equippedCards[indexA], equippedCards[indexB]) = (equippedCards[indexB], equippedCards[indexA]);
+            (PlayerDataManager.EquippedCards[indexA], PlayerDataManager.EquippedCards[indexB]) = (PlayerDataManager.EquippedCards[indexB], PlayerDataManager.EquippedCards[indexA]);
 
             // 교체된 위치 기준으로 스탯 보너스를 다시 적용합니다.
             // (Equip 함수는 스탯 추가 로직을 포함하므로 재사용하지 않습니다.)
@@ -323,11 +328,11 @@ public class CardManager : MonoBehaviour
     /// <param name="targetEquipIndex">목표로 하는 빈 장착 슬롯 인덱스</param>
     public void MoveCardToEmptyEquipSlot(CardInstance cardToMove, int targetEquipIndex)
     {
-        if (cardToMove == null || equippedCards.Count >= maxEquipSlots) return;
+        if (cardToMove == null || PlayerDataManager.EquippedCards.Count >= maxEquipSlots) return;
         if (targetEquipIndex >= maxEquipSlots) return;
 
         // 이미 장착된 카드였다면 먼저 장착 해제
-        if (equippedCards.Contains(cardToMove))
+        if (PlayerDataManager.EquippedCards.Contains(cardToMove))
         {
             Unequip(cardToMove);
         }

@@ -11,7 +11,7 @@ public class CharacterStats : MonoBehaviour, IStatHolder
     [Header("기본 능력치")]
     public BaseStats stats;
     [Header("현재 상태 (런타임)")]
-    public float currentHealth;
+    //public float currentHealth;
     public bool isInvulnerable = false;
     [Header("이벤트")]
     public UnityEvent OnFinalStatsCalculated = new UnityEvent();
@@ -20,8 +20,10 @@ public class CharacterStats : MonoBehaviour, IStatHolder
     public float cardSelectionInterval = 10f;
     private readonly Dictionary<StatType, List<StatModifier>> statModifiers = new Dictionary<StatType, List<StatModifier>>();
 
+    private PlayerDataManager playerDataManager;
+
+
     // [리팩토링] 최종 스탯을 실시간으로 계산하는 프로퍼티 (올바른 StatType 사용)
-    // [수정] FinalDamage -> FinalDamageBonus로 변경하여 '추가 피해량 %'임을 명확히 함
     public float FinalDamageBonus
     {
         get
@@ -46,43 +48,21 @@ public class CharacterStats : MonoBehaviour, IStatHolder
         {
             statModifiers[type] = new List<StatModifier>();
         }
+        playerDataManager = ServiceLocator.Get<PlayerDataManager>();
     }
 
     void Start()
     {
-        var gameManager = ServiceLocator.Get<GameManager>();
-        if (gameManager != null)
+        if (playerDataManager != null)
         {
-            if (gameManager.isFirstRound)
-            {
-                // 새 게임의 첫 라운드이므로, 체력을 최대로 설정합니다.
-                currentHealth = FinalHealth;
-            }
-            else
-            {
-                // 이전 라운드에서 이어지는 경우, 저장된 체력을 가져옵니다.
-                // (혹시 모를 오류에 대비해, 저장된 값이 없으면 최대로 설정)
-                currentHealth = gameManager.GetCurrentHealth() ?? FinalHealth;
-            }
+            // UI가 현재 체력으로 초기화될 수 있도록 방송을 보냅니다.
+            playerDataManager.UpdateHealth(playerDataManager.CurrentHealth);
         }
-        else
-        {
-            // GameManager를 찾을 수 없는 예외적인 경우, 체력을 최대로 설정합니다.
-            currentHealth = FinalHealth;
-        }
-
-        // 체력 초기화 후, HUD UI를 즉시 업데이트합니다.
-        playerHealthBar.UpdateHealth(currentHealth, FinalHealth);
     }
-
     void OnDestroy()
     {
-        var gameManager = ServiceLocator.Get<GameManager>();
-        if (gameManager != null)
-        {
-            Debug.Log($"[DEBUG-HEALTH] CharacterStats.OnDestroy: GameManager에 체력 저장을 요청합니다. 저장할 체력: {currentHealth}");
-            gameManager.SetCurrentHealth(currentHealth);
-        }
+        // 체력은 TakeDamage/Heal에서 실시간으로 PlayerDataManager에 업데이트되므로,
+        // 파괴 시점에 별도로 저장할 필요가 없습니다.
 
         var debugManager = ServiceLocator.Get<DebugManager>();
         if (debugManager != null)
@@ -119,17 +99,21 @@ public class CharacterStats : MonoBehaviour, IStatHolder
 
     public void TakeDamage(float damage)
     {
-        Debug.Log($"[DAMAGE-DEBUG 4/4] TakeDamage 호출됨. 데미지: {damage}, 현재 체력: {currentHealth}");
+        if (playerDataManager == null) return;
+
+        Debug.Log($"[DAMAGE-DEBUG 4/4] TakeDamage 호출됨. 데미지: {damage}, 현재 체력: {playerDataManager.CurrentHealth}");
         if (isInvulnerable)
         {
             Debug.Log("[DAMAGE-DEBUG] 무적 상태이므로 데미지를 받지 않습니다.");
             return;
         }
-        currentHealth -= damage;
-        playerHealthBar.UpdateHealth(currentHealth, FinalHealth);
-        if (currentHealth <= 0)
+
+        float newHealth = playerDataManager.CurrentHealth - damage;
+        playerDataManager.UpdateHealth(newHealth);
+
+        if (playerDataManager.CurrentHealth <= 0)
         {
-            currentHealth = 0;
+            playerDataManager.CurrentHealth = 0;
             Die();
         }
     }
@@ -143,9 +127,14 @@ public class CharacterStats : MonoBehaviour, IStatHolder
 
     public void Heal(float amount)
     {
-        currentHealth += amount;
-        if (currentHealth > FinalHealth) currentHealth = FinalHealth;
-        playerHealthBar.UpdateHealth(currentHealth, FinalHealth);
+        if (playerDataManager == null) return;
+
+        float newHealth = playerDataManager.CurrentHealth + amount;
+        if (newHealth > FinalHealth)
+        {
+            newHealth = FinalHealth;
+        }
+        playerDataManager.UpdateHealth(newHealth);
     }
 
     public void ApplyPermanentStats(CharacterPermanentStats permanentStats)
@@ -181,9 +170,8 @@ public class CharacterStats : MonoBehaviour, IStatHolder
 
     public float GetCurrentHealth()
     {
-        return currentHealth;
+        return playerDataManager != null ? playerDataManager.CurrentHealth : 0f;
     }
-
     public static BaseStats CalculatePreviewStats(BaseStats baseStats, int allocatedPoints)
     {
         BaseStats previewStats = new BaseStats();

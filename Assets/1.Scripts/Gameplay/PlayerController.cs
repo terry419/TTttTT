@@ -111,9 +111,11 @@ public class PlayerController : MonoBehaviour
         try
         {
             if (cardInstance == null) return;
+            var playerDataManager = ServiceLocator.Get<PlayerDataManager>();
+            if (playerDataManager == null) return;
 
-            // 카드가 여전히 장착 목록에 있는지 확인
-            if (!cardManager.equippedCards.Contains(cardInstance))
+            // [수정] 카드가 여전히 장착 목록에 있는지 확인
+            if (!playerDataManager.EquippedCards.Contains(cardInstance))
             {
                 return;
             }
