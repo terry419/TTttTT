@@ -14,8 +14,6 @@ public class GameManager : MonoBehaviour
     public CharacterDataSO SelectedCharacter { get; set; }
     public int AllocatedPoints { get; set; }
 
-    private float? lastPlayerHealth = null;
-
     public event System.Action<GameState> OnGameStateChanged;
 
     private SceneTransitionManager sceneTransitionManager;
@@ -332,23 +330,4 @@ public class GameManager : MonoBehaviour
         Debug.Log("--- [GameManager] StartRoundAfterSceneLoad 코루틴 정상 종료 ---");
     }
 
-    #region 체력 관리 메서드
-
-
-
-    public void ModifyHealth(float amount)
-    {
-        if (lastPlayerHealth.HasValue)
-        {
-            lastPlayerHealth += amount;
-            Debug.Log($"[GameManager] 외부에서 체력 변경: {amount}. 현재 저장된 체력: {lastPlayerHealth}");
-        }
-        else
-        {
-            Debug.LogWarning("[GameManager] 저장된 체력 정보가 없어 ModifyHealth를 수행할 수 없습니다.");
-        }
-    }
-
-
-    #endregion
 }

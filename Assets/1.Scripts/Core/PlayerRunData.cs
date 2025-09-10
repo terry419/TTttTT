@@ -10,8 +10,6 @@ using UnityEngine; // [SerializeField]를 사용하기 위해 필요합니다.
 [Serializable]
 public class PlayerRunData
 {
-    // 제안해주신 대로, 나중에 저장/로드 데이터 구조가 변경될 때를 대비한 버전 관리 필드입니다.
-    [SerializeField] private int version = 1;
 
     // 이 런(Run)의 기반이 되는 캐릭터의 원본 데이터입니다.
     public CharacterDataSO characterData;

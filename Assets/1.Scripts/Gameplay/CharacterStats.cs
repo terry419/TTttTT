@@ -82,6 +82,64 @@ public class CharacterStats : MonoBehaviour, IStatHolder
         playerDataManager.UpdateHealth(FinalHealth, FinalHealth);
     }
 
+    void OnEnable()
+    {
+        // PlayerDataManager의 데이터 변경 방송을 구독합니다.
+        PlayerDataManager.OnRunDataChanged += HandleRunDataChanged;
+    }
+
+    void OnDisable()
+    {
+        // 오브젝트가 비활성화되면 구독을 해제하여 메모리 누수를 방지합니다.
+        PlayerDataManager.OnRunDataChanged -= HandleRunDataChanged;
+    }
+
+    // 데이터 변경 방송을 수신했을 때 호출될 함수입니다.
+    private void HandleRunDataChanged(RunDataChangeType changeType)
+    {
+        // 카드나 유물 데이터가 변경되었을 때만 스탯을 다시 계산합니다.
+        if (changeType == RunDataChangeType.Cards || changeType == RunDataChangeType.Artifacts || changeType == RunDataChangeType.All)
+        {
+            Debug.Log($"[CharacterStats] '{changeType}' 타입 데이터 변경 감지. 스탯을 새로고침합니다.");
+            RecalculateAllModifiers();
+        }
+    }
+
+    // 모든 카드와 유물 보너스를 처음부터 다시 적용하는 함수입니다.
+    private void RecalculateAllModifiers()
+    {
+        // 1. 기존에 적용된 모든 보너스를 초기화합니다.
+        foreach (var key in statModifiers.Keys)
+        {
+            statModifiers[key].Clear();
+        }
+
+        // 2. PlayerDataManager로부터 최신 데이터를 가져옵니다.
+        var runData = ServiceLocator.Get<PlayerDataManager>().CurrentRunData;
+        if (runData == null) return;
+
+        // 3. 현재 장착된 모든 카드의 보너스를 다시 적용합니다.
+        foreach (var card in runData.equippedCards)
+        {
+            AddModifier(StatType.Attack, new StatModifier(card.GetFinalDamageMultiplier(), card));
+            AddModifier(StatType.AttackSpeed, new StatModifier(card.GetFinalAttackSpeedMultiplier(), card));
+            AddModifier(StatType.MoveSpeed, new StatModifier(card.GetFinalMoveSpeedMultiplier(), card));
+            AddModifier(StatType.Health, new StatModifier(card.GetFinalHealthMultiplier(), card));
+            AddModifier(StatType.CritRate, new StatModifier(card.GetFinalCritRateMultiplier(), card));
+            AddModifier(StatType.CritMultiplier, new StatModifier(card.GetFinalCritDamageMultiplier(), card));
+        }
+
+        // 4. (향후 확장) 모든 유물의 보너스를 다시 적용합니다.
+        var artifactManager = ServiceLocator.Get<ArtifactManager>();
+        if (artifactManager != null)
+        {
+            // artifactManager.RecalculateArtifactStats(); // 필요 시 이와 유사한 함수 호출
+        }
+
+        // 5. 최종적으로 스탯을 다시 계산하고 이벤트를 발생시켜 UI 등에 알립니다.
+        CalculateFinalStats();
+    }
+
     void OnDestroy()
     {
         // 이제 OnDestroy에서 체력을 저장할 필요가 없습니다.
