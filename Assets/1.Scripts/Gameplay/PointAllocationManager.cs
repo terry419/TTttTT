@@ -1,10 +1,10 @@
-using Cysharp.Threading.Tasks; // 파일 상단에 추가
-using System.Collections;
+using Cysharp.Threading.Tasks;
+using System.Collections; 
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
-using UnityEngine.EventSystems;
+using UnityEngine.EventSystems; 
 using UnityEngine.UI;
 
 public class PointAllocationManager : MonoBehaviour
@@ -46,6 +46,15 @@ public class PointAllocationManager : MonoBehaviour
         {
             Debug.LogError("[PointAllocationManager] MapGenerator 참조가 설정되지 않았습니다! Inspector에서 연결해주세요.");
         }
+        StartCoroutine(SetInitialFocus());
+    }
+    private IEnumerator SetInitialFocus()
+    {
+        yield return null;
+        EventSystem.current.SetSelectedGameObject(null);
+
+        // 'DefalutFocus' 태그가 있었던 'inputActivationButton'에 포커스를 맞춥니다.
+        EventSystem.current.SetSelectedGameObject(inputActivationButton.gameObject);
     }
 
     private async void OnConfirmAllocationClicked()

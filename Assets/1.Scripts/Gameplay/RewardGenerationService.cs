@@ -14,14 +14,12 @@ public class RewardGenerationService : MonoBehaviour
         if (!ServiceLocator.IsRegistered<RewardGenerationService>())
         {
             ServiceLocator.Register<RewardGenerationService>(this);
-            DontDestroyOnLoad(gameObject);
         }
         else
         {
-            Destroy(gameObject);
+            Destroy(this);
         }
     }
-
     void Start()
     {
         dataManager = ServiceLocator.Get<DataManager>();

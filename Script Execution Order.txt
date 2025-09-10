@@ -1,3 +1,4 @@
+PlayerDataManager -102
 PoolManager -101
 DataManager -100
 PrefabProvider -99

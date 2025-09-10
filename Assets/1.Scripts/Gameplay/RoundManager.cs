@@ -15,7 +15,6 @@ public class RoundManager : MonoBehaviour
     public static event System.Action<float> OnTimerChanged;
     public static event System.Action<bool> OnRoundEnded; // bool: 승리 여부
 
-    // ▼▼▼ [3] Inspector에서 보상 카드 수를 설정할 변수 추가 ▼▼▼
     [Header("보상 설정")]
     [SerializeField] private int numberOfRewardChoices = 3;
 
@@ -37,8 +36,20 @@ public class RoundManager : MonoBehaviour
         }
     }
 
-    // ▼▼▼ [2] OnEnable, OnDisable 함수를 추가/수정하여 GameManager의 이벤트를 구독 ▼▼▼
-    void OnEnable()
+    void Start()
+    {
+        var gameManager = ServiceLocator.Get<GameManager>();
+        if (gameManager != null)
+        {
+            gameManager.ReportRoundManagerReady(this);
+        }
+        else
+        {
+            Debug.LogError($"[{GetType().Name}] GameManager를 찾을 수 없어 라운드를 시작할 수 없습니다!");
+        }
+    }
+
+        void OnEnable()
     {
         MonsterController.OnMonsterDied += HandleMonsterDied;
         
@@ -271,7 +282,6 @@ public class RoundManager : MonoBehaviour
 
     // --- Event Handlers --- //
 
-    // ▼▼▼ [4] GameManager의 상태 변경을 감지할 핸들러 함수 추가 ▼▼▼
     private void HandleGameStateChanged(GameManager.GameState newState)
     {
         // 게임 상태가 '게임오버'로 바뀌면, 라운드 매니저의 모든 활동을 즉시 중단시킵니다.

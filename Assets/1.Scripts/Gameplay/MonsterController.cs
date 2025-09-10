@@ -49,8 +49,12 @@ public class MonsterController : MonoBehaviour
     {
         ServiceLocator.Get<MonsterManager>()?.RegisterMonster(this);
         isDead = false;
-        isTouchingPlayer = false; // 활성화 시 초기화
-        damageTimer = 0f;       // 활성화 시 초기화
+        isTouchingPlayer = false;
+        damageTimer = 0f;
+    }
+
+    void Start()
+    {
         var playerController = ServiceLocator.Get<PlayerController>();
         if (playerController != null)
         {

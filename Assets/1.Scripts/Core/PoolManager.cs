@@ -30,39 +30,64 @@ public class PoolManager : MonoBehaviour
         SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
+    private void Start()
+    {
+        var gameManager = ServiceLocator.Get<GameManager>();
+        if (gameManager != null)
+        {
+            gameManager.OnBeforeStateChange += HandleGameStateChange;
+        }
+        else
+        {
+            // Start에서도 GameManager를 찾지 못한다면 더 큰 문제이므로 에러 로그를 남깁니다.
+            Debug.LogError("[PoolManager] GameManager를 찾을 수 없어 상태 변경 이벤트를 구독할 수 없습니다.");
+        }
+    }
+
     private void OnDisable()
     {
         SceneManager.sceneLoaded -= OnSceneLoaded;
+
+        if (ServiceLocator.IsRegistered<GameManager>())
+        {
+            ServiceLocator.Get<GameManager>().OnBeforeStateChange -= HandleGameStateChange;
+        }
+    }
+
+    private void HandleGameStateChange(GameManager.GameState from, GameManager.GameState to)
+    {
+        // 이전 상태가 Gameplay였고, 다음 상태가 Gameplay가 아니라면 모든 풀을 정리합니다.
+        if (from == GameManager.GameState.Gameplay && to != GameManager.GameState.Gameplay)
+        {
+            Debug.Log($"[PoolManager] 게임 플레이 상태({from})를 벗어나므로 모든 풀 오브젝트를 정리합니다.");
+            ClearAndDestroyEntirePool();
+        }
     }
 
     // 새 씬이 로드될 때 풀을 정리하여 MissingReferenceException을 방지합니다.
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        ClearAndDestroyEntirePool();
     }
 
     public async UniTask<GameObject> GetAsync(string key)
     {
         if (string.IsNullOrEmpty(key)) return null;
 
-        // --- [핵심 수정] SemaphoreSlim을 이용한 동시성 제어 ---
         if (!_loadingSemaphores.ContainsKey(key))
         {
             _loadingSemaphores[key] = new SemaphoreSlim(1, 1);
         }
         await _loadingSemaphores[key].WaitAsync();
-        // --- 여기까지 ---
 
         try
         {
             if (_poolDictionary.TryGetValue(key, out var queue) && queue.Count > 0)
             {
                 GameObject obj = queue.Dequeue();
-                
-                // OnSceneLoaded에서 풀이 정리되므로, 이 경우는 거의 발생하지 않지만 안전을 위해 유지합니다.
+
                 if (obj == null)
                 {
-                    // null이면 새 오브젝트를 생성하도록 로직을 이어갑니다.
+                    // null이면 새 오브젝트 생성 로직으로 넘어감
                 }
                 else
                 {
@@ -91,9 +116,7 @@ public class PoolManager : MonoBehaviour
         }
         finally
         {
-            // --- [핵심 수정] 작업이 끝나면 반드시 세마포어 해제 ---
             _loadingSemaphores[key].Release();
-            // --- 여기까지 ---
         }
     }
 

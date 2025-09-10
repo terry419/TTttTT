@@ -1,4 +1,4 @@
-// ÆÄÀÏ °æ·Î: Assets/1.Scripts/Debug/CardRewardTestHarness.cs
+ï»¿//Â  : Assets/1.Scripts/Debug/CardRewardTestHarness.cs
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,21 +6,21 @@ using Cysharp.Threading.Tasks;
 using UnityEngine.AddressableAssets;
 
 /// <summary>
-/// CardReward ¾ÀÀ» µ¶¸³ÀûÀ¸·Î Å×½ºÆ®ÇÏ±â À§ÇÑ ÅëÇÕ Å×½ºÆ® Å¬·¡½ºÀÔ´Ï´Ù.
-/// ÇÊ¼ö ¸Å´ÏÀú ·Îµå ¹× F5 Å° ÀÔ·ÂÀ» ¸ğµÎ Ã³¸®ÇÕ´Ï´Ù.
+/// CardReward ì”¬ì„ ë‹¨ë…ìœ¼ë¡œ í…ŒìŠ¤íŠ¸í•˜ê¸° ìœ„í•œ í…ŒìŠ¤íŠ¸ í´ë˜ìŠ¤ì…ë‹ˆë‹¤.
+/// ì”¬ì— ì§„ì…í•˜ë©´ ìë™ìœ¼ë¡œ, ë˜ëŠ” F5 í‚¤ ì…ë ¥ìœ¼ë¡œ í…ŒìŠ¤íŠ¸ë¥¼ ì‹¤í–‰í•©ë‹ˆë‹¤.
 /// </summary>
 public class CardRewardTestHarness : MonoBehaviour
 {
-    [Header("Å×½ºÆ® ¼³Á¤")]
-    [Tooltip("º¸»óÀ¸·Î Á¦½ÃÇÒ Ä«µå °³¼ö¸¦ Á¶ÀıÇÕ´Ï´Ù.")]
+    [Header("í…ŒìŠ¤íŠ¸ ì„¤ì •")]
+    [Tooltip("ë³´ìƒìœ¼ë¡œ ì œì‹œí•  ì¹´ë“œ ìˆ˜ë¥¼ ì„¤ì •í•©ë‹ˆë‹¤.")]
     [Range(2, 4)]
     public int rewardCardCount = 3;
 
-    [Tooltip("Àç·á·Î »ç¿ëÇÒ, ÀÌ¹Ì º¸À¯ ÁßÀÎ Ä«µå °³¼ö¸¦ Á¶ÀıÇÕ´Ï´Ù.")]
+    [Tooltip("í”Œë ˆì´ì–´ê°€ ì´ë¯¸ ì†Œìœ í•œ ê²ƒìœ¼ë¡œ ê°€ì •í•  ì¹´ë“œ ìˆ˜ë¥¼ ì„¤ì •í•©ë‹ˆë‹¤.")]
     [Range(0, 7)]
     public int ownedCardCount = 7;
 
-    // --- ³»ºÎ ÂüÁ¶ ---
+    // --- ë‚´ë¶€ ì°¸ì¡° ---
     private CardRewardUIManager cardRewardUI;
     private CardManager cardManager;
     private RewardGenerationService rewardGenerationService;
@@ -37,33 +37,34 @@ public class CardRewardTestHarness : MonoBehaviour
             return;
         }
 
-        Debug.LogWarning("[TestHarness] ÇÊ¼ö ¸Å´ÏÀú°¡ ¾ø¾î ·Îµå¸¦ ½ÃÀÛÇÕ´Ï´Ù...");
+        Debug.LogWarning("[TestHarness] í•„ìˆ˜ ë§¤ë‹ˆì € ë¡œë“œë¥¼ ì‹œì‘í•©ë‹ˆë‹¤...");
+        // [ë¦¬íŒ©í† ë§] ì• í”Œë¦¬ì¼€ì´ì…˜ -> ê²Œì„ ì„¸ì…˜ ìˆœì„œë¡œ ìƒì„±í•©ë‹ˆë‹¤.
         await Addressables.InstantiateAsync(PrefabKeys.Managers).Task;
         await Addressables.InstantiateAsync(PrefabKeys.GameplaySession).Task;
-        Debug.Log("[TestHarness] ÇÊ¼ö ¸Å´ÏÀú »ı¼º ¿Ï·á.");
+        Debug.Log("[TestHarness] í•„ìˆ˜ ë§¤ë‹ˆì € ë¡œë“œ ì™„ë£Œ.");
 
-        //  [ÇÙ½É ¼öÁ¤] DataManager¸¦ Ã£¾Æ µ¥ÀÌÅÍ ·Îµå¸¦ Á÷Á¢ ½ÇÇàÇÏ°í ±â´Ù¸³´Ï´Ù. 
+        // [ì¬í™•ì¸] DataManagerë¥¼ ì°¾ì•„ ë°ì´í„°ë¥¼ ë¡œë“œí•  ë•Œê¹Œì§€ ê¸°ë‹¤ë¦½ë‹ˆë‹¤. 
         dataManager = ServiceLocator.Get<DataManager>();
         if (dataManager != null)
         {
-            Debug.Log("[TestHarness] DataManager ¹ß°ß. µ¥ÀÌÅÍ ·ÎµùÀ» ½ÃÀÛÇÕ´Ï´Ù...");
+            Debug.Log("[TestHarness] DataManager ê°ì§€. ë°ì´í„° ë¡œë“œë¥¼ ì‹œì‘í•©ë‹ˆë‹¤...");
             await dataManager.LoadAllDataAsync().ToUniTask();
-            Debug.Log("[TestHarness] ¸ğµç µ¥ÀÌÅÍ ·Îµù ¿Ï·á.");
+            Debug.Log("[TestHarness] ëª¨ë“  ë°ì´í„° ë¡œë“œ ì™„ë£Œ.");
         }
         else
         {
-            Debug.LogError("[TestHarness] DataManager¸¦ Ã£À» ¼ö ¾ø½À´Ï´Ù!");
-            isInitialized = true; // ¿À·ù°¡ ÀÖ´õ¶óµµ Update ·çÇÁ°¡ ¸ØÃßÁö ¾Êµµ·Ï ¼³Á¤
+            Debug.LogError("[TestHarness] DataManagerë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤!");
+            isInitialized = true; // ë” ì´ìƒ ì§„í–‰í•˜ì§€ ì•Šë„ë¡ í”Œë˜ê·¸ ì„¤ì •
             return;
         }
 
-        // µ¥ÀÌÅÍ ·Îµå ÈÄ ³ª¸ÓÁö ¸Å´ÏÀúµéÀ» ÇÒ´çÇÕ´Ï´Ù.
-        cardRewardUI = ServiceLocator.Get<CardRewardUIManager>();
+        // ë°ì´í„° ë¡œë“œ í›„ ë§¤ë‹ˆì €ë¥¼ í• ë‹¹í•©ë‹ˆë‹¤.
+        cardRewardUI = FindObjectOfType<CardRewardUIManager>(); // ì”¬ì— ì´ë¯¸ ìˆìœ¼ë¯€ë¡œ FindObjectOfType ì‚¬ìš©
         cardManager = ServiceLocator.Get<CardManager>();
         rewardGenerationService = ServiceLocator.Get<RewardGenerationService>();
 
         isInitialized = true;
-        Debug.Log("<color=yellow>--- Å×½ºÆ® ÁØºñ ¿Ï·á! F5 Å°¸¦ ´­·¯ Å×½ºÆ®¸¦ ½ÃÀÛÇÏ¼¼¿ä. ---</color>");
+        Debug.Log("<color=yellow>--- í…ŒìŠ¤íŠ¸ ì¤€ë¹„ ì™„ë£Œ! F5 í‚¤ë¥¼ ëˆŒëŸ¬ í…ŒìŠ¤íŠ¸ë¥¼ ì‹¤í–‰í•˜ì„¸ìš”. ---</color>");
     }
 
     void Update()
@@ -78,19 +79,19 @@ public class CardRewardTestHarness : MonoBehaviour
     {
         if (cardManager == null || dataManager == null || rewardGenerationService == null || cardRewardUI == null)
         {
-            Debug.LogError("[TestHarness] ÇÊ¼ö ¸Å´ÏÀú Áß ÇÏ³ª°¡ nullÀÔ´Ï´Ù! ·Îµå °úÁ¤À» È®ÀÎÇÏ¼¼¿ä.");
+            Debug.LogError("[TestHarness] í•„ìˆ˜ ë§¤ë‹ˆì € ì¤‘ í•˜ë‚˜ê°€ nullì…ë‹ˆë‹¤! ë¡œë“œ ê³¼ì •ì„ í™•ì¸í•˜ì„¸ìš”.");
             return;
         }
 
         isTestRun = true;
-        Debug.Log($"<color=lime>--- F5 Å° ÀÔ·Â °¨Áö! Å×½ºÆ® ½ÃÀÛ: º¸»ó Ä«µå {rewardCardCount}Àå, º¸À¯ Ä«µå {ownedCardCount}Àå ---</color>");
+        Debug.Log($"<color=lime>--- F5 í‚¤ ì…ë ¥ ê°ì§€! í…ŒìŠ¤íŠ¸ ì‹œì‘ : ë³´ìƒ ì¹´ë“œ {rewardCardCount}ê°œ, ì†Œìœ  ì¹´ë“œ {ownedCardCount}ê°œ ---</color>");
 
         cardManager.ClearAndResetDeck();
 
         List<NewCardDataSO> allCards = dataManager.GetAllNewCards();
         if (allCards == null || allCards.Count == 0)
         {
-            Debug.LogError("[TestHarness] Ä«µå µ¥ÀÌÅÍ¸¦ ºÒ·¯¿Ã ¼ö ¾ø½À´Ï´Ù! LoadAllDataAsync°¡ Á¦´ë·Î ½ÇÇàµÇ¾ú´ÂÁö È®ÀÎÇÏ¼¼¿ä.");
+            Debug.LogError("[TestHarness] ì¹´ë“œ ë°ì´í„°ë¥¼ ê°€ì ¸ì˜¬ ìˆ˜ ì—†ìŠµë‹ˆë‹¤! LoadAllDataAsyncê°€ ì œëŒ€ë¡œ í˜¸ì¶œë˜ì—ˆëŠ”ì§€ í™•ì¸í•˜ì„¸ìš”.");
             return;
         }
 
@@ -101,10 +102,10 @@ public class CardRewardTestHarness : MonoBehaviour
             if (instance != null) cardManager.Equip(instance);
         }
         var playerDataManager = ServiceLocator.Get<PlayerDataManager>();
-        Debug.Log($"[TestHarness] {playerDataManager.CurrentRunData.ownedCards.Count}°³ÀÇ Å×½ºÆ® Ä«µå¸¦ »ı¼ºÇÏ°í ÀåÂøÇß½À´Ï´Ù.");
+        Debug.Log($"[TestHarness] {playerDataManager.CurrentRunData.ownedCards.Count}ê°œì˜ í…ŒìŠ¤íŠ¸ ì¹´ë“œë¥¼ ìƒì„±í•˜ê³  ì¥ì°©í–ˆìŠµë‹ˆë‹¤.");
 
         List<NewCardDataSO> rewardChoices = rewardGenerationService.GenerateRewards(rewardCardCount);
-        Debug.Log($"[TestHarness] {rewardChoices.Count}°³ÀÇ º¸»ó Ä«µå¸¦ »ı¼ºÇß½À´Ï´Ù.");
+        Debug.Log($"[TestHarness] {rewardChoices.Count}ê°œì˜ ì¹´ë“œ ë³´ìƒì„ ìƒì„±í–ˆìŠµë‹ˆë‹¤.");
 
         cardRewardUI.Initialize(rewardChoices);
     }

@@ -79,7 +79,7 @@ public class CharacterStats : MonoBehaviour, IStatHolder
         // PlayerInitializer에서 모든 스탯 보너스(카드, 유물 등)가 적용된 후,
         // 최종 최대 체력으로 현재 체력을 설정하고 UI에 알립니다.
         CalculateFinalStats();
-        playerDataManager.UpdateHealth(FinalHealth, FinalHealth);
+        playerDataManager.UpdateHealth(playerDataManager.CurrentRunData.currentHealth, FinalHealth);
     }
 
     void OnEnable()

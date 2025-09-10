@@ -1,4 +1,4 @@
-// 파일명: GameManager.cs (수정 완료)
+// ./TTttTT/Assets/1.Scripts/Core/GameManager.cs
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.AddressableAssets;
 using Cysharp.Threading.Tasks;
 using UnityEngine.SceneManagement;
+using UnityEngine.ResourceManagement.AsyncOperations; // AsyncOperationHandle 사용
 
 public class GameManager : MonoBehaviour
 {
@@ -14,10 +15,16 @@ public class GameManager : MonoBehaviour
     public CharacterDataSO SelectedCharacter { get; set; }
     public int AllocatedPoints { get; set; }
 
-    public event System.Action<GameState> OnGameStateChanged;
+    public event Action<GameState, GameState> OnBeforeStateChange;
+    public event Action<GameState, GameState> OnAfterStateChange;
+
+    public event Action<GameState> OnGameStateChanged;
 
     private SceneTransitionManager sceneTransitionManager;
     private InputManager inputManager;
+    private GameObject _gameplaySessionInstance;
+    private AsyncOperationHandle<GameObject> _gameplaySessionHandle;
+    private RoundManager _currentRoundManager;
 
     private void Awake()
     {
@@ -27,22 +34,15 @@ public class GameManager : MonoBehaviour
             ServiceLocator.Register<GameManager>(this);
             DontDestroyOnLoad(transform.root.gameObject);
             SceneManager.sceneLoaded += OnSceneLoaded;
-
-            if (!ServiceLocator.IsRegistered<RewardGenerationService>())
-            {
-                GameObject serviceGO = new GameObject("RewardGenerationService");
-                serviceGO.AddComponent<RewardGenerationService>();
-            }
+            this.OnBeforeStateChange += HandleStateChangeCleanup;
         }
         else
         {
             Destroy(transform.root.gameObject);
         }
     }
-
     private void Start()
     {
-        Debug.Log($"[GameManager] Start() 호출됨. (ID: {GetInstanceID()}) - 다른 매니저 참조 시작");
         sceneTransitionManager = ServiceLocator.Get<SceneTransitionManager>();
         inputManager = ServiceLocator.Get<InputManager>();
 
@@ -50,149 +50,127 @@ public class GameManager : MonoBehaviour
         {
             inputManager.LinkToGameManager(this);
         }
-
-        if (sceneTransitionManager == null)
-        {
-            Debug.LogError("[GameManager] Start()에서 SceneTransitionManager를 찾지 못했습니다!");
-        }
-        if (inputManager == null)
-        {
-            Debug.LogError("[GameManager] Start()에서 InputManager를 찾지 못했습니다!");
-        }
     }
 
     private void OnDestroy()
     {
-        Debug.Log($"[생명주기] GameManager (ID: {GetInstanceID()}) - OnDestroy() 호출됨.");
         SceneManager.sceneLoaded -= OnSceneLoaded;
-
         if (inputManager != null)
         {
             inputManager.UnlinkFromGameManager(this);
         }
-    }
-
-    private void OnEnable()
-    {
-        Debug.Log($"[생명주기] GameManager (ID: {GetInstanceID()}) - OnEnable() 호출됨.");
+        // [추가] 오브젝트 파괴 시 이벤트 구독 해제
+        this.OnBeforeStateChange -= HandleStateChangeCleanup;
     }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        Debug.Log($"[GameManager] '{scene.name}' 씬 로드 완료. Mode: {mode}");
-        if (CurrentState == GameState.Gameplay && mode == LoadSceneMode.Single)
+    }
+
+    public void ReportRoundManagerReady(RoundManager roundManager)
+    {
+        Debug.Log($"[GameManager] RoundManager로부터 준비 보고를 받았습니다. 라운드 시작 절차를 진행합니다.");
+        _currentRoundManager = roundManager;
+        StartCoroutine(StartRoundRoutine());
+    }
+
+    private IEnumerator StartRoundRoutine()
+    {
+        var mapManager = ServiceLocator.Get<MapManager>();
+        var campaignManager = ServiceLocator.Get<CampaignManager>();
+        yield return new WaitUntil(() => mapManager != null && campaignManager != null && mapManager.IsMapInitialized);
+
+        MapNode currentNode = mapManager.CurrentNode;
+        if (currentNode == null)
         {
-            StartCoroutine(StartRoundAfterSceneLoad());
+            Debug.LogError("[GameManager] 에러! MapManager로부터 현재 노드 정보를 가져올 수 없습니다!");
+            yield break;
+        }
+
+        RoundDataSO roundToStart = campaignManager.GetRoundDataForNode(currentNode);
+        if (roundToStart != null && _currentRoundManager != null)
+        {
+            yield return StartCoroutine(_currentRoundManager.StartRound(roundToStart));
         }
     }
-
-    public void SetupForTest(CharacterDataSO character, int allocatedPoints)
-    {
-        Debug.Log($"[GameManager] 테스트 모드 설정: Character={character.characterId}, Points={allocatedPoints}");
-        SelectedCharacter = character;
-        AllocatedPoints = allocatedPoints;
-    }
-
     public void ChangeState(GameState newState)
     {
-        if (CurrentState == newState && CurrentState != GameState.Gameplay) return;
-        Debug.Log($"[GameManager] 상태 변경: {CurrentState} -> {newState}");
+        if (CurrentState == newState) return;
 
-        // 제안해주신 초기화 순서 보장 로직입니다.
-        if (newState == GameState.PointAllocation)
+        Debug.Log($"[GameManager] 상태 변경 요청: {CurrentState} -> {newState}");
+        OnBeforeStateChange?.Invoke(CurrentState, newState); // [추가] 상태 변경 직전 이벤트 방송
+
+        GameState oldState = CurrentState;
+
+        if (newState == GameState.PointAllocation && _gameplaySessionInstance == null)
         {
-            // isFirstRound는 이제 PlayerDataManager가 관리하므로 GameManager는 신경쓰지 않아도 됩니다.
-            // 바로 새 런 데이터를 초기화하도록 요청합니다.
-            var playerDataManager = ServiceLocator.Get<PlayerDataManager>();
-            if (playerDataManager != null && SelectedCharacter != null)
-            {
-                playerDataManager.ResetRunData(SelectedCharacter);
-            }
-        }
-        if (newState == GameState.Reward)
-        {
-            var rewardManager = ServiceLocator.Get<RewardManager>();
-            var campaignManager = ServiceLocator.Get<CampaignManager>();
-            var mapManager = ServiceLocator.Get<MapManager>();
-            CampaignDataSO currentCampaign = campaignManager?.GetCurrentCampaign();
-
-            if (rewardManager != null && rewardManager.LastRoundWon && mapManager != null && currentCampaign != null)
-            {
-                MapNode currentNode = mapManager.CurrentNode;
-                int totalRounds = currentCampaign.rounds.Count;
-                int currentRoundIndex = currentNode.Position.y;
-
-                if (currentRoundIndex >= totalRounds - 1)
-                {
-                    Debug.Log("[GameManager] 최종 라운드 클리어! 게임 승리 상태로 전환합니다.");
-                    ChangeState(GameState.GameWon);
-                    return;
-                }
-            }
-        }
-
-        if (CurrentState == GameState.Gameplay && newState != GameState.Gameplay)
-        {
-            var cardManager = ServiceLocator.Get<CardManager>();
-            cardManager?.StopCardSelectionLoop();
-
-            var poolManager = ServiceLocator.Get<PoolManager>();
-            if (poolManager != null)
-            {
-                Debug.Log($"[GameManager] Gameplay 씬을 떠나므로 모든 풀링된 오브젝트를 파괴합니다.");
-                poolManager.ClearAndDestroyEntirePool();
-            }
+            InstantiateGameplaySessionAndChangeState(newState).Forget();
+            return;
         }
 
         CurrentState = newState;
         OnGameStateChanged?.Invoke(newState);
 
-        if (newState == GameState.GameWon)
-        {
-            Debug.Log("[GameManager] 게임 승리! 엔딩 씬을 재생해야 하지만, 현재는 메인 메뉴로 바로 이동합니다.");
-            // 나중에 엔딩 씬이 추가되면 아래 로직을 수정하여 엔딩 씬으로 이동시키세요.
-            ChangeState(GameState.MainMenu);
-            return;
-        }
-        else if (newState == GameState.Pause)
-        {
-            Time.timeScale = 0;
-            return;
-        }
-        else if (newState == GameState.GameOver)
-        {
-            StartCoroutine(GameOverRoutine());
-            return;
-        }
+        if (newState == GameState.Pause) { Time.timeScale = 0; return; }
+        else if (newState == GameState.GameOver) { StartCoroutine(GameOverRoutine()); return; }
 
         Time.timeScale = 1;
 
         string sceneName = GetSceneNameForState(newState);
         if (newState == GameState.Gameplay)
         {
-            sceneName = SceneNames.GamePlay;
+            // [수정] 변경된 상수 이름을 사용합니다.
+            sceneName = SceneNames.Gameplay;
         }
 
-        if (!string.IsNullOrEmpty(sceneName))
+        if (!string.IsNullOrEmpty(sceneName) && SceneManager.GetActiveScene().name != sceneName)
         {
             sceneTransitionManager.LoadScene(sceneName);
         }
+
+        OnAfterStateChange?.Invoke(oldState, CurrentState); // [추가] 상태 변경 완료 후 이벤트 방송
+    }
+    private void HandleStateChangeCleanup(GameState from, GameState to)
+    {
+        // 게임 세션이 끝나고 메인 메뉴로 돌아갈 때 _GameplaySession 인스턴스를 파괴합니다.
+        if (to == GameState.MainMenu && _gameplaySessionInstance != null)
+        {
+            Debug.Log("[GameManager] 메인 메뉴로 복귀. _GameplaySession 인스턴스를 파괴합니다.");
+            Addressables.ReleaseInstance(_gameplaySessionHandle);
+            _gameplaySessionInstance = null;
+        }
     }
 
-    private string GetSceneNameForState(GameState state)
+    /// <summary>
+    /// [리팩토링] 게임 세션 프리팹을 생성하고, 데이터 초기화 후 상태를 변경하는 비동기 메서드
+    /// </summary>
+    private async UniTaskVoid InstantiateGameplaySessionAndChangeState(GameState targetState)
     {
-        switch (state)
+        _gameplaySessionHandle = Addressables.InstantiateAsync(PrefabKeys.GameplaySession);
+        _gameplaySessionInstance = await _gameplaySessionHandle.Task;
+
+        if (_gameplaySessionInstance == null)
         {
-            case GameState.MainMenu: return SceneNames.MainMenu;
-            case GameState.CharacterSelect: return SceneNames.CharacterSelect;
-            case GameState.PointAllocation: return SceneNames.PointAllocation;
-            case GameState.Reward: return SceneNames.CardReward;
-            case GameState.Codex: return SceneNames.Codex;
-            case GameState.Shop: return SceneNames.Shop;
-            case GameState.Rest: return SceneNames.Rest;
-            case GameState.Event: return SceneNames.Event;
-            default: return "";
+            Debug.LogError("[GameManager] _GameplaySession 프리팹 인스턴스화에 실패했습니다!");
+            return;
         }
+
+        var playerDataManager = ServiceLocator.Get<PlayerDataManager>();
+        if (playerDataManager != null && SelectedCharacter != null)
+        {
+            playerDataManager.ResetRunData(SelectedCharacter);
+        }
+
+        // 상태를 변경하고 씬을 로드합니다.
+        ChangeState(targetState);
+    }
+
+    // (이하 다른 메서드들은 기존과 동일)
+    public void SetupForTest(CharacterDataSO character, int allocatedPoints)
+    {
+        Debug.Log($"[GameManager] 테스트 모드 설정: Character={character.characterId}, Points={allocatedPoints}");
+        SelectedCharacter = character;
+        AllocatedPoints = allocatedPoints;
     }
 
     public async UniTask PreloadAssetsForRound(RoundDataSO roundData)
@@ -219,21 +197,36 @@ public class GameManager : MonoBehaviour
 
         if (playerDataManager != null && playerDataManager.CurrentRunData != null)
         {
-            foreach (var card in playerDataManager.CurrentRunData.equippedCards) 
+            foreach (var card in playerDataManager.CurrentRunData.equippedCards)
             {
                 foreach (var moduleEntry in card.CardData.modules)
                 {
                     if (moduleEntry.moduleReference.RuntimeKeyIsValid())
                     {
                         CardEffectSO module = await resourceManager.LoadAsync<CardEffectSO>(moduleEntry.moduleReference.AssetGUID);
-                        if (module is ProjectileEffectSO pModule)
+                        if (module is IPreloadable preloadableModule)
                         {
-                            AddOrUpdatePreloadRequest(pModule.bulletPrefabReference, card.CardData.preloadCount);
+                            foreach (var prefabRef in preloadableModule.GetPrefabsToPreload())
+                            {
+                                AddOrUpdatePreloadRequest(prefabRef, card.CardData.preloadCount);
+                            }
                         }
                     }
                 }
             }
         }
+
+        if (roundData != null)
+        {
+            foreach (var wave in roundData.waves)
+            {
+                if (wave.monsterData != null)
+                {
+                    AddOrUpdatePreloadRequest(wave.monsterData.prefabRef, wave.preloadCount > 0 ? wave.preloadCount : wave.count);
+                }
+            }
+        }
+
 
         Debug.Log($"[GameManager] 총 {preloadRequests.Count} 종류의 프리팹에 대한 프리로드를 실행합니다.");
         foreach (var request in preloadRequests)
@@ -261,13 +254,23 @@ public class GameManager : MonoBehaviour
         yield return new WaitForSecondsRealtime(3f);
         Time.timeScale = 1;
 
-        var cardManager = ServiceLocator.Get<CardManager>();
-        if (cardManager != null)
-        {
-            cardManager.ClearAndResetDeck();
-        }
-        
         ChangeState(GameState.MainMenu);
+    }
+
+    private string GetSceneNameForState(GameState state)
+    {
+        switch (state)
+        {
+            case GameState.MainMenu: return SceneNames.MainMenu;
+            case GameState.CharacterSelect: return SceneNames.CharacterSelect;
+            case GameState.PointAllocation: return SceneNames.PointAllocation;
+            case GameState.Reward: return SceneNames.CardReward;
+            case GameState.Codex: return SceneNames.Codex;
+            case GameState.Shop: return SceneNames.Shop;
+            case GameState.Rest: return SceneNames.Rest;
+            case GameState.Event: return SceneNames.Event;
+            default: return "";
+        }
     }
 
     private IEnumerator StartRoundAfterSceneLoad()
@@ -329,5 +332,4 @@ public class GameManager : MonoBehaviour
         }
         Debug.Log("--- [GameManager] StartRoundAfterSceneLoad 코루틴 정상 종료 ---");
     }
-
 }

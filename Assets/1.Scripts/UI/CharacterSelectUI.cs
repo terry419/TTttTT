@@ -1,6 +1,10 @@
+// ./TTttTT/Assets/1.Scripts/UI/CharacterSelectUI.cs
+
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections; 
+using UnityEngine.EventSystems; 
 
 public class CharacterSelectUI : MonoBehaviour
 {
@@ -35,6 +39,18 @@ public class CharacterSelectUI : MonoBehaviour
         DeactivateAllCharacterIllustrations();
         if (totalPointsText != null) totalPointsText.text = "보유 포인트: --";
         ResetButtonColors();
+
+        StartCoroutine(SetInitialFocus());
+    }
+
+    private IEnumerator SetInitialFocus()
+    {
+        // EventSystem이 UI 요소들을 인식할 때까지 한 프레임 기다립니다.
+        yield return null;
+
+        EventSystem.current.SetSelectedGameObject(null);
+        // 기본 선택 버튼인 '전사' 버튼에 포커스를 맞춥니다.
+        EventSystem.current.SetSelectedGameObject(warriorButton.gameObject);
     }
 
     private void ResetButtonColors()

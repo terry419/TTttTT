@@ -41,6 +41,6 @@ public class TestHarness : MonoBehaviour
         playerDataManager.ResetRunData(dataManager.GetCharacter(characterId));
 
         // 4. Gameplay ¾ÀÀ¸·Î ÀüÈ¯
-        sceneTransitionManager.LoadScene(SceneNames.GamePlay);
+        sceneTransitionManager.LoadScene(SceneNames.Gameplay);
     }
 }

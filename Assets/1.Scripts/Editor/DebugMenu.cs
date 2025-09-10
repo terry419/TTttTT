@@ -49,6 +49,6 @@ public class DebugMenu
         gameManager.SetupForTest(warriorData, 0);
 
         // 4. Gameplay 씬으로 전환
-        sceneTransitionManager.LoadScene(SceneNames.GamePlay);
+        sceneTransitionManager.LoadScene(SceneNames.Gameplay);
     }
 }

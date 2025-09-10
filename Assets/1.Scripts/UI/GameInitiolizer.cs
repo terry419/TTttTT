@@ -1,4 +1,4 @@
-// 파일명: GameInitializer.cs
+// ./TTttTT/Assets/1.Scripts/UI/GameInitiolizer.cs
 using System.Collections;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
@@ -13,16 +13,14 @@ public class GameInitializer : MonoBehaviour
 
     private IEnumerator LoadEssentialDataAndProceed()
     {
-        // 0. (선택) 로딩 스피너 또는 로딩 화면 UI 표시하는 코드를 넣을 수 있습니다.
         Debug.Log("[GameInitializer] 필수 데이터 로드 시작합니다...");
 
-        // 1. Addressables 시스템 초기화 (최우선)
+        // 1. Addressables 시스템 초기화
         yield return Addressables.InitializeAsync();
 
-        // 2. 매니저 인스턴스들을 비동기로 인스턴스화합니다.
+        // 2. [수정] 애플리케이션 생명주기를 갖는 _Managers 프리팹만 생성합니다.
         yield return Addressables.InstantiateAsync(PrefabKeys.Managers);
-        yield return Addressables.InstantiateAsync(PrefabKeys.GameplaySession);
-        Debug.Log("[GameInitializer] 매니저 인스턴스 생성 완료.");
+        Debug.Log("[GameInitializer] 애플리케이션 매니저(_Managers) 생성 완료.");
 
         // 3. DataManager의 데이터 로드를 기다립니다.
         var dataManager = ServiceLocator.Get<DataManager>();
