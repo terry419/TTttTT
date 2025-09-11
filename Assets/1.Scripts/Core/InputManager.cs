@@ -52,7 +52,7 @@ public class InputManager : MonoBehaviour
     private void HandleGameStateChanged(GameManager.GameState newState)
     {
         Debug.Log($"[INPUT TRACE] InputManager.HandleGameStateChanged: GameManager로부터 '{newState}' 상태 수신. 입력 모드 변경 실행.");
-        if (newState == GameManager.GameState.Gameplay)
+        if (newState == GameManager.GameState.Gameplay || newState == GameManager.GameState.BossStage)
         {
             EnableGameplayControls();
         }

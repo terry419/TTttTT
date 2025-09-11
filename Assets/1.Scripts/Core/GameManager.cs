@@ -10,7 +10,7 @@ using UnityEngine.ResourceManagement.AsyncOperations; // AsyncOperationHandle �
 
 public class GameManager : MonoBehaviour
 {
-    public enum GameState { MainMenu, CharacterSelect, PointAllocation, Gameplay, Reward, Pause, Codex, GameOver, Shop, Rest, Event, GameWon }
+    public enum GameState { MainMenu, CharacterSelect, PointAllocation, Gameplay, Reward, Pause, Codex, GameOver, Shop, Rest, Event, GameWon, BossStage } // <<-- [수정] BossStage 추가
     public GameState CurrentState { get; private set; }
     public CharacterDataSO SelectedCharacter { get; set; }
     public int AllocatedPoints { get; set; }
@@ -265,6 +265,7 @@ public class GameManager : MonoBehaviour
             case GameState.CharacterSelect: return SceneNames.CharacterSelect;
             case GameState.PointAllocation: return SceneNames.PointAllocation;
             case GameState.Reward: return SceneNames.CardReward;
+            case GameState.BossStage: return SceneNames.BossStage;
             case GameState.Codex: return SceneNames.Codex;
             case GameState.Shop: return SceneNames.Shop;
             case GameState.Rest: return SceneNames.Rest;

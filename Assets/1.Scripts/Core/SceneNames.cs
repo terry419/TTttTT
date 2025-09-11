@@ -9,6 +9,7 @@ public static class SceneNames
     public const string PointAllocation = "PointAllocation";
     public const string Gameplay = "Gameplay";
     public const string CardReward = "CardReward";
+    public const string BossStage = "BossStage";
     public const string Codex = "Codex";
     public const string Shop = "Shop";
     public const string Rest = "Rest";

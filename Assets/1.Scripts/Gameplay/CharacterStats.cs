@@ -55,31 +55,13 @@ public class CharacterStats : MonoBehaviour, IStatHolder
             Debug.LogError($"[{GetType().Name}] CRITICAL: PlayerDataManager를 찾을 수 없습니다! 게임이 정상 동작하지 않을 수 있습니다.");
         }
     }
-
-    void Start()
+        public void Initialize()
     {
-        // 제안해주신 '준비될 때까지 기다리는' 안전한 초기화 로직입니다.
-        StartCoroutine(InitializeWhenReady());
-    }
-
-    private IEnumerator InitializeWhenReady()
-    {
-        // PlayerDataManager의 런 데이터가 준비될 때까지 안전하게 대기합니다.
-        while (playerDataManager == null || playerDataManager.CurrentRunData == null)
-        {
-            // PlayerDataManager가 아직 Awake되지 않았을 수 있으므로, 매 프레임 다시 찾아봅니다.
-            if (playerDataManager == null) playerDataManager = ServiceLocator.Get<PlayerDataManager>();
-
-            Debug.LogWarning("[CharacterStats] PlayerDataManager 또는 RunData가 아직 준비되지 않아 대기합니다...");
-            yield return null;
-        }
-
-        Debug.Log("[CharacterStats] PlayerDataManager 준비 완료. 체력 초기화를 진행합니다.");
-
-        // PlayerInitializer에서 모든 스탯 보너스(카드, 유물 등)가 적용된 후,
-        // 최종 최대 체력으로 현재 체력을 설정하고 UI에 알립니다.
+        // 모든 스탯 보너스가 적용된 후, 최종 최대 체력으로 현재 체력을 설정하고 UI에 알립니다.
         CalculateFinalStats();
-        playerDataManager.UpdateHealth(playerDataManager.CurrentRunData.currentHealth, FinalHealth);
+        // PlayerRunData에 기록된 현재 체력을 가져오되, 만약 그 값이 FinalHealth보다 크면 FinalHealth로 맞춥니다.
+        float healthToSet = Mathf.Min(playerDataManager.CurrentRunData.currentHealth, FinalHealth);
+        playerDataManager.UpdateHealth(healthToSet, FinalHealth);
     }
 
     void OnEnable()

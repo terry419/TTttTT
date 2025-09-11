@@ -18,23 +18,20 @@ public class PlayerInitializer : MonoBehaviour
         CharacterDataSO characterToLoad = gameManager.SelectedCharacter ?? ServiceLocator.Get<DataManager>().GetCharacter(CharacterIDs.Warrior);
         if (characterToLoad == null)
         {
-            Debug.LogError("[INIT-DEBUG] CRITICAL: 적용할 캐릭터 데이터를 찾을 수 없습니다! 여기서 중단됩니다.");
+            Debug.LogError("[INIT-DEBUG] CRITICAL: 적용할 캐릭터 데이터를 찾을 수 없습니다!");
             return;
         }
 
-        // 캐릭터 외형(스프라이트) 변경 로직 추가
+        // 외형 변경 로직 ... (기존과 동일)
         SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
         if (spriteRenderer != null && characterToLoad.illustration != null)
         {
             spriteRenderer.sprite = characterToLoad.illustration;
             Debug.Log($"[PlayerInitializer] 캐릭터 외형을 {characterToLoad.characterName}의 것으로 변경했습니다.");
         }
-        else
-        {
-            if(spriteRenderer == null) Debug.LogWarning("[PlayerInitializer] SpriteRenderer 컴포넌트를 찾지 못해 외형을 변경할 수 없습니다.");
-            if(characterToLoad.illustration == null) Debug.LogWarning($"[PlayerInitializer] {characterToLoad.characterName}의 illustration(스프라이트)이 설정되지 않아 외형을 변경할 수 없습니다.");
-        }
 
+        // --- [핵심 수정 순서] ---
+        // 1. 기본 스탯을 먼저 할당합니다.
         playerStats.stats = characterToLoad.baseStats;
 
         var cardManager = ServiceLocator.Get<CardManager>();
@@ -42,7 +39,7 @@ public class PlayerInitializer : MonoBehaviour
 
         if (playerDataManager.IsRunInitialized)
         {
-            // [수정] CardManager와 ArtifactManager가 PlayerDataManager의 빈 리스트를 먼저 참조하도록 순서 변경
+            // 2. 카드/유물 매니저를 연결하고 모든 보너스 스탯을 적용합니다.
             if (cardManager != null) cardManager.LinkToNewPlayer(playerStats);
             if (artifactManager != null) artifactManager.LinkToNewPlayer(playerStats);
 
@@ -51,12 +48,8 @@ public class PlayerInitializer : MonoBehaviour
             playerStats.ApplyPermanentStats(permanentStats);
             playerStats.ApplyAllocatedPoints(gameManager.AllocatedPoints, permanentStats);
 
+            // 3. 시작 아이템을 지급합니다. (이 과정에서 스탯이 다시 계산됩니다)
             List<NewCardDataSO> cardsToEquip = characterToLoad.startingCards;
-            if (cardsToEquip == null || cardsToEquip.Count == 0)
-            {
-                cardsToEquip = testStartingNewCards;
-            }
-
             if (cardsToEquip != null && cardManager != null)
             {
                 foreach (var cardData in cardsToEquip)
@@ -68,7 +61,6 @@ public class PlayerInitializer : MonoBehaviour
                     }
                 }
             }
-
             if (characterToLoad.startingArtifacts != null && artifactManager != null)
             {
                 foreach (var artifact in characterToLoad.startingArtifacts)
@@ -76,22 +68,30 @@ public class PlayerInitializer : MonoBehaviour
                     if (artifact != null) artifactManager.EquipArtifact(artifact);
                 }
             }
-
-            // [추가] 모든 시작 아이템 지급이 끝났음을 PlayerDataManager에 알림
             playerDataManager.CompleteRunInitialization();
         }
         else
         {
-            // 새 게임이 아닌 경우 (예: 테스트 씬 직접 실행)
             if (cardManager != null) cardManager.LinkToNewPlayer(playerStats);
             if (artifactManager != null) artifactManager.LinkToNewPlayer(playerStats);
         }
 
-        playerStats.CalculateFinalStats();
+        // 4. 모든 스탯 설정이 끝난 후, CharacterStats의 초기화를 직접 호출합니다.
+        playerStats.Initialize();
 
+        // 5. 카드 자동 선택 루프를 시작합니다.
         if (cardManager != null)
         {
             cardManager.StartCardSelectionLoop();
         }
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine($"--- 플레이어({gameObject.name}) 스탯 초기화 완료 ---");
+        sb.AppendLine($"체력: {playerStats.GetCurrentHealth():F1} / {playerStats.FinalHealth:F1}");
+        sb.AppendLine($"공격력 보너스: {playerStats.FinalDamageBonus:F2}%");
+        sb.AppendLine($"공격 속도: {playerStats.FinalAttackSpeed:F2}");
+        sb.AppendLine($"이동 속도: {playerStats.FinalMoveSpeed:F2}");
+        sb.AppendLine($"치명타 확률: {playerStats.FinalCritRate:F2}%");
+        sb.AppendLine($"치명타 피해: {playerStats.FinalCritDamage:F2}%");
+        Debug.Log(sb.ToString());
     }
 }

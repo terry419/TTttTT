@@ -148,7 +148,15 @@ public class RouteSelectionController : MonoBehaviour
 
         mapManager.MoveToNode(node);
         Hide();
-        gameManager.ChangeState(GameManager.GameState.Gameplay);
+        if (node.Position.y == mapManager.MapHeight - 1)
+        {
+            Debug.Log($"[RouteSelectionController] 마지막 노드({node.Position.y}) 선택됨. BossStage로 전환합니다.");
+            gameManager.ChangeState(GameManager.GameState.BossStage);
+        }
+        else
+        {
+            gameManager.ChangeState(GameManager.GameState.Gameplay);
+        }
     }
 
     private void UpdateNodeInteractability()
