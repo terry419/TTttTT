@@ -5,15 +5,13 @@ using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using System.Threading;
 
-[RequireComponent(typeof(CharacterStats), typeof(Rigidbody2D))]
+[RequireComponent(typeof(BossStats), typeof(Rigidbody2D))]
 public class BossController : MonoBehaviour
 {
     [Header("보스 공격 설정")]
     public Transform firePoint;
-    // [삭제] 프리팹에서 직접 카드를 받지 않음
-    // public List<NewCardDataSO> startingCards;
 
-    [HideInInspector] public CharacterStats stats;
+    [HideInInspector] public BossStats stats; // CharacterStats -> BossStats
     [HideInInspector] public Rigidbody2D rb;
 
     private List<CardInstance> _ownedCards = new List<CardInstance>();
@@ -21,7 +19,7 @@ public class BossController : MonoBehaviour
 
     void Awake()
     {
-        stats = GetComponent<CharacterStats>();
+        stats = GetComponent<BossStats>(); // CharacterStats -> BossStats
         rb = GetComponent<Rigidbody2D>();
     }
 
@@ -42,16 +40,15 @@ public class BossController : MonoBehaviour
                 spriteRenderer.sprite = bossData.illustration;
             }
 
-            // [수정] bossData로부터 시작 카드를 가져와 인스턴스를 생성합니다.
+            // CharacterDataSO로부터 시작 카드를 가져와 인스턴스를 생성합니다.
             foreach (var cardData in bossData.startingCards)
             {
                 _ownedCards.Add(new CardInstance(cardData));
             }
 
             stats.CalculateFinalStats();
+            stats.Heal(stats.FinalHealth); // 체력을 최대치로 설정합니다.
 
-            // [추가] 보스도 체력을 최대치로 설정합니다.
-            stats.Heal(stats.FinalHealth);
 
             var sb = new StringBuilder();
             sb.AppendLine($"--- 보스({gameObject.name}) 스탯 초기화 완료 ---");

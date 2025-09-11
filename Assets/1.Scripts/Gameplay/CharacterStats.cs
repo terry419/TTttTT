@@ -1,106 +1,120 @@
-// 경로: ./TTttTT/Assets/1/Scripts/Gameplay/CharacterStats.cs
-
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
-using UnityEngine.Events;
 
 [RequireComponent(typeof(PlayerHealthBar))]
-public class CharacterStats : MonoBehaviour, IStatHolder
+public class CharacterStats : EntityStats
 {
-    [Header("기본 능력치")]
-    public BaseStats stats;
-    [Header("현재 상태 (런타임)")]
-    //public float currentHealth;
-    public bool isInvulnerable = false;
-    [Header("이벤트")]
-    public UnityEvent OnFinalStatsCalculated = new UnityEvent();
-
-    private PlayerHealthBar playerHealthBar;
-    public float cardSelectionInterval = 10f;
-    private readonly Dictionary<StatType, List<StatModifier>> statModifiers = new Dictionary<StatType, List<StatModifier>>();
-
     private PlayerDataManager playerDataManager;
+    public float cardSelectionInterval = 10f;
 
-
-    // [리팩토링] 최종 스탯을 실시간으로 계산하는 프로퍼티 (올바른 StatType 사용)
-    public float FinalDamageBonus
+    protected override void Awake()
     {
-        get
-        {
-            float totalBonusRatio = statModifiers[StatType.Attack].Sum(mod => mod.Value);
-            return stats.baseDamage + totalBonusRatio;
-        }
-    }
-    public float FinalAttackSpeed => Mathf.Max(0.1f, CalculateFinalValue(StatType.AttackSpeed, stats.baseAttackSpeed));
-    public float FinalMoveSpeed => Mathf.Max(0f, CalculateFinalValue(StatType.MoveSpeed, stats.baseMoveSpeed));
-    public float FinalHealth => Mathf.Max(1f, CalculateFinalValue(StatType.Health, stats.baseHealth));
-    public float FinalCritRate => Mathf.Clamp(CalculateFinalValue(StatType.CritRate, stats.baseCritRate), 0f, 100f);
-    public float FinalCritDamage => Mathf.Max(0f, CalculateFinalValue(StatType.CritMultiplier, stats.baseCritDamage));
-
-    // 이하 코드는 기존과 동일합니다...
-    // Awake(), OnDestroy(), AddModifier(), RemoveModifiersFromSource() 등은 변경 없음
-
-    void Awake()
-    {
-        playerHealthBar = GetComponent<PlayerHealthBar>();
-        foreach (StatType type in System.Enum.GetValues(typeof(StatType)))
-        {
-            statModifiers[type] = new List<StatModifier>();
-        }
+        base.Awake();
         playerDataManager = ServiceLocator.Get<PlayerDataManager>();
         if (playerDataManager == null)
         {
-            Debug.LogError($"[{GetType().Name}] CRITICAL: PlayerDataManager를 찾을 수 없습니다! 게임이 정상 동작하지 않을 수 있습니다.");
+            Debug.LogError($"[{GetType().Name}] CRITICAL: PlayerDataManager를 찾을 수 없습니다!");
         }
     }
-        public void Initialize()
-    {
-        // 모든 스탯 보너스가 적용된 후, 최종 최대 체력으로 현재 체력을 설정하고 UI에 알립니다.
-        CalculateFinalStats();
-        // PlayerRunData에 기록된 현재 체력을 가져오되, 만약 그 값이 FinalHealth보다 크면 FinalHealth로 맞춥니다.
-        float healthToSet = Mathf.Min(playerDataManager.CurrentRunData.currentHealth, FinalHealth);
-        playerDataManager.UpdateHealth(healthToSet, FinalHealth);
-    }
 
-    void OnEnable()
+    private void OnEnable()
     {
-        // PlayerDataManager의 데이터 변경 방송을 구독합니다.
         PlayerDataManager.OnRunDataChanged += HandleRunDataChanged;
+        // [수정] PlayerDataManager와 체력을 동기화하는 이벤트 구독
+        OnHealthChanged += SyncHealthToDataManager;
     }
 
-    void OnDisable()
+    private void OnDisable()
     {
-        // 오브젝트가 비활성화되면 구독을 해제하여 메모리 누수를 방지합니다.
         PlayerDataManager.OnRunDataChanged -= HandleRunDataChanged;
+        OnHealthChanged -= SyncHealthToDataManager;
     }
 
-    // 데이터 변경 방송을 수신했을 때 호출될 함수입니다.
+    public override void Initialize()
+    {
+        // PlayerDataManager에서 이전 씬의 체력 정보를 가져옵니다.
+        float previousHealth = playerDataManager.CurrentRunData.currentHealth;
+        float previousMaxHealth = playerDataManager.CurrentRunData.maxHealth;
+
+        // 이전 체력 비율을 계산합니다.
+        // 만약 previousMaxHealth가 0이라면 (예: 데이터 오류), 비율을 1로 설정하여 최대 체력으로 시작합니다.
+        float healthRatio = (previousMaxHealth > 0) ? (previousHealth / previousMaxHealth) : 1f;
+
+        // 현재 씬의 아이템과 스탯을 기반으로 최종 스탯을 다시 계산합니다.
+        // 이 호출 후 FinalHealth 프로퍼티는 새로운 최대 체력 값을 반환합니다.
+        CalculateFinalStats();
+
+        // 새로운 최대 체력에 이전 비율을 적용하여 현재 체력을 설정합니다.
+        float newMaxHealth = FinalHealth;
+        CurrentHealth = newMaxHealth * healthRatio;
+
+        // 체력 변경 이벤트를 호출하여 UI를 업데이트하고, 변경된 체력 정보를 PlayerDataManager에 동기화합니다.
+        InvokeOnHealthChanged();
+    }
+
+    protected override void Die()
+    {
+        Debug.Log("[CharacterStats] 플레이어가 사망했습니다. 게임오버 상태로 전환합니다.");
+        gameObject.SetActive(false);
+        ServiceLocator.Get<GameManager>().ChangeState(GameManager.GameState.GameOver);
+    }
+
+    public void LoadHealthFromDataManager()
+    {
+        if (playerDataManager != null && playerDataManager.CurrentRunData != null)
+        {
+            // 부모의 Heal/TakeDamage를 이용해 체력을 설정하고 이벤트를 발생시킵니다.
+            float healthToSet = Mathf.Min(playerDataManager.CurrentRunData.currentHealth, FinalHealth);
+            if (healthToSet > CurrentHealth)
+            {
+                Heal(healthToSet - CurrentHealth);
+            }
+            else
+            {
+                TakeDamage(CurrentHealth - healthToSet);
+            }
+        }
+    }
+
+    private void SyncHealthToDataManager(float current, float max)
+    {
+        if (playerDataManager != null)
+        {
+            playerDataManager.UpdateHealth(current, max);
+        }
+    }
+
     private void HandleRunDataChanged(RunDataChangeType changeType)
     {
-        // 카드나 유물 데이터가 변경되었을 때만 스탯을 다시 계산합니다.
         if (changeType == RunDataChangeType.Cards || changeType == RunDataChangeType.Artifacts || changeType == RunDataChangeType.All)
         {
-            Debug.Log($"[CharacterStats] '{changeType}' 타입 데이터 변경 감지. 스탯을 새로고침합니다.");
-            RecalculateAllModifiers();
+            // 체력 비율 보존 로직 추가
+            float oldMaxHealth = FinalHealth;
+            float healthRatio = (oldMaxHealth > 0) ? (CurrentHealth / oldMaxHealth) : 1f;
+
+            RecalculateAllModifiers(); // 스탯 재계산 (FinalHealth 변경)
+
+            float newMaxHealth = FinalHealth;
+            // 새 최대 체력에 맞춰 현재 체력 조정
+            CurrentHealth = newMaxHealth * healthRatio;
+            
+            // 체력 변경 이벤트 호출
+            InvokeOnHealthChanged();
         }
     }
 
-    // 모든 카드와 유물 보너스를 처음부터 다시 적용하는 함수입니다.
-    private void RecalculateAllModifiers()
+    // [추가] 누락되었던 메서드들
+    public void RecalculateAllModifiers()
     {
-        // 1. 기존에 적용된 모든 보너스를 초기화합니다.
         foreach (var key in statModifiers.Keys)
         {
-            statModifiers[key].Clear();
+            // 영구 스탯이나 분배 포인트로 인한 모디파이어는 제거하지 않도록, 카드 인스턴스로부터 온 모디파이어만 제거합니다.
+            statModifiers[key].RemoveAll(mod => mod.Source is CardInstance);
         }
 
-        // 2. PlayerDataManager로부터 최신 데이터를 가져옵니다.
         var runData = ServiceLocator.Get<PlayerDataManager>().CurrentRunData;
         if (runData == null) return;
 
-        // 3. 현재 장착된 모든 카드의 보너스를 다시 적용합니다.
         foreach (var card in runData.equippedCards)
         {
             AddModifier(StatType.Attack, new StatModifier(card.GetFinalDamageMultiplier(), card));
@@ -111,82 +125,13 @@ public class CharacterStats : MonoBehaviour, IStatHolder
             AddModifier(StatType.CritMultiplier, new StatModifier(card.GetFinalCritDamageMultiplier(), card));
         }
 
-        // 4. (향후 확장) 모든 유물의 보너스를 다시 적용합니다.
         var artifactManager = ServiceLocator.Get<ArtifactManager>();
         if (artifactManager != null)
         {
-            // artifactManager.RecalculateArtifactStats(); // 필요 시 이와 유사한 함수 호출
+            // artifactManager.RecalculateArtifactStats();
         }
 
-        // 5. 최종적으로 스탯을 다시 계산하고 이벤트를 발생시켜 UI 등에 알립니다.
         CalculateFinalStats();
-    }
-
-    void OnDestroy()
-    {
-        // 이제 OnDestroy에서 체력을 저장할 필요가 없습니다.
-        // TakeDamage/Heal 함수에서 실시간으로 PlayerDataManager에 업데이트하기 때문입니다.
-        var debugManager = ServiceLocator.Get<DebugManager>();
-        if (debugManager != null)
-        {
-            debugManager.UnregisterPlayer();
-        }
-    }
-
-    public void AddModifier(StatType type, StatModifier modifier)
-    {
-        statModifiers[type].Add(modifier);
-        CalculateFinalStats();
-    }
-
-    public void RemoveModifiersFromSource(object source)
-    {
-        foreach (var key in statModifiers.Keys)
-        {
-            statModifiers[key].RemoveAll(mod => mod.Source == source);
-        }
-        CalculateFinalStats();
-    }
-
-    private float CalculateFinalValue(StatType type, float baseValue)
-    {
-        float totalBonusRatio = statModifiers[type].Sum(mod => mod.Value);
-        return baseValue * (1 + totalBonusRatio / 100f);
-    }
-
-    public void CalculateFinalStats()
-    {
-        OnFinalStatsCalculated?.Invoke();
-    }
-
-    public void TakeDamage(float damage)
-    {
-        if (playerDataManager == null) return;
-        if (isInvulnerable) return;
-
-        float newHealth = playerDataManager.CurrentRunData.currentHealth - damage;
-        // 체력 변경을 PlayerDataManager에게 위임하고, 변경된 값을 UI에 방송하도록 요청합니다.
-        playerDataManager.UpdateHealth(newHealth, FinalHealth);
-
-        if (playerDataManager.CurrentRunData.currentHealth <= 0)
-        {
-            Die();
-        }
-    }
-
-    private void Die()
-    {
-        Debug.Log("[CharacterStats] 플레이어가 사망했습니다. 게임오버 상태로 전환합니다.");
-        gameObject.SetActive(false);
-        ServiceLocator.Get<GameManager>().ChangeState(GameManager.GameState.GameOver);
-    }
-
-    public void Heal(float amount)
-    {
-        if (playerDataManager == null) return;
-        float newHealth = playerDataManager.CurrentRunData.currentHealth + amount;
-        // 체력 변경을 PlayerDataManager에게 위임합니다.
-        playerDataManager.UpdateHealth(newHealth, FinalHealth);
     }
 
     public void ApplyPermanentStats(CharacterPermanentStats permanentStats)
@@ -216,26 +161,6 @@ public class CharacterStats : MonoBehaviour, IStatHolder
 
     private float GetWeightForStat(StatType stat)
     {
-        return stat == StatType.Health ?
-            2f : 1f;
-    }
-
-    public float GetCurrentHealth()
-    {
-        return playerDataManager != null ? playerDataManager.CurrentRunData.currentHealth : 0f;
-    }
-
-    public static BaseStats CalculatePreviewStats(BaseStats baseStats, int allocatedPoints)
-    {
-        BaseStats previewStats = new BaseStats();
-        float healthGeneBoosterRatio = allocatedPoints * 2f;
-        float otherStatsGeneBoosterRatio = allocatedPoints * 1f;
-        previewStats.baseHealth = baseStats.baseHealth * (1 + healthGeneBoosterRatio / 100f);
-        previewStats.baseDamage = baseStats.baseDamage * (1 + otherStatsGeneBoosterRatio / 100f);
-        previewStats.baseAttackSpeed = baseStats.baseAttackSpeed * (1 + otherStatsGeneBoosterRatio / 100f);
-        previewStats.baseMoveSpeed = baseStats.baseMoveSpeed * (1 + otherStatsGeneBoosterRatio / 100f);
-        previewStats.baseCritDamage = baseStats.baseCritDamage * (1 + otherStatsGeneBoosterRatio / 100f);
-        previewStats.baseCritRate = baseStats.baseCritRate;
-        return previewStats;
+        return stat == StatType.Health ? 2f : 1f;
     }
 }

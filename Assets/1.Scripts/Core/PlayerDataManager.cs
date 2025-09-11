@@ -94,6 +94,7 @@ public class PlayerDataManager : MonoBehaviour
 
         float oldHealth = CurrentRunData.currentHealth;
         CurrentRunData.currentHealth = newHealth;
+        CurrentRunData.maxHealth = maxHealth; // [추가] 최대 체력도 함께 저장합니다.
 
         OnHealthChanged?.Invoke(CurrentRunData.currentHealth, maxHealth);
         if (Mathf.Approximately(oldHealth, CurrentRunData.currentHealth) == false)

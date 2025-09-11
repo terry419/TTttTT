@@ -8,7 +8,7 @@ public class RippleController : MonoBehaviour
     private float _maxRadius;
     private float _expandDuration;
     private float _damage;
-    private CharacterStats _caster;
+    private EntityStats _caster;
     private CircleCollider2D _collider;
     private float _elapsedTime;
     // 개선 방안 적용: HashSet<GameObject> 대신 InstanceID를 사용하는 int로 메모리 효율성 향상
@@ -23,7 +23,7 @@ public class RippleController : MonoBehaviour
         _hitMonsterIDs = new HashSet<int>();
     }
 
-    public void Initialize(CharacterStats caster, float maxRadius, float duration, float damage)
+    public void Initialize(EntityStats caster, float maxRadius, float duration, float damage) // CharacterStats -> EntityStats
     {
         _caster = caster;
         _maxRadius = maxRadius;

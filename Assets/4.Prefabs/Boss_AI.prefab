@@ -253,7 +253,8 @@ GameObject:
   - component: {fileID: 5717583237825516066}
   - component: {fileID: 6761212658256558402}
   - component: {fileID: 601887131027535560}
-  - component: {fileID: 3922725313684570972}
+  - component: {fileID: -591882673054172719}
+  - component: {fileID: 7484183600112504102}
   m_Layer: 6
   m_Name: Boss_AI
   m_TagString: Player
@@ -429,7 +430,7 @@ CircleCollider2D:
   m_Offset: {x: 0, y: 0}
   serializedVersion: 2
   m_Radius: 0.8
---- !u!114 &3922725313684570972
+--- !u!114 &-591882673054172719
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -441,11 +442,32 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b28f9d427ceb22546bd7779b1e3a058a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  firePoint: {fileID: 665560882621029558}
-  startingCards:
-  - {fileID: 11400000, guid: 1c931ac983ca8094bbe20fe7bc5a9c7f, type: 2}
+  firePoint: {fileID: 3691342460919089392}
   stats: {fileID: 0}
   rb: {fileID: 0}
+--- !u!114 &7484183600112504102
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3584919349513980085}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 927781a27cc703349b2c208882bfb782, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  stats:
+    baseDamage: 0
+    baseAttackSpeed: 0
+    baseMoveSpeed: 0
+    baseHealth: 0
+    baseCritRate: 0
+    baseCritDamage: 0
+  isInvulnerable: 0
+  OnFinalStatsCalculated:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &3752976335165370229
 GameObject:
   m_ObjectHideFlags: 0

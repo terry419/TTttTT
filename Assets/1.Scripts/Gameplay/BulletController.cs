@@ -20,7 +20,7 @@ public class BulletController : MonoBehaviour
     private bool isTracking;
     private Transform trackingTarget;
     private float turnSpeed = 200f;
-    private CharacterStats casterStats;
+    private EntityStats casterStats;
     private int _bounceCountForPayload = 0;
     private NewCardDataSO sourcePlatform;
     private CardInstance sourceCardInstance;
@@ -37,7 +37,7 @@ public class BulletController : MonoBehaviour
     }
 
     // [수정] NewCardDataSO를 사용하는 Initialize 메소드만 남깁니다.
-    public void Initialize(Vector2 direction, float initialSpeed, float damage, string shotID, NewCardDataSO platform, ProjectileEffectSO module, CharacterStats caster, CardInstance instance)
+    public void Initialize(Vector2 direction, float initialSpeed, float damage, string shotID, NewCardDataSO platform, ProjectileEffectSO module, EntityStats caster, CardInstance instance) // CharacterStats -> EntityStats
     {
         this._direction = direction.normalized;
         this.speed = initialSpeed;

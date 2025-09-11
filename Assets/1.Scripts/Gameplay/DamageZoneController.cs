@@ -10,7 +10,7 @@ using System.Text;
 public class DamageZoneController : MonoBehaviour
 {
     private CreateZoneEffectSO zoneData;
-    private CharacterStats playerCaster;
+    private EntityStats playerCaster;
     private float lifeTimer;
     private CircleCollider2D zoneCollider;
     private Transform visualsTransform;
@@ -34,7 +34,7 @@ public class DamageZoneController : MonoBehaviour
         }
     }
 
-    public void Initialize(CreateZoneEffectSO data, CharacterStats caster)
+    public void Initialize(CreateZoneEffectSO data, EntityStats caster) 
     {
         this.zoneData = data;
         this.playerCaster = caster;

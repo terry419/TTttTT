@@ -1,4 +1,5 @@
-// 파일 경로: Assets/1.Scripts/UI/PlayerHealthBar.cs (수정)
+// 파일 경로: Assets/1.Scripts/UI/PlayerHealthBar.cs
+
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -7,28 +8,40 @@ public class PlayerHealthBar : MonoBehaviour
     [SerializeField]
     private Slider healthBarSlider;
 
-    // UI 오브젝트가 활성화될 때 이벤트를 구독합니다.
+    // 특정 스탯 컴포넌트가 아닌, 범용 EntityStats를 참조하도록 변경
+    private EntityStats entityStats;
+
+    // Awake에서 자신과 같은 게임 오브젝트에 있는 부모 클래스(EntityStats)를 찾아둡니다.
+    void Awake()
+    {
+        entityStats = GetComponentInParent<EntityStats>();
+    }
+
     private void OnEnable()
     {
-        // PlayerDataManager의 static 이벤트에 HandleHealthChanged 함수를 직접 연결합니다.
-        PlayerDataManager.OnHealthChanged += HandleHealthChanged;
-        Debug.Log("[PlayerHealthBar] OnHealthChanged 이벤트 구독 시작.");
+        if (entityStats != null)
+        {
+            // EntityStats의 체력 변경 이벤트를 구독합니다.
+            entityStats.OnHealthChanged += HandleHealthChanged;
+            // 활성화될 때 현재 체력으로 UI를 즉시 업데이트합니다.
+            HandleHealthChanged(entityStats.CurrentHealth, entityStats.FinalHealth);
+        }
     }
 
-    // UI 오브젝트가 비활성화될 때 이벤트 구독을 해제합니다. (메모리 누수 방지)
     private void OnDisable()
     {
-        PlayerDataManager.OnHealthChanged -= HandleHealthChanged;
-        Debug.Log("[PlayerHealthBar] OnHealthChanged 이벤트 구독 해제.");
+        if (entityStats != null)
+        {
+            // 구독을 해제합니다.
+            entityStats.OnHealthChanged -= HandleHealthChanged;
+        }
     }
 
-    // 이벤트가 발생했을 때만 호출되는 함수
     private void HandleHealthChanged(float currentHealth, float maxHealth)
     {
         if (healthBarSlider != null && maxHealth > 0)
         {
             healthBarSlider.value = currentHealth / maxHealth;
-            Debug.Log($"[PlayerHealthBar] 체력 UI 업데이트: {currentHealth:F1}/{maxHealth:F1}");
         }
     }
 }

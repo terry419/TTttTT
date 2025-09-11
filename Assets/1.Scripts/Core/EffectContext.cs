@@ -6,7 +6,7 @@ using System.Collections.Generic;
 public class EffectContext
 {
     // --- 입력 데이터 (Executor가 채워줌) ---
-    public CharacterStats Caster;           // 효과 시전자
+    public EntityStats Caster;           // 효과 시전자
     public Transform SpawnPoint;            // 효과 발현 위치 (총구 등)
     public List<Vector2> FiringDirections;  // 계산된 최종 발사 방향 목록
     public NewCardDataSO Platform;          // [추가] 이 효과를 발동시킨 원본 카드(플랫폼)

@@ -80,7 +80,7 @@ public class StatusEffectInstance
 
     // --- 스케일링 및 시전자 정보 ---
     private readonly bool scalesWithDmgBonus;
-    private readonly CharacterStats casterStats;
+    private readonly EntityStats casterStats;
 
     // --- [추가] 틱 기반 시스템을 위한 타이머 ---
     private float dotTimer = 0f;
@@ -97,7 +97,7 @@ public class StatusEffectInstance
     public StatusEffectInstance(GameObject target, string id, float duration, Dictionary<StatType, float> bonuses,
         float dotAmount, DamageType dotType, bool scales,
         float healAmount, float healDuration, HealType healType,
-        StackingBehavior stacking, CharacterStats caster,
+        StackingBehavior stacking, EntityStats caster,
         AssetReferenceGameObject onApplyVFX, AssetReferenceGameObject loopingVFX, AssetReferenceGameObject onExpireVFX)
     {
         this.Target = target;
