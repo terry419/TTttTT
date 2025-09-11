@@ -69,4 +69,13 @@ public class ArtifactManager : MonoBehaviour
         playerStats.AddModifier(StatType.CritRate, new StatModifier(artifact.critChanceBoostRatio, artifact));
         playerStats.AddModifier(StatType.CritMultiplier, new StatModifier(artifact.critDamageBoostRatio, artifact));
     }
+
+    private void OnDestroy()
+    {
+        // ServiceLocator에 내가 등록되어 있을 경우에만 등록 해제를 시도합니다.
+        if (ServiceLocator.IsRegistered<ArtifactManager>() && ServiceLocator.Get<ArtifactManager>() == this)
+        {
+            ServiceLocator.Unregister<ArtifactManager>(this);
+        }
+    }
 }

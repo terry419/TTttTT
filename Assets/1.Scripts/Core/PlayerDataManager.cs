@@ -162,4 +162,13 @@ public class PlayerDataManager : MonoBehaviour
         Debug.Log($"[PlayerDataManager] OnRunDataChanged 이벤트를 '{changeType}' 타입으로 방송합니다.");
         OnRunDataChanged?.Invoke(changeType);
     }
+    private void OnDestroy()
+    {
+        // ServiceLocator에 내가 등록되어 있을 경우에만 등록 해제를 시도합니다.
+        if (ServiceLocator.IsRegistered<PlayerDataManager>() && ServiceLocator.Get<PlayerDataManager>() == this)
+        {
+            ServiceLocator.Unregister<PlayerDataManager>(this);
+        }
+    }
+
 }

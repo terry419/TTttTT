@@ -80,6 +80,10 @@ public class CampaignManager : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (ServiceLocator.IsRegistered<CampaignManager>() && ServiceLocator.Get<CampaignManager>() == this)
+        {
+            ServiceLocator.Unregister<CampaignManager>(this);
+        }
         Debug.Log($"[생명주기] {GetType().Name} (ID: {gameObject.GetInstanceID()}) - OnDestroy() 시작. (프레임: {Time.frameCount})");
     }
 }

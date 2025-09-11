@@ -38,6 +38,14 @@ public class CardManager : MonoBehaviour
         StopCardSelectionLoop();
     }
 
+    private void OnDestroy()
+    {
+        if (ServiceLocator.IsRegistered<CardManager>() && ServiceLocator.Get<CardManager>() == this)
+        {
+            ServiceLocator.Unregister<CardManager>(this);
+        }
+    }
+
     private void HandleRoundEnd(bool success)
     {
         StopCardSelectionLoop();

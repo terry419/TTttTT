@@ -53,7 +53,7 @@ public class RewardManager : MonoBehaviour
         {
             ServiceLocator.Register<RewardManager>(this);
             // 씬이 전환되어도 파괴되지 않도록 설정합니다.
-            DontDestroyOnLoad(gameObject);
+            //DontDestroyOnLoad(gameObject);
         }
         else
         {
@@ -119,5 +119,14 @@ public class RewardManager : MonoBehaviour
         // 이 상태는 RouteSelectionController가 '보상 페이지로' 버튼을 비활성화하는 데 사용됩니다.
         IsRewardSelectionComplete = true;
         Debug.Log("[RewardManager] 카드 보상 선택이 완료되었습니다. 'IsRewardSelectionComplete' 상태를 [true]로 설정.");
+    }
+
+    private void OnDestroy()
+    {
+        // ServiceLocator에 내가 등록되어 있을 경우에만 등록 해제를 시도합니다.
+        if (ServiceLocator.IsRegistered<RewardManager>() && ServiceLocator.Get<RewardManager>() == this)
+        {
+            ServiceLocator.Unregister<RewardManager>(this);
+        }
     }
 }

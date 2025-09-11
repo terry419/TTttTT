@@ -76,4 +76,13 @@ public class MapManager : MonoBehaviour
         }
         return CurrentNode.NextNodes;
     }
+    private void OnDestroy()
+    {
+        // ServiceLocator에 내가 등록되어 있을 경우에만 등록 해제를 시도합니다.
+        if (ServiceLocator.IsRegistered<MapManager>() && ServiceLocator.Get<MapManager>() == this)
+        {
+            ServiceLocator.Unregister<MapManager>(this);
+        }
+    }
+
 }

@@ -158,5 +158,13 @@ public class StatusEffectManager : MonoBehaviour
     public List<StatusEffectInstance> GetActiveEffectsOn(GameObject target) => activeEffects.TryGetValue(target, out var e) ? new List<StatusEffectInstance>(e) : new List<StatusEffectInstance>();
     public bool HasStatusEffect(GameObject target, string effectId) => !string.IsNullOrEmpty(effectId) && activeEffects.TryGetValue(target, out var e) && e.Any(inst => inst.EffectId == effectId);
     public void ConsumeEffects(List<StatusEffectInstance> effectsToConsume) => effectsToConsume.ForEach(RemoveStatusEffect);
+    private void OnDestroy()
+    {
+        // ServiceLocator에 내가 등록되어 있을 경우에만 등록 해제를 시도합니다.
+        if (ServiceLocator.IsRegistered<StatusEffectManager>() && ServiceLocator.Get<StatusEffectManager>() == this)
+        {
+            ServiceLocator.Unregister<StatusEffectManager>(this);
+        }
+    }
 }
 

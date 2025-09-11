@@ -28,4 +28,13 @@ public class MonsterManager : MonoBehaviour
             activeMonsters.Remove(monster);
         }
     }
+
+    private void OnDestroy()
+    {
+        // ServiceLocator에 내가 등록되어 있을 경우에만 등록 해제를 시도합니다.
+        if (ServiceLocator.IsRegistered<MonsterManager>() && ServiceLocator.Get<MonsterManager>() == this)
+        {
+            ServiceLocator.Unregister<MonsterManager>(this);
+        }
+    }
 }
