@@ -1,93 +1,102 @@
-// ÆÄÀÏ °æ·Î: Assets/1.Scripts/Gameplay/BossStageManager.cs
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using Cysharp.Threading.Tasks;
+using System.Collections.Generic;
 
 public class BossStageManager : MonoBehaviour
 {
-    [Header("Ä«¸Ş¶ó ÂüÁ¶")]
+    [Header("ì¹´ë©”ë¼ ì„¤ì •")]
     [SerializeField] private CameraFollow playerCamera;
     [SerializeField] private CameraFollow bossCamera;
 
-    [Header("½ºÆùÇÒ ´ë»ó")]
-    [Tooltip("ÇÃ·¹ÀÌ¾î ÇÁ¸®ÆÕÀÇ Addressable Å°(GUID)¸¦ °¡Áø ¿¡¼Â")]
+    [Header("ìŠ¤í° ê´€ë ¨ ì„¤ì •")]
     [SerializeField] private AssetReferenceGameObject playerPrefabRef;
-    [Tooltip("º¸½º ÇÁ¸®ÆÕ")]
-    [SerializeField] private GameObject bossPrefab;
-    [Tooltip("º¸½º¿¡°Ô Àû¿ëÇÒ CharacterDataSO ¿¡¼Â")]
-    [SerializeField] private CharacterDataSO bossCharacterData;
+    [SerializeField] private MonsterSpawner playerArenaSpawner;
+    [SerializeField] private MonsterSpawner bossArenaSpawner;
+    [SerializeField] private MapBoundary playerArenaBoundary;
+    [SerializeField] private MapBoundary bossArenaBoundary;
+
+    private BossStageDataSO _bossStageData;
 
     async void Start()
     {
-        // --- [µğ¹ö±× ·Î±× 1] ---
-        Debug.Log("[BossStageManager] Start() ÇÔ¼ö ½ÇÇà ½ÃÀÛ.");
+        Debug.Log("[BossStageManager] Start() í•¨ìˆ˜ ì‹œì‘.");
 
-        // --- ÇÃ·¹ÀÌ¾î ½ºÆù ---
+        // --- ë°ì´í„° ë¡œë“œ ---
+        var gameManager = ServiceLocator.Get<GameManager>();
+        var campaignManager = ServiceLocator.Get<CampaignManager>();
+        var mapManager = ServiceLocator.Get<MapManager>(); // MapManager ê°€ì ¸ì˜¤ê¸°
+        if (gameManager == null || campaignManager == null || mapManager == null)
+        {
+            Debug.LogError("[BossStageManager] GameManager, CampaignManager, ë˜ëŠ” MapManagerë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤!");
+            return;
+        }
+
+        // CurrentNodeë¥¼ GameManager ëŒ€ì‹  MapManagerì—ì„œ ê°€ì ¸ì˜µë‹ˆë‹¤.
+        RoundDataSO currentRoundData = campaignManager.GetRoundDataForNode(mapManager.CurrentNode);
+        if (currentRoundData == null || currentRoundData.bossStageData == null)
+        {
+            Debug.LogError("[BossStageManager] í˜„ì¬ ë¼ìš´ë“œì˜ BossStageDataë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤! RoundDataSOì— BossStageDataê°€ í• ë‹¹ë˜ì—ˆëŠ”ì§€ í™•ì¸í•˜ì„¸ìš”.");
+            return;
+        }
+        _bossStageData = currentRoundData.bossStageData;
+        Debug.Log($"[BossStageManager] ë³´ìŠ¤ ìŠ¤í…Œì´ì§€ ë°ì´í„° '{_bossStageData.name}' ë¡œë“œ ì™„ë£Œ.");
+
+        // --- í”Œë ˆì´ì–´ ìƒì„± ---
         var playerObject = await Addressables.InstantiateAsync(playerPrefabRef, new Vector3(0, 0, 0), Quaternion.identity).Task;
-
-        // --- [µğ¹ö±× ·Î±× 2] ---
-        if (playerObject != null)
+        if (playerObject == null)
         {
-            Debug.Log($"[BossStageManager] ÇÃ·¹ÀÌ¾î ½ºÆù ¼º°ø: {playerObject.name}, À§Ä¡: {playerObject.transform.position}");
+            Debug.LogError("[BossStageManager] í”Œë ˆì´ì–´ ìƒì„± ì‹¤íŒ¨!");
+            return;
         }
-        else
-        {
-            Debug.LogError("[BossStageManager] ÇÃ·¹ÀÌ¾î ½ºÆù ½ÇÆĞ!");
-            return; // ÇÃ·¹ÀÌ¾î »ı¼º ½ÇÆĞ ½Ã Áß´Ü
-        }
+        if (playerCamera != null) playerCamera.target = playerObject.transform;
+        // PlayerControllerì˜ StartAutoAttackLoopëŠ” PlayerInitializerê°€ ë‹´ë‹¹í•˜ë¯€ë¡œ ì—¬ê¸°ì„œ í˜¸ì¶œí•˜ì§€ ì•ŠìŠµë‹ˆë‹¤.
 
-        if (playerCamera != null)
+        // --- ë³´ìŠ¤ ìƒì„± ---
+        GameObject bossObject = null;
+        // BossStageDataSOì—ì„œ bossPrefabì„ ì§ì ‘ ê°€ì ¸ì™€ ì‚¬ìš©í•©ë‹ˆë‹¤.
+        if (_bossStageData.bossPrefab != null && _bossStageData.bossPrefab.RuntimeKeyIsValid())
         {
-            playerCamera.target = playerObject.transform;
-            // --- [µğ¹ö±× ·Î±× 3] ---
-            Debug.Log($"[BossStageManager] Player_CameraÀÇ TargetÀ» '{playerCamera.target.name}'À¸·Î ¼³Á¤ ¿Ï·á.");
-        }
-        else
-        {
-            Debug.LogError("[BossStageManager] playerCamera ÂüÁ¶°¡ ¾ø½À´Ï´Ù!");
-        }
-
-        if (playerObject.TryGetComponent<PlayerController>(out var playerController))
-        {
-            playerController.StartAutoAttackLoop();
-            Debug.Log("[BossStageManager] PlayerControllerÀÇ ÀÚµ¿ °ø°İ ·çÇÁ¸¦ ½ÃÀÛÇÕ´Ï´Ù.");
-        }
-
-
-        // --- º¸½º ½ºÆù ---
-        if (bossPrefab != null)
-        {
-            var bossObject = Instantiate(bossPrefab, new Vector3(2000, 0, 0), Quaternion.identity);
-
-            // --- [µğ¹ö±× ·Î±× 4] ---
-            if (bossObject != null)
+            bossObject = await Addressables.InstantiateAsync(_bossStageData.bossPrefab, new Vector3(2000, 0, 0), Quaternion.identity).Task;
+            if (bossObject == null)
             {
-                Debug.Log($"[BossStageManager] º¸½º ½ºÆù ¼º°ø: {bossObject.name}, À§Ä¡: {bossObject.transform.position}");
+                Debug.LogError("[BossStageManager] ë³´ìŠ¤ ìƒì„± ì‹¤íŒ¨!");
+                return;
             }
-            else
-            {
-                Debug.LogError("[BossStageManager] º¸½º ½ºÆù ½ÇÆĞ!");
-                return; // º¸½º »ı¼º ½ÇÆĞ ½Ã Áß´Ü
-            }
-
             if (bossObject.TryGetComponent<BossController>(out var bossController))
             {
-                bossController.Initialize(bossCharacterData);
-                // --- [Ãß°¡] º¸½º °ø°İ ½ÃÀÛ ---
+                bossController.Initialize(_bossStageData.bossCharacterData);
                 bossController.StartAutoAttackLoop();
-                Debug.Log("[BossStageManager] BossControllerÀÇ ÀÚµ¿ °ø°İ ·çÇÁ¸¦ ½ÃÀÛÇÕ´Ï´Ù.");
             }
+            if (bossCamera != null) bossCamera.target = bossObject.transform;
+        }
+        else
+        {
+            Debug.LogError("[BossStageManager] BossStageDataì— ìœ íš¨í•œ ë³´ìŠ¤ í”„ë¦¬íŒ¹ì´ ì„¤ì •ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤!");
+            return;
+        }
 
-            if (bossCamera != null)
-            {
-                bossCamera.target = bossObject.transform;
-                // --- [µğ¹ö±× ·Î±× 5] ---
-                Debug.Log($"[BossStageManager] Boss_CameraÀÇ TargetÀ» '{bossCamera.target.name}'À¸·Î ¼³Á¤ ¿Ï·á.");
-            }
-            else
-            {
-                Debug.LogError("[BossStageManager] bossCamera ÂüÁ¶°¡ ¾ø½À´Ï´Ù!");
-            }
+        // --- ëª¬ìŠ¤í„° ìŠ¤í° ì‹œì‘ ---
+        List<Wave> wavesToSpawn = _bossStageData.waves;
+        if (wavesToSpawn == null || wavesToSpawn.Count == 0)
+        {
+            Debug.LogWarning("[BossStageManager] ë³´ìŠ¤ ìŠ¤í…Œì´ì§€ì— ìŠ¤í°í•  ëª¬ìŠ¤í„° ì›¨ì´ë¸Œê°€ ì—†ìŠµë‹ˆë‹¤.");
+        }
+
+        // í”Œë ˆì´ì–´ ì•„ë ˆë‚˜ ìŠ¤í¬ë„ˆ í™œì„±í™” (í”Œë ˆì´ì–´ë¥¼ ê³µê²©)
+        if (playerArenaSpawner != null && playerArenaBoundary != null)
+        {
+            Debug.Log("[BossStageManager] í”Œë ˆì´ì–´ ì•„ë ˆë‚˜ ìŠ¤í¬ë„ˆë¥¼ í™œì„±í™”í•˜ê³  ìŠ¤í°ì„ ì‹œì‘í•©ë‹ˆë‹¤. ê³µê²© ëŒ€ìƒ: í”Œë ˆì´ì–´");
+            playerArenaSpawner.mapBoundary = playerArenaBoundary;
+            playerArenaSpawner.StartSpawning(wavesToSpawn, playerObject.transform, playerObject.transform);
+        }
+
+        // ë³´ìŠ¤ ì•„ë ˆë‚˜ ìŠ¤í¬ë„ˆ í™œì„±í™” (ë³´ìŠ¤ë¥¼ ê³µê²©)
+        if (bossArenaSpawner != null && bossArenaBoundary != null)
+        {
+            Debug.Log("[BossStageManager] ë³´ìŠ¤ ì•„ë ˆë‚˜ ìŠ¤í¬ë„ˆë¥¼ í™œì„±í™”í•˜ê³  ìŠ¤í°ì„ ì‹œì‘í•©ë‹ˆë‹¤. ê³µê²© ëŒ€ìƒ: ë³´ìŠ¤");
+            bossArenaSpawner.mapBoundary = bossArenaBoundary;
+            bossArenaSpawner.StartSpawning(wavesToSpawn, bossObject.transform, bossObject.transform);
         }
     }
 }

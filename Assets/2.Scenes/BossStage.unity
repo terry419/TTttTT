@@ -122,6 +122,54 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &94475833
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 94475835}
+  - component: {fileID: 94475834}
+  m_Layer: 0
+  m_Name: PlayerArena_Spawner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &94475834
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 94475833}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 153f2b375ddbba34a9fb654f9c1c0ef0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  minSpawnRadius: 10
+  maxSpawnRadius: 15
+  maxConcurrentSpawns: 15
+  mapBoundary: {fileID: 360025261}
+--- !u!4 &94475835
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 94475833}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -0.11420175, y: -1.0280048, z: 0.06581717}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 360025262}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &101516263
 GameObject:
   m_ObjectHideFlags: 0
@@ -165,8 +213,58 @@ Transform:
   m_LocalPosition: {x: 2000, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 134681125}
+  - {fileID: 241542456}
   m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &134681123
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 134681125}
+  - component: {fileID: 134681124}
+  m_Layer: 0
+  m_Name: BossArena_Spawner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &134681124
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 134681123}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 153f2b375ddbba34a9fb654f9c1c0ef0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  minSpawnRadius: 10
+  maxSpawnRadius: 15
+  maxConcurrentSpawns: 15
+  mapBoundary: {fileID: 101516264}
+--- !u!4 &134681125
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 134681123}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -2000.1143, y: -1.0280048, z: 0.06581717}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 101516265}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &241542453
 GameObject:
@@ -236,7 +334,7 @@ Camera:
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 5
+  orthographic size: 7.5
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -260,12 +358,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 241542453}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -10}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -2000, y: 0, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 101516265}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &360025260
 GameObject:
@@ -312,6 +410,8 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1649943615}
+  - {fileID: 94475835}
+  - {fileID: 519420032}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &519420028
@@ -376,7 +476,7 @@ Camera:
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 5
+  orthographic size: 7.5
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -400,12 +500,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 519420028}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 360025262}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &519420033
 MonoBehaviour:
@@ -3684,6 +3784,47 @@ MonoBehaviour:
     m_EditorAssetChanged: 0
   bossPrefab: {fileID: 3584919349513980085, guid: c0e2215efd6a7794c98bd674571fe4d3, type: 3}
   bossCharacterData: {fileID: 11400000, guid: 734ea066c7f239c4585d7a9797f05472, type: 2}
+  playerArenaSpawner: {fileID: 94475834}
+  bossArenaSpawner: {fileID: 134681124}
+  playerArenaBoundary: {fileID: 360025261}
+  bossArenaBoundary: {fileID: 101516264}
+  wavesToSpawn:
+  - monsterData: {fileID: 11400000, guid: 2265fedca4117354e9664c20df25176e, type: 2}
+    count: 20
+    duration: 0
+    delayAfterWave: 0
+    spawnType: 1
+    preloadCount: 0
+  - monsterData: {fileID: 11400000, guid: 8e6d06e903a0daf488a7fe30c8dbaa5f, type: 2}
+    count: 20
+    duration: 0
+    delayAfterWave: 0
+    spawnType: 1
+    preloadCount: 0
+  - monsterData: {fileID: 11400000, guid: e4c2796a489d4eb4a8d84476e18f791d, type: 2}
+    count: 20
+    duration: 0
+    delayAfterWave: 0
+    spawnType: 1
+    preloadCount: 0
+  - monsterData: {fileID: 11400000, guid: ee5f88ff0f10eaf42a54e77575add7a7, type: 2}
+    count: 20
+    duration: 0
+    delayAfterWave: 0
+    spawnType: 1
+    preloadCount: 0
+  - monsterData: {fileID: 11400000, guid: 28cc4791a59ec8d4fbb5a86f3c5a9ebe, type: 2}
+    count: 20
+    duration: 0
+    delayAfterWave: 0
+    spawnType: 1
+    preloadCount: 0
+  - monsterData: {fileID: 11400000, guid: 68eaff86033fe384d8efdf3e47b24efb, type: 2}
+    count: 20
+    duration: 0
+    delayAfterWave: 0
+    spawnType: 1
+    preloadCount: 0
 --- !u!4 &1740145815
 Transform:
   m_ObjectHideFlags: 0
@@ -3849,8 +3990,6 @@ Transform:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
-  - {fileID: 519420032}
-  - {fileID: 241542456}
   - {fileID: 360025262}
   - {fileID: 101516265}
   - {fileID: 1741654155}

@@ -21,6 +21,9 @@ public class PointAllocationManager : MonoBehaviour
     [Header("코어 로직 참조")]
     [SerializeField] private MapGenerator mapGenerator;
 
+    [Header("보스 스테이지 설정")]
+    [SerializeField] private List<BossStageDataSO> finalBossCandidates;
+
     private CharacterDataSO selectedCharacter;
     private int totalCharacterPoints;
 
@@ -102,11 +105,26 @@ public class PointAllocationManager : MonoBehaviour
         // 2. 캠페인 매니저를 통해 이번에 플레이할 캠페인을 미리 선택합니다.
         CampaignDataSO selectedCampaign = campaignManager.SelectRandomCampaign();
         if (selectedCampaign == null)
-        {
+        { 
             confirmButton.interactable = true;
             backButton.interactable = true;
             inputActivationButton.interactable = true;
             return;
+        }
+
+        // 마지막 라운드에 랜덤 보스 할당
+        if (finalBossCandidates != null && finalBossCandidates.Count > 0 && selectedCampaign.rounds.Count > 0)
+        {
+            // 캠페인의 마지막 라운드 데이터를 가져옵니다.
+            RoundDataSO finalRoundData = selectedCampaign.rounds.Last();
+
+            // 보스 후보 중에서 하나를 랜덤으로 선택합니다.
+            BossStageDataSO selectedBoss = finalBossCandidates[Random.Range(0, finalBossCandidates.Count)];
+
+            // 마지막 라운드의 bossStageData 필드에 선택된 보스를 할당합니다.
+            finalRoundData.bossStageData = selectedBoss;
+
+            Debug.Log($"[PointAllocationManager] 캠페인 '{selectedCampaign.name}'의 마지막 라운드 '{finalRoundData.name}'에 보스 '{selectedBoss.name}'를 할당했습니다.");
         }
 
         // 3. 선택된 캠페인의 첫 번째 라운드 데이터를 가져옵니다.

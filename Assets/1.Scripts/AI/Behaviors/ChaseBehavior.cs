@@ -1,43 +1,43 @@
-// °æ·Î: ./TTttTT/Assets/1.Scripts/AI/Behaviors/ChaseBehavior.cs
+// : ./TTttTT/Assets/1.Scripts/AI/Behaviors/ChaseBehavior.cs
 using UnityEngine;
 
 /// <summary>
-/// [Çàµ¿ ºÎÇ°] ´ë»óÀ» ÇâÇØ ÁöÁ¤µÈ ¼Óµµ·Î ÀÌµ¿ÇÏ´Â Çàµ¿ÀÔ´Ï´Ù.
+/// [àµ¿ Ç°]    Óµ ÌµÏ´ àµ¿Ô´Ï´.
 /// </summary>
 [CreateAssetMenu(menuName = "Monster AI/Behaviors/Chase")]
 public class ChaseBehavior : MonsterBehavior
 {
-    [Tooltip("Ãß°Ý ½Ã ±âº» ÀÌµ¿ ¼Óµµ¿¡ °öÇØÁú ¹èÀ²ÀÔ´Ï´Ù. 1.0Àº 100% ¼Óµµ¸¦ ÀÇ¹ÌÇÕ´Ï´Ù.")]
+    [Tooltip("ß°  âº» Ìµ Óµ  Ô´Ï´. 1.0 100% Óµ Ç¹Õ´Ï´.")]
     public float speedMultiplier = 1.0f;
 
     public override void OnEnter(MonsterController monster)
     {
         base.OnEnter(monster);
-        // Æ¯º°ÇÑ ÃÊ±âÈ­ ÀÛ¾÷Àº ¾ø½À´Ï´Ù.
+        // Æ¯ Ê±È­ Û¾ Ï´.
     }
 
     public override void OnExecute(MonsterController monster)
     {
-        // ÇÃ·¹ÀÌ¾î°¡ ¾ø´Ù¸é ¿òÁ÷ÀÌÁö ¾Ê½À´Ï´Ù.
-        if (monster.playerTransform == null)
+        // If there is no player, do not move.
+        if (monster.targetTransform == null)
         {
             monster.rb.velocity = Vector2.zero;
             return;
         }
 
-        // 1. ÇÃ·¹ÀÌ¾î ¹æÇâÀ¸·Î ÇâÇÏ´Â º¤ÅÍ¸¦ °è»êÇÕ´Ï´Ù.
-        Vector2 direction = (monster.playerTransform.position - monster.transform.position).normalized;
+        // 1. Calculate the vector towards the player.
+        Vector2 direction = (monster.targetTransform.position - monster.transform.position).normalized;
 
-        // 2. ¸ó½ºÅÍÀÇ ÃÖÁ¾ ÀÌµ¿ ¼Óµµ¿¡ ¹èÀ²À» °öÇÏ¿© ¼Óµµ¸¦ °áÁ¤ÇÏ°í, ¹°¸® ¿£ÁøÀ» ÅëÇØ ÀÌµ¿½ÃÅµ´Ï´Ù.
+        // 2. Calculate speed based on the monster's final move speed and multiplier, and move towards the target.
         monster.rb.velocity = direction * monster.monsterStats.FinalMoveSpeed * speedMultiplier;
 
-        // 3. Ãß°ÝÀ» ÇÏ´Ù°¡ ´Ù¸¥ Çàµ¿À¸·Î ÀüÈ¯µÉ Á¶°ÇÀÌ µÇ¾ú´ÂÁö È®ÀÎÇÕ´Ï´Ù. (¿¹: ÇÃ·¹ÀÌ¾î°¡ ³Ê¹« ¸Ö¾îÁü)
+        // 3. Check if there are any other behaviors to transition to. (e.g., if player is in attack range)
         CheckTransitions(monster);
     }
 
     public override void OnExit(MonsterController monster)
     {
-        // Ãß°Ý Çàµ¿À» ¸ØÃâ ¶§, È¤½Ã ¸ð¸¦ °ü¼ºÀ» ¾ø¾Ö±â À§ÇØ ¼Óµµ¸¦ 0À¸·Î ÃÊ±âÈ­ÇÕ´Ï´Ù.
+        // ß° àµ¿  , È¤   Ö±  Óµ 0 Ê±È­Õ´Ï´.
         monster.rb.velocity = Vector2.zero;
     }
 }

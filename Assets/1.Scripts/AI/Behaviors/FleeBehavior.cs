@@ -17,14 +17,14 @@ public class FleeBehavior : MonsterBehavior
 
     public override void OnExecute(MonsterController monster)
     {
-        if (monster.playerTransform == null)
+        if (monster.targetTransform == null)
         {
             monster.rb.velocity = Vector2.zero;
             return;
         }
 
         // 1. 플레이어로부터 '멀어지는' 방향 벡터를 계산합니다. (자신의 위치 - 플레이어 위치)
-        Vector2 direction = (monster.transform.position - monster.playerTransform.position).normalized;
+        Vector2 direction = (monster.transform.position - monster.targetTransform.position).normalized;
 
         // 2. 계산된 방향으로 이동시킵니다.
         monster.rb.velocity = direction * monster.monsterStats.FinalMoveSpeed * speedMultiplier;

@@ -87,7 +87,7 @@ public class SummonBehavior : MonsterBehavior
                     if (mc != null)
                     {
                         mc.countsTowardKillGoal = false;
-                        mc.Initialize(entry.minionToSummon);
+                        mc.Initialize(entry.minionToSummon, summoner.targetTransform);
                     }
                 }
             }

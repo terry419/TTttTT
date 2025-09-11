@@ -17,14 +17,14 @@ public class SkirmishBehavior : MonsterBehavior
 
     public override void OnExecute(MonsterController monster)
     {
-        if (monster.playerTransform == null)
+        if (monster.targetTransform == null)
         {
             monster.rb.velocity = Vector2.zero;
             return;
         }
 
         Vector3 monsterPos = monster.transform.position;
-        Vector3 playerPos = monster.playerTransform.position;
+        Vector3 playerPos = monster.targetTransform.position;
         float distanceSq = Vector3.SqrMagnitude(playerPos - monsterPos);
 
         // 1. 플레이어와 너무 가까운 경우: 후퇴

@@ -8,4 +8,7 @@ public class RoundDataSO : ScriptableObject
     public int killGoal = 100;
     public List<Wave> waves;
 
+    [Header("Boss Stage (Optional)")]
+    [Tooltip("If this round is a boss stage, link the corresponding BossStageDataSO here.")]
+    public BossStageDataSO bossStageData;
 }

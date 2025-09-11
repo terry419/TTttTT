@@ -58,20 +58,20 @@ public class ChargeBehavior : MonsterBehavior
                 break;
 
             case State.ChargeWindup:
-                if (monster.playerTransform != null)
+                if (monster.targetTransform != null)
                 {
-                    Vector2 direction = (monster.playerTransform.position - monster.transform.position).normalized;
+                    Vector2 direction = (monster.targetTransform.position - monster.transform.position).normalized;
                     monster.rb.velocity = direction * monster.monsterStats.FinalMoveSpeed * windupSpeedMultiplier;
                 }
                 if (monster.stateTimer >= aimingDuration + windupDuration)
                 {
                     monster.chargeState = (int)State.Charging;
-                    if (monster.playerTransform != null)
+                    if (monster.targetTransform != null)
                     {
-                        Vector2 playerVelocity = monster.playerRigidbody != null ? monster.playerRigidbody.velocity : Vector2.zero;
+                        Vector2 playerVelocity = monster.targetRigidbody != null ? monster.targetRigidbody.velocity : Vector2.zero;
 
                         // 2. 예측 계수를 곱해 '미래 예상 위치'를 계산합니다.
-                        Vector3 predictedPosition = monster.playerTransform.position + (Vector3)playerVelocity * chargePlayerPredictionFactor;
+                        Vector3 predictedPosition = monster.targetTransform.position + (Vector3)playerVelocity * chargePlayerPredictionFactor;
 
                         // 3. 현재 내 위치에서 '미래 예상 위치'를 향하는 방향을 최종 돌진 방향으로 결정합니다.
                         monster.chargeDirection = (predictedPosition - monster.transform.position).normalized;

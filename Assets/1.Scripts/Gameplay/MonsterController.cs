@@ -17,8 +17,8 @@ public class MonsterController : MonoBehaviour
     [HideInInspector] public MonsterDataSO monsterData;
     [HideInInspector] public MonsterStats monsterStats;
     [HideInInspector] public Rigidbody2D rb;
-    [HideInInspector] public Transform playerTransform;
-    [HideInInspector] public Rigidbody2D playerRigidbody;
+    [HideInInspector] public Transform targetTransform;
+    [HideInInspector] public Rigidbody2D targetRigidbody;
     [HideInInspector] public Vector3 startPosition;
     [HideInInspector] public float stateTimer = 0f;
     [HideInInspector] public int chargeState;
@@ -53,15 +53,6 @@ public class MonsterController : MonoBehaviour
         damageTimer = 0f;
     }
 
-    void Start()
-    {
-        var playerController = ServiceLocator.Get<PlayerController>();
-        if (playerController != null)
-        {
-            playerTransform = playerController.transform;
-            playerRigidbody = playerController.rb;
-        }
-    }
 
     void OnDisable()
     {
@@ -71,19 +62,32 @@ public class MonsterController : MonoBehaviour
         }
     }
 
-    public void Initialize(MonsterDataSO data)
+    public void Initialize(MonsterDataSO data, Transform target)
     {
         this.monsterData = data;
         monsterStats.Initialize(this, data);
         startPosition = transform.position;
         isDead = false;
 
+        // 공격 대상 설정
+        this.targetTransform = target;
+        if (target != null)
+        {
+            this.targetRigidbody = target.GetComponent<Rigidbody2D>();
+        }
+
+
         if (_globalModifiers != null)
             _globalModifiers.Initialize(monsterData.globalModifierRules);
 
         if (monsterData.useNewAI && monsterData.initialBehavior != null)
         {
+            Debug.Log($"<color=cyan>[AI Init Debug]</color> {gameObject.name}: InitialBehavior '{monsterData.initialBehavior.name}'를 발견하여 ChangeBehavior를 호출합니다.");
             ChangeBehavior(monsterData.initialBehavior);
+        }
+        else
+        {
+            Debug.LogWarning($"<color=orange>[AI Init Debug]</color> {gameObject.name}: InitialBehavior가 설정되지 않았거나 useNewAI가 false입니다. (useNewAI: {monsterData.useNewAI}, initialBehavior: {(monsterData.initialBehavior == null ? "null" : monsterData.initialBehavior.name)})");
         }
     }
 
@@ -115,53 +119,30 @@ public class MonsterController : MonoBehaviour
     #endregion
 
     #region Collision Methods
-    // 
-    private void HandlePlayerContact(GameObject target, bool isEntering)
-    {
-        if (!target.CompareTag(Tags.Player)) return;
-
-        isTouchingPlayer = isEntering;
-
-        if (isEntering)
-        {
-            // 돌진 중인 경우 즉시 자폭 로직으로 넘어감
-            if (currentBehavior is ChargeBehavior && chargeState == 2)
-            {
-                Log.Info(Log.LogCategory.AI_Behavior, $"[진단] {name}이(가) 플레이어와 '돌진 중 충돌'! 자폭을 시도합니다.");
-                monsterStats.HandleDeath().Forget();
-            }
-            else // 일반 접촉인 경우 타이머 시작
-            {
-                Log.Info(Log.LogCategory.AI_Behavior, $"[진단] {name}이(가) 플레이어와 '일반 접촉' 시작.");
-                damageTimer = DAMAGE_INTERVAL;
-            }
-        }
-        else
-        {
-            Log.Info(Log.LogCategory.AI_Behavior, $"[진단] {name}이(가) 플레이어와 접촉 해제.");
-        }
-    }
+    // [수정] playerTransform -> targetTransform
     private void ApplyContactDamage()
     {
-        if (playerTransform != null && playerTransform.TryGetComponent<CharacterStats>(out var playerStats))
+        if (targetTransform != null && targetTransform.TryGetComponent<CharacterStats>(out var playerStats))
         {
             Log.Info(Log.LogCategory.AI_Behavior, $"[진단] {name}이(가) 플레이어에게 접촉 피해({monsterStats.FinalContactDamage})를 입히려 합니다.");
             playerStats.TakeDamage(monsterStats.FinalContactDamage);
         }
     }
 
+    // OnCollisionEnter2D, OnCollisionExit2D, OnTriggerEnter2D, OnTriggerExit2D 메서드는 수정할 필요 없습니다.
+    // 'Player' 태그를 가진 대상과의 충돌만 감지하면 되기 때문입니다.
     void OnCollisionEnter2D(Collision2D collision)
     {
         if (collision.gameObject.CompareTag(Tags.Player))
         {
             Log.Info(Log.LogCategory.AI_Behavior, $"[진단] OnCollisionEnter2D 충돌 감지: {name} -> {collision.gameObject.name}");
             isTouchingPlayer = true;
-            damageTimer = DAMAGE_INTERVAL; 
+            damageTimer = DAMAGE_INTERVAL;
 
             if (currentBehavior is ChargeBehavior && chargeState == 2)
             {
                 Log.Info(Log.LogCategory.AI_Behavior, $"{name}이(가) 플레이어와 충돌하여 자폭합니다!");
-                monsterStats.HandleDeath().Forget(); 
+                monsterStats.HandleDeath().Forget();
             }
         }
     }
@@ -175,7 +156,6 @@ public class MonsterController : MonoBehaviour
         }
     }
 
-    // 트리거 콜라이더를 사용할 경우를 대비한 로직
     void OnTriggerEnter2D(Collider2D other)
     {
         if (other.CompareTag(Tags.Player))
@@ -202,7 +182,6 @@ public class MonsterController : MonoBehaviour
 
         string oldBehaviorName = (currentBehavior != null) ? currentBehavior.name : "None";
         string newBehaviorName = (newBehavior != null) ? newBehavior.name : "None";
-        //Log.Info(Log.LogCategory.AI_Transition, $"Monster: '{gameObject.name}', Behavior Changed: '{oldBehaviorName}' -> '{newBehaviorName}'");
 
         if (currentBehavior != null)
             currentBehavior.OnExit(this);
@@ -221,24 +200,19 @@ public class MonsterController : MonoBehaviour
 
         OnMonsterDied?.Invoke(this);
 
-        // 실제 오브젝트 풀 반환은 PoolManager가 OnDisable을 통해 처리하도록 유도
         gameObject.SetActive(false);
     }
 
-    // 다른 스크립트들이 필요로 하는 공개 기능들
     public void TakeDamage(float damage) => monsterStats.TakeDamage(damage);
     public float GetCurrentHealth() => monsterStats.CurrentHealth;
     public void SetVelocity(Vector2 newVelocity) { rb.velocity = newVelocity; }
     public bool RegisterHitByShot(string shotID, bool allowMultipleHits)
     {
-        // 이 기능은 몬스터별로 고유해야 하므로 Controller가 담당
-        // (코드는 기존과 동일하여 생략)
         return true;
     }
     public void SetInvulnerable(float duration) => StartCoroutine(InvulnerableRoutine(duration));
     private IEnumerator InvulnerableRoutine(float duration)
     {
-        // (코드는 기존과 동일하여 생략)
         yield return null;
     }
     public void ApplySelfStatusEffect(MonsterStatusEffectSO effectData) => monsterStats.ApplySelfStatusEffect(effectData);

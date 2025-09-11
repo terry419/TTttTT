@@ -15,9 +15,9 @@ public class PlayerInRangeDecision : Decision
 
     public override bool Decide(MonsterController monster)
     {
-        if (monster.playerTransform == null) return false;
+        if (monster.targetTransform == null) return false;
 
-        float sqrDistance = (monster.playerTransform.position - monster.transform.position).sqrMagnitude;
+        float sqrDistance = (monster.targetTransform.position - monster.transform.position).sqrMagnitude;
         bool isInRange = sqrDistance < range * range;
         bool result = negate ? !isInRange : isInRange;
 
