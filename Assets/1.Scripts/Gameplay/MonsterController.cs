@@ -82,7 +82,6 @@ public class MonsterController : MonoBehaviour
 
         if (monsterData.useNewAI && monsterData.initialBehavior != null)
         {
-            Debug.Log($"<color=cyan>[AI Init Debug]</color> {gameObject.name}: InitialBehavior '{monsterData.initialBehavior.name}'를 발견하여 ChangeBehavior를 호출합니다.");
             ChangeBehavior(monsterData.initialBehavior);
         }
         else
@@ -122,13 +121,12 @@ public class MonsterController : MonoBehaviour
     // [수정] playerTransform -> targetTransform
     private void ApplyContactDamage()
     {
-        if (targetTransform != null && targetTransform.TryGetComponent<CharacterStats>(out var playerStats))
+        if (targetTransform != null && targetTransform.TryGetComponent<EntityStats>(out var targetStats))
         {
-            Log.Info(Log.LogCategory.AI_Behavior, $"[진단] {name}이(가) 플레이어에게 접촉 피해({monsterStats.FinalContactDamage})를 입히려 합니다.");
-            playerStats.TakeDamage(monsterStats.FinalContactDamage);
+            Log.Info(Log.LogCategory.AI_Behavior, $"[진단] {name}이(가) 대상({targetTransform.name})에게 접촉 피해({monsterStats.FinalContactDamage})를 입히려 합니다.");
+            targetStats.TakeDamage(monsterStats.FinalContactDamage);
         }
     }
-
     // OnCollisionEnter2D, OnCollisionExit2D, OnTriggerEnter2D, OnTriggerExit2D 메서드는 수정할 필요 없습니다.
     // 'Player' 태그를 가진 대상과의 충돌만 감지하면 되기 때문입니다.
     void OnCollisionEnter2D(Collision2D collision)

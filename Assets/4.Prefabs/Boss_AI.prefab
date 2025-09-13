@@ -251,7 +251,6 @@ GameObject:
   - component: {fileID: 143212180826856210}
   - component: {fileID: 5764762486754335338}
   - component: {fileID: 5717583237825516066}
-  - component: {fileID: 6761212658256558402}
   - component: {fileID: 601887131027535560}
   - component: {fileID: -591882673054172719}
   - component: {fileID: 7484183600112504102}
@@ -371,30 +370,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   healthBarSlider: {fileID: 6822823154407695784}
---- !u!114 &6761212658256558402
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3584919349513980085}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 352e9200c0509d94f97dbe53c6cca51b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  stats:
-    baseDamage: 0
-    baseAttackSpeed: 0
-    baseMoveSpeed: 0
-    baseHealth: 0
-    baseCritRate: 0
-    baseCritDamage: 0
-  isInvulnerable: 0
-  OnFinalStatsCalculated:
-    m_PersistentCalls:
-      m_Calls: []
-  cardSelectionInterval: 10
 --- !u!58 &601887131027535560
 CircleCollider2D:
   m_ObjectHideFlags: 0

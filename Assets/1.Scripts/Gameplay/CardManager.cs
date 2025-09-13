@@ -241,11 +241,13 @@ public class CardManager : MonoBehaviour
                 if (randomValue <= currentWeight)
                 {
                     activeCard = card;
+                    Debug.Log($"[CardManager] Selected Card: {activeCard.CardData.basicInfo.cardName}");
                     return;
                 }
             }
             activeCard = selectableCards.LastOrDefault();
         }
+        Debug.Log($"[CardManager] Selected Card: {activeCard.CardData.basicInfo.cardName}");
     }
 
     public void ClearAndResetDeck()

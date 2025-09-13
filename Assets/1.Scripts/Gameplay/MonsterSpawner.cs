@@ -86,8 +86,6 @@ public class MonsterSpawner : MonoBehaviour
                 yield break;
             }
 
-            Debug.Log($"[MonsterSpawner] '{state.WaveData.monsterData.name}' 웨이브 스폰 시작.");
-
             switch (state.WaveData.spawnType)
             {
                 case SpawnType.Spread:
@@ -114,7 +112,6 @@ public class MonsterSpawner : MonoBehaviour
         finally
         {
             _runningWaveStates.Remove(state);
-            Debug.Log($"[MonsterSpawner] '{state.WaveData.monsterData?.name ?? "Unknown"}' 웨이브 코루틴 완료.");
         }
     }
 

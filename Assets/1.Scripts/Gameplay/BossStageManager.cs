@@ -51,6 +51,8 @@ public class BossStageManager : MonoBehaviour
         }
         if (playerCamera != null) playerCamera.target = playerObject.transform;
         // PlayerController의 StartAutoAttackLoop는 PlayerInitializer가 담당하므로 여기서 호출하지 않습니다.
+        playerObject.GetComponent<PlayerController>()?.StartAutoAttackLoop();
+
 
         // --- 보스 생성 ---
         GameObject bossObject = null;

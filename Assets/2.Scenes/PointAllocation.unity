@@ -1213,6 +1213,7 @@ MonoBehaviour:
   backButton: {fileID: 2117017319}
   totalPointsText: {fileID: 1136470270}
   mapGenerator: {fileID: 497011238}
+  finalBossCandidates: []
 --- !u!114 &497011238
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1225,8 +1226,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 54fe3993c31102c4d9f2e1d5dc70e6ec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mapHeight: 3
-  mapWidth: 5
+  mapHeight: 15
+  mapWidth: 4
   monsterChance: 60
   restChance: 15
   eventChance: 15
