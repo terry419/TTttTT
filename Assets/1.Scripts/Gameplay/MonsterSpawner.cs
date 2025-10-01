@@ -32,7 +32,7 @@ public class MonsterSpawner : MonoBehaviour
 
     // [수정] StartSpawning 메서드가 spawnCenter와 target을 받도록 변경
     public void StartSpawning(List<Wave> waves, Transform spawnCenter, Transform target)
-    {
+    { 
         Debug.Log("[MonsterSpawner] StartSpawning 호출됨.");
         if (_runningWaveStates.Count > 0) StopSpawning();
 
@@ -54,6 +54,40 @@ public class MonsterSpawner : MonoBehaviour
             }
         }
         _runningWaveStates.Clear();
+    }
+
+    /// <summary>
+    /// 지정된 수의 일반 몬스터를 즉시 스폰합니다.
+    /// </summary>
+    public void SpawnReinforcements(int count, List<MonsterDataSO> monsterPool)
+    {
+        if (monsterPool == null || monsterPool.Count == 0)
+        {
+            Debug.LogWarning("[MonsterSpawner] 증원할 몬스터 풀(Pool)이 비어있어 스폰할 수 없습니다.");
+            return;
+        }
+
+        for (int i = 0; i < count; i++)
+        {
+            // 몬스터 풀에서 무작위로 하나를 선택
+            MonsterDataSO monsterToSpawn = monsterPool[Random.Range(0, monsterPool.Count)];
+            if (_spawnCenter == null) return;
+            SpawnMonster(monsterToSpawn, _spawnCenter.position, _target);
+        }
+    }
+
+    /// <summary>
+    /// 지정된 데이터의 특수 몬스터를 1마리 즉시 스폰합니다.
+    /// </summary>
+    public void SpawnSpecialMonster(MonsterDataSO specialMonsterData)
+    {
+        if (specialMonsterData == null)
+        {
+            Debug.LogError("[MonsterSpawner] 특수 몬스터 데이터가 null이라 스폰할 수 없습니다.");
+            return;
+        }
+        if (_spawnCenter == null) return;
+        SpawnMonster(specialMonsterData, _spawnCenter.position, _target);
     }
 
     private IEnumerator SpawnRoutine(List<Wave> waves)

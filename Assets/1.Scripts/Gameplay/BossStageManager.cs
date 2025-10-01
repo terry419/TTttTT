@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.AddressableAssets;
 using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
+using System;
 
 public class BossStageManager : MonoBehaviour
 {
@@ -16,89 +17,182 @@ public class BossStageManager : MonoBehaviour
     [SerializeField] private MapBoundary playerArenaBoundary;
     [SerializeField] private MapBoundary bossArenaBoundary;
 
+    // UI 및 데이터 제공을 위한 이벤트
+    public static event Action<float> OnElapsedTimeChanged;
+    public static event Action<int, int> OnKillCountsChanged;
+
     private BossStageDataSO _bossStageData;
+    private GameObject _playerObject;
+    private GameObject _bossObject;
+    private EntityStats _bossStats;
+    private bool _isStageEnded = false;
+
+    // 실시간 상태 변수
+    private float elapsedTime;
+    private int playerArenaKills_Cumulative;
+    private int bossArenaKills_Cumulative;
+
+    // 상호작용 스폰용 변수
+    private int playerArenaKills_Periodic;
+    private int bossArenaKills_Periodic;
+    private float reinforcementTimer;
+
+    void OnEnable()
+    {
+        MonsterController.OnMonsterDied += HandleMonsterDied;
+    }
+
+    void OnDisable()
+    {
+        MonsterController.OnMonsterDied -= HandleMonsterDied;
+    }
 
     async void Start()
     {
-        Debug.Log("[BossStageManager] Start() 함수 시작.");
+        Time.timeScale = 1f; // 스테이지 시작 시 시간 정상화
 
         // --- 데이터 로드 ---
-        var gameManager = ServiceLocator.Get<GameManager>();
         var campaignManager = ServiceLocator.Get<CampaignManager>();
-        var mapManager = ServiceLocator.Get<MapManager>(); // MapManager 가져오기
-        if (gameManager == null || campaignManager == null || mapManager == null)
-        {
-            Debug.LogError("[BossStageManager] GameManager, CampaignManager, 또는 MapManager를 찾을 수 없습니다!");
-            return;
-        }
-
-        // CurrentNode를 GameManager 대신 MapManager에서 가져옵니다.
+        var mapManager = ServiceLocator.Get<MapManager>();
         RoundDataSO currentRoundData = campaignManager.GetRoundDataForNode(mapManager.CurrentNode);
-        if (currentRoundData == null || currentRoundData.bossStageData == null)
-        {
-            Debug.LogError("[BossStageManager] 현재 라운드의 BossStageData를 찾을 수 없습니다! RoundDataSO에 BossStageData가 할당되었는지 확인하세요.");
-            return;
-        }
         _bossStageData = currentRoundData.bossStageData;
-        Debug.Log($"[BossStageManager] 보스 스테이지 데이터 '{_bossStageData.name}' 로드 완료.");
 
-        // --- 플레이어 생성 ---
-        var playerObject = await Addressables.InstantiateAsync(playerPrefabRef, new Vector3(0, 0, 0), Quaternion.identity).Task;
-        if (playerObject == null)
+        // --- 시스템 초기화 ---
+        elapsedTime = 0f;
+        playerArenaKills_Cumulative = 0;
+        bossArenaKills_Cumulative = 0;
+        OnKillCountsChanged?.Invoke(playerArenaKills_Cumulative, bossArenaKills_Cumulative);
+        OnElapsedTimeChanged?.Invoke(elapsedTime);
+
+        // 상호작용 스폰 시스템 초기화
+        if (_bossStageData.reinforcementInterval > 0)
         {
-            Debug.LogError("[BossStageManager] 플레이어 생성 실패!");
-            return;
+            reinforcementTimer = _bossStageData.reinforcementInterval;
         }
-        if (playerCamera != null) playerCamera.target = playerObject.transform;
-        // PlayerController의 StartAutoAttackLoop는 PlayerInitializer가 담당하므로 여기서 호출하지 않습니다.
-        playerObject.GetComponent<PlayerController>()?.StartAutoAttackLoop();
+        playerArenaKills_Periodic = 0;
+        bossArenaKills_Periodic = 0;
 
+        // --- 플레이어 및 보스 생성 (기존과 동일) ---
+        _playerObject = await Addressables.InstantiateAsync(playerPrefabRef, new Vector3(0, 0, 0), Quaternion.identity).Task;
+        if (playerCamera != null) playerCamera.target = _playerObject.transform;
+        _playerObject.GetComponent<PlayerController>()?.StartAutoAttackLoop();
 
-        // --- 보스 생성 ---
-        GameObject bossObject = null;
-        // BossStageDataSO에서 bossPrefab을 직접 가져와 사용합니다.
-        if (_bossStageData.bossPrefab != null && _bossStageData.bossPrefab.RuntimeKeyIsValid())
+        _bossObject = await Addressables.InstantiateAsync(_bossStageData.bossPrefab, new Vector3(2000, 0, 0), Quaternion.identity).Task;
+        _bossStats = _bossObject.GetComponent<EntityStats>();
+        if (_bossObject.TryGetComponent<BossController>(out var bossController))
         {
-            bossObject = await Addressables.InstantiateAsync(_bossStageData.bossPrefab, new Vector3(2000, 0, 0), Quaternion.identity).Task;
-            if (bossObject == null)
-            {
-                Debug.LogError("[BossStageManager] 보스 생성 실패!");
-                return;
-            }
-            if (bossObject.TryGetComponent<BossController>(out var bossController))
-            {
-                bossController.Initialize(_bossStageData.bossCharacterData);
-                bossController.StartAutoAttackLoop();
-            }
-            if (bossCamera != null) bossCamera.target = bossObject.transform;
+            bossController.Initialize(_bossStageData.bossCharacterData);
+            bossController.StartAutoAttackLoop();
         }
-        else
-        {
-            Debug.LogError("[BossStageManager] BossStageData에 유효한 보스 프리팹이 설정되지 않았습니다!");
-            return;
-        }
+        if (bossCamera != null) bossCamera.target = _bossObject.transform;
 
-        // --- 몬스터 스폰 시작 ---
+        // --- 몬스터 스폰 시작 (기존과 동일) ---
         List<Wave> wavesToSpawn = _bossStageData.waves;
-        if (wavesToSpawn == null || wavesToSpawn.Count == 0)
+        if (wavesToSpawn != null && wavesToSpawn.Count > 0)
         {
-            Debug.LogWarning("[BossStageManager] 보스 스테이지에 스폰할 몬스터 웨이브가 없습니다.");
+            if (playerArenaSpawner != null && playerArenaBoundary != null)
+            {
+                playerArenaSpawner.mapBoundary = playerArenaBoundary;
+                playerArenaSpawner.StartSpawning(wavesToSpawn, _playerObject.transform, _playerObject.transform);
+            }
+            if (bossArenaSpawner != null && bossArenaBoundary != null)
+            {
+                bossArenaSpawner.mapBoundary = bossArenaBoundary;
+                bossArenaSpawner.StartSpawning(wavesToSpawn, _bossObject.transform, _bossObject.transform);
+            }
+        }
+    }
+
+    void Update()
+    {
+        if (_isStageEnded) return;
+
+        // 1. 경과 시간 처리
+        elapsedTime += Time.deltaTime;
+        OnElapsedTimeChanged?.Invoke(elapsedTime);
+
+        // 2. 주기적 증원 처리
+        if (_bossStageData.reinforcementInterval > 0)
+        {
+            reinforcementTimer -= Time.deltaTime;
+            if (reinforcementTimer <= 0f)
+            {
+                int reinforcementsForPlayer = Mathf.FloorToInt(bossArenaKills_Periodic * _bossStageData.reinforcementRatio);
+                int reinforcementsForBoss = Mathf.FloorToInt(playerArenaKills_Periodic * _bossStageData.reinforcementRatio);
+
+                if (reinforcementsForPlayer > 0 && playerArenaSpawner != null)
+                {
+                    playerArenaSpawner.SpawnReinforcements(reinforcementsForPlayer, _bossStageData.reinforcementMonsters);
+                }
+                if (reinforcementsForBoss > 0 && bossArenaSpawner != null)
+                {
+                    bossArenaSpawner.SpawnReinforcements(reinforcementsForBoss, _bossStageData.reinforcementMonsters);
+                }
+
+                playerArenaKills_Periodic = 0;
+                bossArenaKills_Periodic = 0;
+                reinforcementTimer = _bossStageData.reinforcementInterval;
+            }
         }
 
-        // 플레이어 아레나 스포너 활성화 (플레이어를 공격)
-        if (playerArenaSpawner != null && playerArenaBoundary != null)
+        // 3. 승리 조건 확인
+        if (_bossStats != null && _bossStats.CurrentHealth <= 0)
         {
-            Debug.Log("[BossStageManager] 플레이어 아레나 스포너를 활성화하고 스폰을 시작합니다. 공격 대상: 플레이어");
-            playerArenaSpawner.mapBoundary = playerArenaBoundary;
-            playerArenaSpawner.StartSpawning(wavesToSpawn, playerObject.transform, playerObject.transform);
+            HandlePlayerVictory();
         }
+    }
 
-        // 보스 아레나 스포너 활성화 (보스를 공격)
-        if (bossArenaSpawner != null && bossArenaBoundary != null)
+    private void HandleMonsterDied(MonsterController deadMonster)
+    {
+        if (_isStageEnded) return;
+
+        bool isPlayerArena = deadMonster.transform.position.x < 1000;
+
+        if (isPlayerArena)
         {
-            Debug.Log("[BossStageManager] 보스 아레나 스포너를 활성화하고 스폰을 시작합니다. 공격 대상: 보스");
-            bossArenaSpawner.mapBoundary = bossArenaBoundary;
-            bossArenaSpawner.StartSpawning(wavesToSpawn, bossObject.transform, bossObject.transform);
+            playerArenaKills_Periodic++;
+            playerArenaKills_Cumulative++;
+
+            if (_bossStageData.milestoneKillTarget > 0 && playerArenaKills_Cumulative % _bossStageData.milestoneKillTarget == 0)
+            {
+                if (bossArenaSpawner != null && _bossStageData.specialMonsterData != null)
+                {
+                    bossArenaSpawner.SpawnSpecialMonster(_bossStageData.specialMonsterData);
+                }
+            }
         }
+        else // Boss Arena
+        {
+            bossArenaKills_Periodic++;
+            bossArenaKills_Cumulative++;
+
+            if (_bossStageData.milestoneKillTarget > 0 && bossArenaKills_Cumulative % _bossStageData.milestoneKillTarget == 0)
+            {
+                if (playerArenaSpawner != null && _bossStageData.specialMonsterData != null)
+                {
+                    playerArenaSpawner.SpawnSpecialMonster(_bossStageData.specialMonsterData);
+                }
+            }
+        }
+        
+        // 누적 킬 카운트 UI 업데이트 이벤트 호출
+        OnKillCountsChanged?.Invoke(playerArenaKills_Cumulative, bossArenaKills_Cumulative);
+    }
+
+    private void HandlePlayerVictory()
+    {
+        if (_isStageEnded) return;
+        _isStageEnded = true;
+
+        if (playerArenaSpawner != null) playerArenaSpawner.StopSpawning();
+        if (bossArenaSpawner != null) bossArenaSpawner.StopSpawning();
+
+        var poolManager = ServiceLocator.Get<PoolManager>();
+        if (poolManager != null) poolManager.ReturnAllActiveObjectsToPool();
+
+        var rewardManager = ServiceLocator.Get<RewardManager>();
+        if (rewardManager != null) rewardManager.LastRoundWon = true;
+
+        ServiceLocator.Get<GameManager>().ChangeState(GameManager.GameState.Reward);
     }
 }
