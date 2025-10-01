@@ -19,6 +19,10 @@ public class CharacterDataSO : ScriptableObject
     public List<NewCardDataSO> startingCards;
     public List<ArtifactDataSO> startingArtifacts; // [추가] 시작 유물 목록
 
+    [Header("초기 슬롯 설정")]
+    public int maxEquipSlots = 5;
+    public int maxInventorySlots = 0; // "Owned"의 개념을 "Inventory"로 명확히 합니다.
+
     [Header("초기 포인트")]
     public int initialAllocationPoints;
 }

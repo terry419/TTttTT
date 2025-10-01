@@ -17,6 +17,8 @@ public class BossController : MonoBehaviour
     private List<CardInstance> _ownedCards = new List<CardInstance>();
     private CancellationTokenSource _attackLoopCts;
 
+    private int maxEquipSlots;
+
     void Awake()
     {
         stats = GetComponent<BossStats>(); // CharacterStats -> BossStats
@@ -33,6 +35,9 @@ public class BossController : MonoBehaviour
     {
         if (bossData != null)
         {
+            this.maxEquipSlots = bossData.maxEquipSlots;
+            Debug.Log($"[BossController] '{bossData.name}' 보스 초기화. 장착 슬롯: {this.maxEquipSlots}");
+
             stats.stats = bossData.baseStats;
             SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
             if (spriteRenderer != null && bossData.illustration != null)

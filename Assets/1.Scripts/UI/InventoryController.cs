@@ -84,7 +84,6 @@ public class InventoryController : MonoBehaviour
         UpdateStatsPanel();
     }
 
-    // ▼▼▼ [수정] HandleSlotClick 메서드 전체 교체 ▼▼▼
     private void HandleSlotClick(CardSlot clickedSlot)
     {
         Debug.Log($"-- [인벤토리 상호작용] 슬롯 클릭: {clickedSlot.gameObject.name}, 상태: {clickedSlot.currentState} --");
@@ -109,6 +108,14 @@ public class InventoryController : MonoBehaviour
         else
         {
             Debug.Log($"[인벤토리] 2차 선택: {clickedSlot.gameObject.name}");
+
+            if (firstSelectedSlot.currentState == CardSlot.SlotState.Empty && clickedSlot.currentState == CardSlot.SlotState.Empty)
+            {
+                Debug.Log("[인벤토리] 빈 슬롯끼리는 상호작용할 수 없습니다. 선택을 취소합니다.");
+                CancelSelection();
+                return; 
+            }
+
             if (firstSelectedSlot == clickedSlot)
             {
                 CancelSelection();
@@ -154,7 +161,6 @@ public class InventoryController : MonoBehaviour
         }
     }
 
-    // ▼▼▼ [수정] MoveToEmptySlot 메서드에 로그 추가 ▼▼▼
     private void MoveToEmptySlot(CardSlot emptySlot)
     {
         CardInstance cardToMove = firstSelectedSlot.currentCard;
@@ -196,7 +202,12 @@ public class InventoryController : MonoBehaviour
     {
         if (firstSelectedSlot == null) return;
         if (fixedCursor != null) fixedCursor.SetActive(false);
-        Debug.Log($"[인벤토리] 카드 선택 해제 (Unlock): {firstSelectedSlot.currentCard.CardData.basicInfo.cardName}");
+
+        string cardName = firstSelectedSlot.currentCard != null
+        ? firstSelectedSlot.currentCard.CardData.basicInfo.cardName
+        : "빈 슬롯";
+
+        Debug.Log($"[인벤토리] 카드 선택 해제 (Unlock): {cardName}");
         firstSelectedSlot = null;
     }
 
@@ -220,14 +231,22 @@ public class InventoryController : MonoBehaviour
         var ownedOnlyCards = runData.ownedCards.Except(runData.equippedCards).ToList();
         for (int i = 0; i < ownedSlots.Count; i++)
         {
-            if (i >= cardManager.maxOwnedSlots - cardManager.maxEquipSlots)
+            // cardManager.MaxInventorySlots 개수만큼만 슬롯을 활성화(Empty)하고 나머지는 잠금(Locked) 처리합니다.
+            if (i < cardManager.MaxInventorySlots)
             {
-                ownedSlots[i].SetState(CardSlot.SlotState.Locked);
-                continue;
+                if (i < ownedOnlyCards.Count)
+                {
+                    ownedSlots[i].Setup(ownedOnlyCards[i]); // 카드가 있으면 채움
+                }
+                else
+                {
+                    ownedSlots[i].Setup(null); // 카드가 없으면 빈 슬롯으로
+                }
             }
-
-            if (i < ownedOnlyCards.Count) ownedSlots[i].Setup(ownedOnlyCards[i]);
-            else ownedSlots[i].Setup(null);
+            else
+            {
+                ownedSlots[i].SetState(CardSlot.SlotState.Locked); // 한도를 초과하면 잠금
+            }
         }
     }
 

@@ -51,7 +51,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 03a3a5892437d8449a01bae6541ef64a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxOwnedSlots: 7
+  maxOwnedSlots: 6
   maxEquipSlots: 5
   activeCard:
     InstanceId: 

@@ -22,6 +22,11 @@ public class PlayerInitializer : MonoBehaviour
             return;
         }
 
+        if (cardManager != null)
+        {
+            cardManager.InitializeSlotCounts();
+        }
+
         // --- 공통 초기화 로직 ---
         SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
         if (spriteRenderer != null && characterToLoad.illustration != null)

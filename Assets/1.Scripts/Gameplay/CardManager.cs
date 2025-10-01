@@ -6,9 +6,9 @@ using UnityEngine;
 
 public class CardManager : MonoBehaviour
 {
-    [Header("슬롯 설정")]
-    public int maxOwnedSlots = 7;
-    public int maxEquipSlots = 5;
+    public int MaxEquipSlots { get; private set; }
+    public int MaxInventorySlots { get; private set; }
+    public int TotalSlots => MaxEquipSlots + MaxInventorySlots;
 
     [Header("실시간 카드 상태")]
     public CardInstance activeCard;
@@ -31,12 +31,51 @@ public class CardManager : MonoBehaviour
         else Destroy(gameObject);
     }
 
-    void OnEnable() { RoundManager.OnRoundEnded += HandleRoundEnd; }
+    void OnEnable()
+    {
+        RoundManager.OnRoundEnded += HandleRoundEnd;
+        PlayerDataManager.OnRunDataChanged += HandleRunDataChanged; // 이벤트 구독
+    }
+
     void OnDisable()
     {
         RoundManager.OnRoundEnded -= HandleRoundEnd;
         StopCardSelectionLoop();
+        PlayerDataManager.OnRunDataChanged -= HandleRunDataChanged; // 이벤트 구독 해제
     }
+
+    private void HandleRunDataChanged(RunDataChangeType changeType)
+    {
+        if (changeType == RunDataChangeType.Artifacts || changeType == RunDataChangeType.All)
+        {
+            InitializeSlotCounts(); // 슬롯 수를 다시 계산합니다.
+        }
+    }
+
+    public void InitializeSlotCounts()
+    {
+        if (PlayerDataManager?.CurrentRunData?.characterData == null) return;
+
+        CharacterDataSO characterData = PlayerDataManager.CurrentRunData.characterData;
+
+        // 1. 캐릭터의 기본 슬롯 수를 가져옵니다.
+        int baseEquipSlots = characterData.maxEquipSlots;
+        int baseInventorySlots = characterData.maxInventorySlots;
+
+        // 2. 유물로 인한 보너스 슬롯 수를 계산합니다.
+        int bonusInventorySlots = 0;
+        if (PlayerDataManager.CurrentRunData.ownedArtifacts != null)
+        {
+            bonusInventorySlots = PlayerDataManager.CurrentRunData.ownedArtifacts.Sum(artifact => artifact.ownedCardSlotBonus);
+        }
+
+        // 3. 최종 슬롯 수를 확정합니다.
+        MaxEquipSlots = baseEquipSlots; // 장착 슬롯은 현재 기획상 보너스가 없음
+        MaxInventorySlots = baseInventorySlots + bonusInventorySlots;
+
+        Debug.Log($"[CardManager] 슬롯 설정 업데이트 완료. 장착: {MaxEquipSlots}, 보관(기본 {baseInventorySlots} + 보너스 {bonusInventorySlots}): {MaxInventorySlots}");
+    }
+
 
     private void OnDestroy()
     {
@@ -59,18 +98,15 @@ public class CardManager : MonoBehaviour
 
     public CardInstance AddCard(NewCardDataSO newCardData)
     {
-        if (PlayerDataManager.CurrentRunData.ownedCards.Count >= maxOwnedSlots)
+        if (PlayerDataManager.CurrentRunData.ownedCards.Count >= TotalSlots)
         {
+            Debug.LogWarning($"[CardManager] 소유 가능한 카드 개수({TotalSlots})를 초과하여 장착된 카드 중 하나를 무작위로 제거합니다.");
             if (PlayerDataManager.CurrentRunData.equippedCards.Count > 0)
             {
-                int randomIndex = Random.Range(0, PlayerDataManager.CurrentRunData.equippedCards.Count);
+                int randomIndex = UnityEngine.Random.Range(0, PlayerDataManager.CurrentRunData.equippedCards.Count);
                 CardInstance cardToRemove = PlayerDataManager.CurrentRunData.equippedCards[randomIndex];
                 Unequip(cardToRemove);
                 PlayerDataManager.CurrentRunData.ownedCards.Remove(cardToRemove);
-            }
-            else
-            {
-                return null;
             }
         }
         CardInstance newInstance = new CardInstance(newCardData);
@@ -78,7 +114,6 @@ public class CardManager : MonoBehaviour
         return newInstance;
     }
 
-    // ▼▼▼ [수정] Equip 메서드에 로그 추가 ▼▼▼
     public bool Equip(CardInstance cardInstance, int index = -1)
     {
         if (cardInstance == null || PlayerDataManager.CurrentRunData.equippedCards.Contains(cardInstance))
@@ -86,9 +121,9 @@ public class CardManager : MonoBehaviour
             Debug.LogWarning($"[CardManager] 카드 장착 실패: Null 또는 이미 장착된 카드 ({cardInstance?.CardData.basicInfo.cardName})");
             return false;
         }
-        if (PlayerDataManager.CurrentRunData.equippedCards.Count >= maxEquipSlots)
+        if (PlayerDataManager.CurrentRunData.equippedCards.Count >= MaxEquipSlots)
         {
-            Debug.LogWarning($"[CardManager] 카드 장착 실패: 장착 슬롯 가득 참 ({PlayerDataManager.CurrentRunData.equippedCards.Count}/{maxEquipSlots})");
+            Debug.LogWarning($"[CardManager] 카드 장착 실패: 장착 슬롯 가득 참 ({PlayerDataManager.CurrentRunData.equippedCards.Count}/{MaxEquipSlots})");
             return false;
         }
 
