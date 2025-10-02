@@ -69,7 +69,7 @@ public class OptionsUIController : MonoBehaviour
 
     public void OnBackButtonClicked()
     {
-        ServiceLocator.Get<GameManager>().ChangeState(GameManager.GameState.MainMenu);
+        ServiceLocator.Get<GameManager>().GoBackFromOptions();
     }
 
     private IEnumerator SetInitialFocus()

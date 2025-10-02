@@ -11,9 +11,11 @@ using UnityEngine.EventSystems;
 
 public class GameManager : MonoBehaviour
 {
-    public enum GameState { 
-        MainMenu, CharacterSelect, PointAllocation, Gameplay, Reward, Pause, 
-        Options, Codex, GameOver, Shop, Rest, Event, GameWon, BossStage }
+    public enum GameState
+    {
+        MainMenu, CharacterSelect, PointAllocation, Gameplay, Reward, Pause,
+        Options, Codex, GameOver, Shop, Rest, Event, GameWon, BossStage
+    }
     public GameState CurrentState { get; private set; }
 
     private GameState previousState;
@@ -29,6 +31,8 @@ public class GameManager : MonoBehaviour
     private GameObject _gameplaySessionInstance;
     private AsyncOperationHandle<GameObject> _gameplaySessionHandle;
     private RoundManager _currentRoundManager;
+
+    private Stack<GameState> stateHistory = new Stack<GameState>();
 
     private void Awake()
     {
@@ -171,7 +175,11 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        Time.timeScale = 1;
+        // 일시정지 상태에서 옵션으로 들어가는 경우, 게임플레이가 재개되지 않도록 Time.timeScale을 1로 설정하지 않습니다.
+        if (oldState != GameState.Pause || (newState != GameState.Options && newState != GameState.Codex))
+        {
+            Time.timeScale = 1;
+        }
 
         string sceneName = GetSceneNameForState(newState);
 
@@ -185,7 +193,15 @@ public class GameManager : MonoBehaviour
 
         if (isSceneNameValid && isSceneDifferent)
         {
-            sceneTransitionManager.LoadScene(sceneName);
+            // 일시정지 상태에서 옵션/도감으로 진입 시, 기존 씬(Gameplay)을 유지하기 위해 Additive로 로드합니다.
+            if ((newState == GameState.Options || newState == GameState.Codex) && oldState == GameState.Pause)
+            {
+                sceneTransitionManager.LoadSceneAdditive(sceneName);
+            }
+            else
+            {
+                sceneTransitionManager.LoadScene(sceneName);
+            }
         }
         else
         {
@@ -414,5 +430,39 @@ public class GameManager : MonoBehaviour
             Debug.LogError($"4. [GameManager] 에러! '{currentNode.Position}' 노드에 해당하는 라운드 데이터를 찾지 못했습니다!");
         }
         Debug.Log("--- [GameManager] StartRoundAfterSceneLoad 코루틴 정상 종료 ---");
+    }
+
+    public void GoBackFromOptions()
+    {
+        // Options 씬을 언로드합니다.
+        sceneTransitionManager.UnloadScene(SceneNames.Options);
+
+        // 'previousState'는 PauseGame()이 호출될 때 저장됩니다.
+        // 만약 previousState가 Gameplay나 BossStage라면, 일시정지 메뉴를 통해 왔다는 의미입니다.
+        if (previousState == GameState.Gameplay || previousState == GameState.BossStage)
+        {
+            Debug.Log("[GameManager] 옵션 씬에서 일시정지 씬으로 돌아갑니다.");
+            // 씬을 언로드했으므로, 상태만 Pause로 되돌립니다.
+            CurrentState = GameState.Pause;
+            OnGameStateChanged?.Invoke(CurrentState);
+            OnAfterStateChange?.Invoke(GameState.Options, CurrentState);
+
+            // PauseUIController를 찾아 포커스를 설정합니다.
+            var pauseUIController = FindObjectOfType<PauseUIController>();
+            if (pauseUIController != null)
+            {
+                GameObject firstFocus = pauseUIController.GetFirstFocusableElement();
+                if (firstFocus != null)
+                {
+                    EventSystem.current.SetSelectedGameObject(firstFocus);
+                }
+            }
+        }
+        else
+        {
+            Debug.Log("[GameManager] 옵션 씬에서 메인 메뉴로 돌아갑니다.");
+            // MainMenu에서 왔을 경우, Options 씬이 단독으로 로드되었으므로 MainMenu 씬을 다시 로드해야 합니다.
+            ChangeState(GameState.MainMenu);
+        }
     }
 }

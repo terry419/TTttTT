@@ -72,7 +72,27 @@ public class InteractiveSlider : Slider, ISubmitHandler, ICancelHandler
         }
         else
         {
-            base.OnMove(eventData);
+            Selectable nextSelectable = null;
+            switch (eventData.moveDir)
+            {
+                case MoveDirection.Up:
+                    nextSelectable = this.FindSelectableOnUp();
+                    break;
+                case MoveDirection.Down:
+                    nextSelectable = this.FindSelectableOnDown();
+                    break;
+                case MoveDirection.Left:
+                    nextSelectable = this.FindSelectableOnLeft();
+                    break;
+                case MoveDirection.Right:
+                    nextSelectable = this.FindSelectableOnRight();
+                    break;
+            }
+
+            if (nextSelectable != null)
+            {
+                EventSystem.current.SetSelectedGameObject(nextSelectable.gameObject, eventData);
+            }
         }
     }
 

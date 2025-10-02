@@ -30,6 +30,7 @@ public class PauseUIController : MonoBehaviour
         {
             continueButton.onClick.AddListener(gameManager.ResumeGame);
             abandonButton.onClick.AddListener(gameManager.AbandonRun);
+            optionButton.onClick.AddListener(() => gameManager.ChangeState(GameManager.GameState.Options));
         }
         else
         {
