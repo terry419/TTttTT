@@ -11,7 +11,9 @@ using UnityEngine.EventSystems;
 
 public class GameManager : MonoBehaviour
 {
-    public enum GameState { MainMenu, CharacterSelect, PointAllocation, Gameplay, Reward, Pause, Codex, GameOver, Shop, Rest, Event, GameWon, BossStage } // <<-- [수정] BossStage 추가
+    public enum GameState { 
+        MainMenu, CharacterSelect, PointAllocation, Gameplay, Reward, Pause, 
+        Options, Codex, GameOver, Shop, Rest, Event, GameWon, BossStage }
     public GameState CurrentState { get; private set; }
 
     private GameState previousState;
@@ -134,9 +136,15 @@ public class GameManager : MonoBehaviour
             yield return StartCoroutine(_currentRoundManager.StartRound(roundToStart));
         }
     }
+
     public void ChangeState(GameState newState)
     {
-        if (CurrentState == newState && newState != GameState.Gameplay) return;
+        if (CurrentState == newState && newState != GameState.Gameplay)
+        {
+            // 디버그 1-1: 동일 상태 변경으로 인한 조기 리턴 확인
+            Debug.LogWarning($"[DEBUG] 1-1. 동일한 상태({newState})로 변경 요청되어 아무것도 하지 않고 리턴합니다.");
+            return;
+        }
 
         Debug.Log($"[GameManager] 상태 변경 요청: {CurrentState} -> {newState}");
         OnBeforeStateChange?.Invoke(CurrentState, newState);
@@ -166,14 +174,23 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 1;
 
         string sceneName = GetSceneNameForState(newState);
+
         if (newState == GameState.Gameplay)
         {
             sceneName = SceneNames.Gameplay;
         }
 
-        if (!string.IsNullOrEmpty(sceneName) && SceneManager.GetActiveScene().name != sceneName)
+        bool isSceneNameValid = !string.IsNullOrEmpty(sceneName);
+        bool isSceneDifferent = SceneManager.GetActiveScene().name != sceneName;
+
+        if (isSceneNameValid && isSceneDifferent)
         {
             sceneTransitionManager.LoadScene(sceneName);
+        }
+        else
+        {
+            // 디버그 5-1: 씬 전환이 일어나지 않은 이유
+            Debug.LogWarning("[DEBUG] 5-1. 씬 이름이 비어있거나 현재 씬과 동일하여 씬을 전환하지 않았습니다.");
         }
 
         OnAfterStateChange?.Invoke(oldState, CurrentState);
@@ -334,6 +351,7 @@ public class GameManager : MonoBehaviour
             case GameState.Shop: return SceneNames.Shop;
             case GameState.Rest: return SceneNames.Rest;
             case GameState.Event: return SceneNames.Event;
+            case GameState.Options: return SceneNames.Options;
             default: return "";
         }
     }

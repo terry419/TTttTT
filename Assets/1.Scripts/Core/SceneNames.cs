@@ -15,4 +15,5 @@ public static class SceneNames
     public const string Rest = "Rest";
     public const string Event = "Event";
     public const string Pause = "Pause";
+    public const string Options = "Options";
 }

@@ -17,7 +17,6 @@ public class MainMenuUI : MonoBehaviour
 
     void Start()
     {
-        Debug.Log("[INPUT TRACE ⑦] MainMenuUI.Start: 시작 및 버튼 리스너 등록.");
         startButton.onClick.AddListener(OnStartButtonClicked);
         optionsButton.onClick.AddListener(OnOptionsButtonClicked);
         codexButton.onClick.AddListener(OnCodexButtonClicked);
@@ -49,7 +48,10 @@ public class MainMenuUI : MonoBehaviour
         }
     }
 
-    public void OnOptionsButtonClicked() { Debug.Log("옵션 버튼 클릭!"); }
+    public void OnOptionsButtonClicked() { 
+        Debug.Log("옵션 버튼 클릭!");
+        ServiceLocator.Get<GameManager>().ChangeState(GameManager.GameState.Options);
+    }
     public void OnStartButtonClicked() 
     {
         Debug.Log("[INPUT TRACE ⑧] MainMenuUI: 'Start' 버튼 클릭 이벤트 정상 처리됨.");
