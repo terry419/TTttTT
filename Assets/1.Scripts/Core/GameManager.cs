@@ -7,17 +7,19 @@ using UnityEngine.AddressableAssets;
 using Cysharp.Threading.Tasks;
 using UnityEngine.SceneManagement;
 using UnityEngine.ResourceManagement.AsyncOperations; // AsyncOperationHandle 사용
+using UnityEngine.EventSystems;
 
 public class GameManager : MonoBehaviour
 {
     public enum GameState { MainMenu, CharacterSelect, PointAllocation, Gameplay, Reward, Pause, Codex, GameOver, Shop, Rest, Event, GameWon, BossStage } // <<-- [수정] BossStage 추가
     public GameState CurrentState { get; private set; }
+
+    private GameState previousState;
     public CharacterDataSO SelectedCharacter { get; set; }
     public int AllocatedPoints { get; set; }
 
     public event Action<GameState, GameState> OnBeforeStateChange;
     public event Action<GameState, GameState> OnAfterStateChange;
-
     public event Action<GameState> OnGameStateChanged;
 
     private SceneTransitionManager sceneTransitionManager;
@@ -59,12 +61,51 @@ public class GameManager : MonoBehaviour
         {
             inputManager.UnlinkFromGameManager(this);
         }
-        // [추가] 오브젝트 파괴 시 이벤트 구독 해제
         this.OnBeforeStateChange -= HandleStateChangeCleanup;
     }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        if (scene.name == SceneNames.Pause)
+        {
+            var pauseUIController = FindObjectOfType<PauseUIController>();
+            if (pauseUIController != null)
+            {
+                GameObject firstFocus = pauseUIController.GetFirstFocusableElement();
+                if (firstFocus != null)
+                {
+                    EventSystem.current.SetSelectedGameObject(firstFocus);
+                    Debug.Log("[GameManager] Pause 씬 로드 완료. PauseUIController를 통해 포커스를 설정했습니다.");
+                }
+            }
+            else
+            {
+                Debug.LogWarning("[GameManager] Pause 씬에서 PauseUIController를 찾지 못해 포커스를 설정할 수 없습니다.");
+            }
+        }
+    }
+
+    public void PauseGame()
+    {
+        if (CurrentState == GameState.Pause) return;
+
+        previousState = CurrentState;
+        Time.timeScale = 0f;
+        ChangeState(GameState.Pause);
+    }
+
+    public void ResumeGame()
+    {
+        if (CurrentState != GameState.Pause) return;
+
+        Time.timeScale = 1f;
+        sceneTransitionManager.UnloadScene(SceneNames.Pause);
+
+        // ChangeState를 거치지 않고 직접 상태를 되돌립니다.
+        GameState stateBeforePause = previousState;
+        CurrentState = stateBeforePause;
+        OnGameStateChanged?.Invoke(stateBeforePause);
+        OnAfterStateChange?.Invoke(GameState.Pause, stateBeforePause);
     }
 
     public void ReportRoundManagerReady(RoundManager roundManager)
@@ -95,10 +136,10 @@ public class GameManager : MonoBehaviour
     }
     public void ChangeState(GameState newState)
     {
-        if (CurrentState == newState) return;
+        if (CurrentState == newState && newState != GameState.Gameplay) return;
 
         Debug.Log($"[GameManager] 상태 변경 요청: {CurrentState} -> {newState}");
-        OnBeforeStateChange?.Invoke(CurrentState, newState); // [추가] 상태 변경 직전 이벤트 방송
+        OnBeforeStateChange?.Invoke(CurrentState, newState);
 
         GameState oldState = CurrentState;
 
@@ -111,15 +152,22 @@ public class GameManager : MonoBehaviour
         CurrentState = newState;
         OnGameStateChanged?.Invoke(newState);
 
-        if (newState == GameState.Pause) { Time.timeScale = 0; return; }
-        else if (newState == GameState.GameOver) { StartCoroutine(GameOverRoutine()); return; }
+        if (newState == GameState.Pause)
+        {
+            sceneTransitionManager.LoadSceneAdditive(SceneNames.Pause);
+            return;
+        }
+        else if (newState == GameState.GameOver)
+        {
+            StartCoroutine(GameOverRoutine());
+            return;
+        }
 
         Time.timeScale = 1;
 
         string sceneName = GetSceneNameForState(newState);
         if (newState == GameState.Gameplay)
         {
-            // [수정] 변경된 상수 이름을 사용합니다.
             sceneName = SceneNames.Gameplay;
         }
 
@@ -128,11 +176,11 @@ public class GameManager : MonoBehaviour
             sceneTransitionManager.LoadScene(sceneName);
         }
 
-        OnAfterStateChange?.Invoke(oldState, CurrentState); // [추가] 상태 변경 완료 후 이벤트 방송
+        OnAfterStateChange?.Invoke(oldState, CurrentState);
     }
+
     private void HandleStateChangeCleanup(GameState from, GameState to)
     {
-        // 게임 세션이 끝나고 메인 메뉴로 돌아갈 때 _GameplaySession 인스턴스를 파괴합니다.
         if (to == GameState.MainMenu && _gameplaySessionInstance != null)
         {
             Debug.Log("[GameManager] 메인 메뉴로 복귀. _GameplaySession 인스턴스를 파괴합니다.");
@@ -141,9 +189,6 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// [리팩토링] 게임 세션 프리팹을 생성하고, 데이터 초기화 후 상태를 변경하는 비동기 메서드
-    /// </summary>
     private async UniTaskVoid InstantiateGameplaySessionAndChangeState(GameState targetState)
     {
         _gameplaySessionHandle = Addressables.InstantiateAsync(PrefabKeys.GameplaySession);
@@ -161,11 +206,9 @@ public class GameManager : MonoBehaviour
             playerDataManager.ResetRunData(SelectedCharacter);
         }
 
-        // 상태를 변경하고 씬을 로드합니다.
         ChangeState(targetState);
     }
 
-    // (이하 다른 메서드들은 기존과 동일)
     public void SetupForTest(CharacterDataSO character, int allocatedPoints)
     {
         Debug.Log($"[GameManager] 테스트 모드 설정: Character={character.characterId}, Points={allocatedPoints}");
@@ -253,6 +296,27 @@ public class GameManager : MonoBehaviour
         }
         yield return new WaitForSecondsRealtime(3f);
         Time.timeScale = 1;
+
+        ChangeState(GameState.MainMenu);
+    }
+
+    public void AbandonRun()
+    {
+        Debug.Log("[GameManager] 현재 게임을 포기하고 메인 메뉴로 돌아갑니다.");
+
+        if (ServiceLocator.IsRegistered<PlayerController>())
+        {
+            var playerController = ServiceLocator.Get<PlayerController>();
+            playerController.StopAllActions();
+        }
+
+        Time.timeScale = 1;
+
+        var poolManager = ServiceLocator.Get<PoolManager>();
+        if (poolManager != null)
+        {
+            poolManager.ClearAndDestroyEntirePool();
+        }
 
         ChangeState(GameState.MainMenu);
     }

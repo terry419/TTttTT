@@ -57,7 +57,7 @@ public class PoolManager : MonoBehaviour
     private void HandleGameStateChange(GameManager.GameState from, GameManager.GameState to)
     {
         // 이전 상태가 Gameplay였고, 다음 상태가 Gameplay가 아니라면 모든 풀을 정리합니다.
-        if (from == GameManager.GameState.Gameplay && to != GameManager.GameState.Gameplay)
+        if (from == GameManager.GameState.Gameplay && to != GameManager.GameState.Gameplay && to != GameManager.GameState.Pause)
         {
             Debug.Log($"[PoolManager] 게임 플레이 상태({from})를 벗어나므로 모든 풀 오브젝트를 정리합니다.");
             ClearAndDestroyEntirePool();

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System;
 using UnityEngine.EventSystems;
+using UnityEngine.UI; // Button 사용을 위해 추가
 
 public class InventoryController : MonoBehaviour
 {
@@ -63,6 +64,26 @@ public class InventoryController : MonoBehaviour
         {
             PlayerDataManager.OnRunDataChanged -= OnRunDataChanged;
             isSubscribed = false;
+        }
+    }
+
+    /// <summary>
+    /// 인벤토리 슬롯들의 상호작용 가능 여부를 설정합니다.
+    /// </summary>
+    public void SetInteractive(bool isInteractive)
+    {
+        foreach (var slot in equippedSlots.Concat(ownedSlots))
+        {
+            var button = slot.GetComponent<Button>();
+            if (button != null)
+            {
+                button.interactable = isInteractive;
+            }
+        }
+
+        if (!isInteractive)
+        {
+            CancelSelection();
         }
     }
 
@@ -169,7 +190,6 @@ public class InventoryController : MonoBehaviour
         bool isSourceEquipped = equippedSlots.Contains(firstSelectedSlot);
         Debug.Log($"[인벤토리] Source는 장착 슬롯인가? {isSourceEquipped}");
 
-        // 장착 슬롯에 있던 카드라면 Unequip을 먼저 호출해야 함
         if (isSourceEquipped)
         {
             cardManager.Unequip(cardToMove);

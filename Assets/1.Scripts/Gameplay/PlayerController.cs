@@ -45,9 +45,7 @@ public class PlayerController : MonoBehaviour
             inputManager.InputActions.Gameplay.Move.canceled -= HandleMove;
         }
         RoundManager.OnRoundEnded -= HandleRoundEnd;
-        _attackLoopCts?.Cancel();
-        _attackLoopCts?.Dispose();
-        _attackLoopCts = null;
+        StopAllActions(); // OnDisable 시 모든 동작 중지
     }
 
     private void HandleRoundStarted(RoundDataSO roundData)
@@ -62,9 +60,30 @@ public class PlayerController : MonoBehaviour
 
     private void HandleRoundEnd(bool success)
     {
-        _attackLoopCts?.Cancel();
-        _attackLoopCts?.Dispose();
-        _attackLoopCts = null;
+        StopAllActions();
+    }
+
+    /// <summary>
+    /// 플레이어의 모든 동작(이동, 공격)을 중지합니다.
+    /// </summary>
+    public void StopAllActions()
+    {
+        Debug.Log("[PlayerController] 모든 동작을 중지합니다.");
+
+        // 이동 중지
+        moveInput = Vector2.zero;
+        if (rb != null)
+        {
+            rb.velocity = Vector2.zero;
+        }
+
+        // 공격 루프 중지
+        if (_attackLoopCts != null && !_attackLoopCts.IsCancellationRequested)
+        {
+            _attackLoopCts.Cancel();
+            _attackLoopCts.Dispose();
+            _attackLoopCts = null;
+        }
     }
 
     public void StartAutoAttackLoop()
@@ -80,29 +99,25 @@ public class PlayerController : MonoBehaviour
         {
             while (!token.IsCancellationRequested)
             {
-                // 1. 공격에 사용할 카드를 가져옵니다.
                 var cardToUse = cardManager.activeCard;
                 if (cardToUse == null)
                 {
-                    await UniTask.Yield(PlayerLoopTiming.FixedUpdate, token); // 사용할 카드가 없으면 한 프레임 대기
+                    await UniTask.Yield(PlayerLoopTiming.FixedUpdate, token);
                     continue;
                 }
 
-                // 2. 해당 카드로 공격을 실행합니다.
                 await PerformAttack(cardToUse);
 
-                // 3. 방금 사용한 카드의 고유 쿨타임을 기반으로 대기 시간을 계산합니다.
                 if (stats == null) return;
                 float interval = cardToUse.CardData.attackInterval / stats.FinalAttackSpeed;
                 if (float.IsInfinity(interval) || interval <= 0) interval = 1f;
 
-                // 4. 계산된 시간만큼 대기합니다.
                 await UniTask.Delay(System.TimeSpan.FromSeconds(interval), delayTiming: PlayerLoopTiming.FixedUpdate, cancellationToken: token);
             }
         }
         catch (System.OperationCanceledException)
         {
-            Debug.Log("[PlayerController] AutoAttackLoop safely cancelled.");
+            Debug.Log("[PlayerController] AutoAttackLoop가 안전하게 취소되었습니다.");
         }
     }
 
@@ -114,7 +129,6 @@ public class PlayerController : MonoBehaviour
             var playerDataManager = ServiceLocator.Get<PlayerDataManager>();
             if (playerDataManager?.CurrentRunData == null) return;
 
-            // [핵심 수정] PlayerDataManager의 최신 장착 카드 목록에 카드가 있는지 확인합니다.
             if (!playerDataManager.CurrentRunData.equippedCards.Contains(cardInstance))
             {
                 return;
@@ -126,7 +140,7 @@ public class PlayerController : MonoBehaviour
         }
         catch (MissingReferenceException ex)
         {
-            Debug.LogError($"[!!! MissingReferenceException !!!] PlayerController.PerformAttack() 내부에서 오류 발생. 원본 오류: {ex.Message}\n{ex.StackTrace}");
+            Debug.LogError($"[!!! MissingReferenceException !!!] PlayerController.PerformAttack() 내부에서 오류 발생. 원본 오류: {ex.Message}");
         }
     }
 

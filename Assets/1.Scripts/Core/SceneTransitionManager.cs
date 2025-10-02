@@ -54,6 +54,15 @@ public class SceneTransitionManager : MonoBehaviour
         StartCoroutine(FadeOutAndLoad(sceneName));
     }
 
+    public void LoadSceneAdditive(string sceneName)
+    {
+        SceneManager.LoadScene(sceneName, LoadSceneMode.Additive);
+    }
+    public void UnloadScene(string sceneName)
+    {
+        SceneManager.UnloadSceneAsync(sceneName);
+    }
+
     private IEnumerator FadeIn()
     {
         fadeOverlay.gameObject.SetActive(true);

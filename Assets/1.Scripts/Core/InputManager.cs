@@ -11,6 +11,8 @@ public class InputManager : MonoBehaviour
     public PlayerInputActions InputActions { get; private set; }
     public InputActionAsset ActionsAsset => playerActionsAsset;
 
+    private GameManager gameManager;
+
 
     void Awake()
     {
@@ -22,26 +24,57 @@ public class InputManager : MonoBehaviour
     /// <summary>
     /// GameManager가 자신의 준비가 끝났을 때 이 함수를 호출하여 이벤트 구독을 시작시킵니다.
     /// </summary>
-    public void LinkToGameManager(GameManager gameManager)
+    public void LinkToGameManager(GameManager gm)
     {
-        if (gameManager != null)
+        if (gm != null)
         {
-            gameManager.OnGameStateChanged += HandleGameStateChanged;
-            HandleGameStateChanged(gameManager.CurrentState); // 초기 상태 적용
-            Debug.Log("[INPUT TRACE] InputManager: GameManager의 상태 변경 이벤트 구독 완료.");
+            this.gameManager = gm; //
+            this.gameManager.OnGameStateChanged += HandleGameStateChanged;
+            HandleGameStateChanged(this.gameManager.CurrentState);
+            Debug.Log("[INPUT TRACE] InputManager: GameManager .");
+
+            if (InputActions != null)
+            {
+                InputActions.Gameplay.Pause.performed += OnPausePerformed;
+                InputActions.UI.Cancel.performed += OnPausePerformed;
+            }
         }
     }
 
     /// <summary>
     /// GameManager가 파괴될 때 호출하여 이벤트 구독을 안전하게 해제합니다.
     /// </summary>
-    public void UnlinkFromGameManager(GameManager gameManager)
+    public void UnlinkFromGameManager(GameManager gm)
     {
-        if (gameManager != null)
+        if (gm != null)
         {
-            gameManager.OnGameStateChanged -= HandleGameStateChanged;
+            gm.OnGameStateChanged -= HandleGameStateChanged;
         }
+
+        if (InputActions != null)
+        {
+            InputActions.Gameplay.Pause.performed -= OnPausePerformed;
+            InputActions.UI.Cancel.performed -= OnPausePerformed;
+        }
+
         InputActions?.Disable();
+        this.gameManager = null;
+    }
+
+    private void OnPausePerformed(InputAction.CallbackContext context)
+    {
+        if (gameManager == null) return;
+
+        if (gameManager.CurrentState == GameManager.GameState.Gameplay)
+        {
+            Debug.Log("[InputManager] Pause action performed in Gameplay. Pausing.");
+            gameManager.PauseGame();
+        }
+        else if (gameManager.CurrentState == GameManager.GameState.Pause)
+        {
+            Debug.Log("[InputManager] Pause action performed in Pause state. Resuming.");
+            gameManager.ResumeGame(); 
+        }
     }
 
     private void OnDestroy()
