@@ -1,5 +1,5 @@
 // TTttTT/Assets/1.Scripts/UI/CardDisplay.cs
-
+using UnityEngine.Localization;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -43,10 +43,10 @@ public class CardDisplay : MonoBehaviour
 
         // --- 각 UI 요소에 데이터 할당 ---
         if (nameText != null)
-            nameText.text = cardData.basicInfo.cardName;
+            nameText.text = cardData.basicInfo.cardName.ToString();
 
         if (descriptionText != null)
-            descriptionText.text = cardData.basicInfo.effectDescription;
+            descriptionText.text = cardData.basicInfo.effectDescription.ToString();      
 
         if (levelText != null)
             levelText.text = $"Lv.{cardInstance.EnhancementLevel + 1}";

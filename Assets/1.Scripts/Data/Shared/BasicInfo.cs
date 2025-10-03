@@ -1,4 +1,5 @@
 // 추천 경로: Assets/1.Scripts/Data/Shared/BasicInfo.cs
+using UnityEngine.Localization;
 using UnityEngine;
 using System;
 
@@ -8,16 +9,16 @@ using System;
 [Serializable]
 public class BasicInfo
 {
-    [Tooltip("카드의 고유 ID (예: warrior_basic_001)")]
+    [Tooltip("카드 ID (예: warrior_basic_001)")]
     public string cardID;
     [Tooltip("UI에 표시될 카드 이름")]
-    public string cardName;
-    [Tooltip("카드 중앙에 표시될 메인 일러스트")]
+    public LocalizedString cardName; // string -> LocalizedString 으로 변경
+    [Tooltip("카드 중앙에 표시될 일러스트")]
     public Sprite cardIllustration;
-    [Tooltip("카드의 타입 (물리 또는 마법)")]
+    [Tooltip("카드의 타입 (공격 또는 방어)")]
     public CardType type;
-    [Tooltip("카드의 희귀도")]
+    [Tooltip("카드의 등급")]
     public CardRarity rarity;
     [Tooltip("카드 효과 설명 텍스트"), TextArea(3, 5)]
-    public string effectDescription;
+    public LocalizedString effectDescription; // string -> LocalizedString 으로 변경
 }

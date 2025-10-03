@@ -58,7 +58,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.9811321, g: 0, b: 0, a: 0.05882353}
+  m_Color: {r: 0.9811321, g: 0, b: 0, a: 0.19607843}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -242,12 +242,14 @@ MonoBehaviour:
       m_AssetGUID: d449cd9647b76924ca8c8df2ba7b338e
       m_SubObjectName: 
       m_SubObjectType: 
+      m_SubObjectGUID: 
       m_EditorAssetChanged: 0
     count: 500
   critEffectPrefabRef:
     m_AssetGUID: 
     m_SubObjectName: 
     m_SubObjectType: 
+    m_SubObjectGUID: 
     m_EditorAssetChanged: 0
 --- !u!114 &6115583072221150736
 MonoBehaviour:

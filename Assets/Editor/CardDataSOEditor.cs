@@ -1,31 +1,55 @@
-// ÆÄÀÏ °æ·Î: Assets/Editor/CardDataSOEditor.cs
-using UnityEngine;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
-using System.Collections.Generic;
-using UnityEngine.AddressableAssets; // AssetReferenceT¸¦ À§ÇØ Ãß°¡
+using UnityEngine;
+using UnityEngine.AddressableAssets; // AssetReferenceT ì‚¬ìš©ì„ ìœ„í•´ ì¶”ê°€
 
 [CustomEditor(typeof(NewCardDataSO))]
 public class CardDataSOEditor : Editor
 {
-    // °¢ ¸ğµâÀÇ Editor ÀÎ½ºÅÏ½º¸¦ ÀúÀåÇÏ¿©, ÀÎ½ºÆåÅÍ »óÅÂ¸¦ À¯ÁöÇÕ´Ï´Ù.
+    // ê° ëª¨ë“ˆ Editor ì¸ìŠ¤í„´ìŠ¤ë¥¼ ê´€ë¦¬í•˜ì—¬, ì¸ìŠ¤í™í„°ì˜ ìƒíƒœë¥¼ ìœ ì§€í•©ë‹ˆë‹¤.
     private readonly Dictionary<Object, Editor> moduleEditors = new Dictionary<Object, Editor>();
 
     public override void OnInspectorGUI()
     {
-        // ¿øº» NewCardDataSOÀÇ º¯°æ»çÇ×À» ±â·Ï ½ÃÀÛ
+        // í˜„ì¬ NewCardDataSOì˜ ë³€ê²½ì‚¬í•­ì„ ì—…ë°ì´íŠ¸
         serializedObject.Update();
 
-        // "m_Script"¿Í "modules" ÇÊµå¸¦ Á¦¿ÜÇÑ ¸ğµç ±âº» ÇÊµå(baseDamage, projectileCount µî)¸¦ ÀÚµ¿À¸·Î ±×·ÁÁİ´Ï´Ù.
-        DrawPropertiesExcluding(serializedObject, "m_Script", "modules");
+        // "m_Script", "modules", "basicInfo" í•„ë“œë¥¼ ì œì™¸í•˜ê³  ë‚˜ë¨¸ì§€ ê¸°ë³¸ í•„ë“œë¥¼ ìë™ìœ¼ë¡œ ê·¸ë¦½ë‹ˆë‹¤.
+        DrawPropertiesExcluding(serializedObject, "m_Script", "modules", "basicInfo");
+
+        // basicInfo í•„ë“œë¥¼ ìˆ˜ë™ìœ¼ë¡œ ê·¸ë¦½ë‹ˆë‹¤.
+        SerializedProperty basicInfoProperty = serializedObject.FindProperty("basicInfo");
+        if (basicInfoProperty != null)
+        {
+            Debug.Log("Drawing cardID...");
+            EditorGUILayout.PropertyField(basicInfoProperty.FindPropertyRelative("cardID"), new
+GUIContent("Card ID"));
+            Debug.Log("Drawing cardName...");
+            EditorGUILayout.PropertyField(basicInfoProperty.FindPropertyRelative("cardName"), new
+GUIContent("Card Name"));
+            Debug.Log("Drawing cardIllustration...");
+            EditorGUILayout.PropertyField(basicInfoProperty.FindPropertyRelative("cardIllustration"), new
+GUIContent("Card Illustration"));
+            Debug.Log("Drawing type...");
+            EditorGUILayout.PropertyField(basicInfoProperty.FindPropertyRelative("type"), new
+GUIContent("Card Type"));
+            Debug.Log("Drawing rarity...");
+            EditorGUILayout.PropertyField(basicInfoProperty.FindPropertyRelative("rarity"), new
+GUIContent("Card Rarity"));
+            Debug.Log("Drawing effectDescription...");
+            EditorGUILayout.PropertyField(basicInfoProperty.FindPropertyRelative("effectDescription"), new
+ GUIContent("Effect Description"));
+        }
 
         EditorGUILayout.Space(10);
-        EditorGUILayout.LabelField("¸ğµâ Á¶¸³ ½½·Ô", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField("ëª¨ë“ˆ ì •ë³´ ì„¤ì •", EditorStyles.boldLabel);
 
-        // "modules" ¸®½ºÆ® ÇÁ·ÎÆÛÆ¼¸¦ °¡Á®¿É´Ï´Ù.
+        // "modules" ë¦¬ìŠ¤íŠ¸ í”„ë¡œí¼í‹°ë¥¼ ê·¸ë¦½ë‹ˆë‹¤.
         SerializedProperty modulesProperty = serializedObject.FindProperty("modules");
 
-        modulesProperty.isExpanded = EditorGUILayout.Foldout(modulesProperty.isExpanded, "¸ğµâ Á¶¸³ ½½·Ô", true, EditorStyles.foldoutHeader);
+        modulesProperty.isExpanded = EditorGUILayout.Foldout(modulesProperty.isExpanded, "ëª¨ë“ˆ ì •ë³´ ì„¤ì •",
+ true, EditorStyles.foldoutHeader);
 
         if (modulesProperty.isExpanded)
         {
@@ -33,36 +57,40 @@ public class CardDataSOEditor : Editor
 
             EditorGUILayout.PropertyField(modulesProperty.FindPropertyRelative("Array.size"));
 
-            // ¸®½ºÆ®ÀÇ °¢ ¸ğµâ Ç×¸ñÀ» ¼øÈ¸ÇÕ´Ï´Ù.
+            // ë¦¬ìŠ¤íŠ¸ì˜ ê° í•­ëª©ì„ ê·¸ë¦½ë‹ˆë‹¤.
             for (int i = 0; i < modulesProperty.arraySize; i++)
             {
                 SerializedProperty moduleEntryProperty = modulesProperty.GetArrayElementAtIndex(i);
 
-                // ModuleEntryÀÇ description ÇÊµå¸¦ ±×¸³´Ï´Ù.
-                SerializedProperty descriptionProperty = moduleEntryProperty.FindPropertyRelative("description");
+                // ModuleEntryì˜ description í•„ë“œë¥¼ ê·¸ë¦½ë‹ˆë‹¤.
+                SerializedProperty descriptionProperty =
+moduleEntryProperty.FindPropertyRelative("description");
                 EditorGUILayout.PropertyField(descriptionProperty);
 
-                // ModuleEntryÀÇ AssetReference ÇÊµå¸¦ ±×¸³´Ï´Ù.
-                SerializedProperty moduleRefProperty = moduleEntryProperty.FindPropertyRelative("moduleReference");
-                EditorGUILayout.PropertyField(moduleRefProperty, new GUIContent("¸ğµâ ¿¡¼Â (Module Asset)"));
+                // ModuleEntryì˜ AssetReference í•„ë“œë¥¼ ê·¸ë¦½ë‹ˆë‹¤.
+                SerializedProperty moduleRefProperty =
+moduleEntryProperty.FindPropertyRelative("moduleReference");
+                EditorGUILayout.PropertyField(moduleRefProperty, new GUIContent("ëª¨ë“ˆ ì—ì…‹ (ModuleAsset)"));
 
-                // AssetReference¿¡ ½ÇÁ¦ ¿¡¼ÂÀÌ ÇÒ´çµÇ¾î ÀÖ´ÂÁö È®ÀÎÇÕ´Ï´Ù.
-                var referencedModuleGuid = moduleRefProperty.FindPropertyRelative("m_AssetGUID").stringValue;
+                  // AssetReferenceì— ì‹¤ì œ ì—ì…‹ì´ í• ë‹¹ë˜ì–´ ìˆëŠ”ì§€ í™•ì¸í•©ë‹ˆë‹¤.
+                var referencedModuleGuid =
+moduleRefProperty.FindPropertyRelative("m_AssetGUID").stringValue;
 
                 if (!string.IsNullOrEmpty(referencedModuleGuid))
                 {
-                    var entry = AddressableAssetSettingsDefaultObject.Settings.FindAssetEntry(referencedModuleGuid);
+                    var entry =
+AddressableAssetSettingsDefaultObject.Settings.FindAssetEntry(referencedModuleGuid);
                     if (entry != null)
                     {
-                        // [¼öÁ¤] .GetAsset() ´ë½Å .MainAsset ¼Ó¼ºÀ» »ç¿ëÇÕ´Ï´Ù.
+                        // [ì£¼ì˜] .GetAsset() ëŒ€ì‹  .MainAsset ì†ì„±ì„ ì‚¬ìš©í•©ë‹ˆë‹¤.
                         var asset = entry.MainAsset as CardEffectSO;
 
                         if (asset != null)
                         {
-                            // ÀÎ¶óÀÎ ¿¡µğÅÍ¸¦ ±×¸®±â À§ÇÑ FoldoutÀ» »ı¼ºÇÕ´Ï´Ù.
+                            // í• ë‹¹ëœ ì—ì…‹ì„ ê·¸ë¦¬ê¸° ìœ„í•œ Foldoutì„ ì‚¬ìš©í•©ë‹ˆë‹¤.
                             bool isExpanded = EditorGUILayout.Foldout(
                                 GetFoldoutState(asset),
-                                $"¦¦ '{asset.name}' ¸ğµâ ³»¿ë ÆíÁı",
+                                $"'{asset.name}' ëª¨ë“ˆ ìƒì„¸ ì •ë³´",
                                 true,
                                 EditorStyles.foldoutHeader
                             );
@@ -90,11 +118,11 @@ public class CardDataSOEditor : Editor
             EditorGUI.indentLevel--;
         }
 
-        // º¯°æµÈ »çÇ×ÀÌ ÀÖ´Ù¸é Àû¿ëÇÕ´Ï´Ù.
+        // ë³€ê²½ëœ ë‚´ìš©ì„ ì ìš©í•©ë‹ˆë‹¤.
         serializedObject.ApplyModifiedProperties();
     }
 
-    // Foldout »óÅÂ ÀúÀåÀ» À§ÇÑ Helper ¸Ş¼Òµåµé
+    // Foldout ìƒíƒœ ì €ì¥ì„ ìœ„í•œ Helper ë©”ì„œë“œ
     private bool GetFoldoutState(Object asset)
     {
         return SessionState.GetBool(asset.GetInstanceID().ToString(), false);
@@ -107,7 +135,7 @@ public class CardDataSOEditor : Editor
 
     private void OnDisable()
     {
-        // ¿¡µğÅÍ°¡ ºñÈ°¼ºÈ­µÉ ¶§ »ı¼ºµÈ ¸ğµç ÀÎ¶óÀÎ ¿¡µğÅÍ¸¦ Á¤¸®ÇÏ¿© ¸Ş¸ğ¸® ´©¼ö¸¦ ¹æÁöÇÕ´Ï´Ù.
+        // ì—ë””í„°ê°€ ë¹„í™œì„±í™”ë  ë•Œ ìƒì„±ëœ ëª¨ë“  ì„œë¸Œ ì—ë””í„°ë¥¼ ì œê±°í•˜ì—¬ ë©”ëª¨ë¦¬ ëˆ„ìˆ˜ë¥¼ ë°©ì§€í•©ë‹ˆë‹¤.
         foreach (var editor in moduleEditors.Values)
         {
             if (editor != null)

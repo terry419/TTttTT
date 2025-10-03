@@ -1,3 +1,4 @@
+using UnityEngine.Localization;
 using UnityEngine;
 using TMPro;
 using System.Collections.Generic;
@@ -123,7 +124,8 @@ public class InventoryController : MonoBehaviour
                 fixedCursor.SetActive(true);
                 fixedCursor.transform.position = firstSelectedSlot.transform.position;
             }
-            string cardName = (firstSelectedSlot.currentState == CardSlot.SlotState.Empty) ? "빈 슬롯" : firstSelectedSlot.currentCard.CardData.basicInfo.cardName;
+            string cardName = (firstSelectedSlot.currentState == CardSlot.SlotState.Empty) ? "빈 슬롯"
+               : firstSelectedSlot.currentCard.CardData.basicInfo.cardName.ToString();
             Debug.Log($"[인벤토리] 1차 선택(Lock-in): {cardName}");
         }
         else
@@ -211,8 +213,8 @@ public class InventoryController : MonoBehaviour
 
     private void SwapWithFilledSlot(CardSlot targetSlot)
     {
-        string cardAName = firstSelectedSlot.currentCard.CardData.basicInfo.cardName;
-        string cardBName = targetSlot.currentCard.CardData.basicInfo.cardName;
+        string cardAName = firstSelectedSlot.currentCard.CardData.basicInfo.cardName.ToString();
+        string cardBName = targetSlot.currentCard.CardData.basicInfo.cardName.ToString();
         Debug.Log($"[인벤토리] 스왑 시도: '{cardAName}' <-> '{cardBName}'");
 
         cardManager.SwapCards(firstSelectedSlot.currentCard, targetSlot.currentCard);
@@ -224,7 +226,7 @@ public class InventoryController : MonoBehaviour
         if (fixedCursor != null) fixedCursor.SetActive(false);
 
         string cardName = firstSelectedSlot.currentCard != null
-        ? firstSelectedSlot.currentCard.CardData.basicInfo.cardName
+        ? firstSelectedSlot.currentCard.CardData.basicInfo.cardName.ToString()
         : "빈 슬롯";
 
         Debug.Log($"[인벤토리] 카드 선택 해제 (Unlock): {cardName}");
