@@ -1,6 +1,5 @@
 // TTttTT/Assets/1.Scripts/UI/CardDisplay.cs
-using UnityEngine.Localization;
-using UnityEngine.Localization;
+
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -11,24 +10,24 @@ public class CardSelectedEvent : UnityEvent<CardDisplay> { }
 
 public class CardDisplay : MonoBehaviour
 {
-    [Header("--- UI ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ---")]
-    [Header("ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½")]
+    [Header("--- UI ¿ä¼Ò ¿¬°á ---")]
+    [Header("»ó´Ü Á¤º¸")]
     [SerializeField] private TextMeshProUGUI levelText;
     [SerializeField] private TextMeshProUGUI nameText;
     [SerializeField] private Image attributeIcon;
 
-    [Header("ï¿½ß¾ï¿½ ï¿½ï¿½ï¿½ï¿½")]
+    [Header("Áß¾Ó Á¤º¸")]
     [SerializeField] private Image illustrationImage;
 
-    [Header("ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½")]
+    [Header("ÇÏ´Ü Á¤º¸")]
     [SerializeField] private TextMeshProUGUI descriptionText;
 
-    [Header("ï¿½ï¿½Å¸ UI")]
+    [Header("±âÅ¸ UI")]
     // [SerializeField] private Image rarityImage; 
     [SerializeField] private Image highlightBorder;
     public Button selectButton;
 
-    [Header("--- ï¿½Ìºï¿½Æ® ---")]
+    [Header("--- ÀÌº¥Æ® ---")]
     public CardSelectedEvent OnCardSelected;
 
     public NewCardDataSO CurrentCard { get; private set; }
@@ -42,12 +41,12 @@ public class CardDisplay : MonoBehaviour
         NewCardDataSO cardData = cardInstance.CardData;
         CurrentCard = cardData;
 
-        // --- ï¿½ï¿½ UI ï¿½ï¿½Ò¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ò´ï¿½ ---
+        // --- °¢ UI ¿ä¼Ò¿¡ µ¥ÀÌÅÍ ÇÒ´ç ---
         if (nameText != null)
-            nameText.text = cardData.basicInfo.cardName.ToString();
+            nameText.text = cardData.basicInfo.cardName;
 
         if (descriptionText != null)
-            descriptionText.text = cardData.basicInfo.effectDescription.ToString();      
+            descriptionText.text = cardData.basicInfo.effectDescription;
 
         if (levelText != null)
             levelText.text = $"Lv.{cardInstance.EnhancementLevel + 1}";
@@ -55,13 +54,13 @@ public class CardDisplay : MonoBehaviour
         var uiDb = ServiceLocator.Get<UIGraphicsDB>();
         if (uiDb != null)
         {
-            // Highlight Border ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
+            // Highlight Border »ö»ó ¼³Á¤ (µî±Þ ±âÁØ)
             if (highlightBorder != null)
             {
                 highlightBorder.color = uiDb.GetRarityColor(cardData.basicInfo.rarity);
             }
 
-            // ï¿½Ó¼ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (CardType ï¿½ï¿½ï¿½ï¿½)
+            // ¼Ó¼º ¾ÆÀÌÄÜ ¼³Á¤ (CardType ±âÁØ)
             if (attributeIcon != null)
             {
                 attributeIcon.sprite = uiDb.GetAttributeSprite(cardData.basicInfo.type);
@@ -69,14 +68,14 @@ public class CardDisplay : MonoBehaviour
             }
         }
 
-        // ï¿½ï¿½ï¿½ï¿½ ï¿½Ï·ï¿½ï¿½ï¿½Æ® (null Ã¼Å©)
+        // ¸ÞÀÎ ÀÏ·¯½ºÆ® (null Ã¼Å©)
         if (illustrationImage != null)
         {
             illustrationImage.sprite = cardData.basicInfo.cardIllustration;
             illustrationImage.enabled = illustrationImage.sprite != null;
         }
 
-        // ï¿½ï¿½Æ° ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+        // ¹öÆ° ¸®½º³Ê ¿¬°á
         if (selectButton != null)
         {
             selectButton.onClick.RemoveAllListeners();

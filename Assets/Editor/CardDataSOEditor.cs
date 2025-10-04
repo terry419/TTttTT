@@ -1,142 +1,120 @@
+// ÆÄÀÏ °æ·Î: Assets/Editor/CardDataSOEditor.cs
 using UnityEngine;
 using UnityEditor;
-using System.IO;
-using System.Linq;
+using UnityEditor.AddressableAssets;
+using System.Collections.Generic;
+using UnityEngine.AddressableAssets; // AssetReferenceT¸¦ À§ÇØ Ãß°¡
 
 [CustomEditor(typeof(NewCardDataSO))]
 public class CardDataSOEditor : Editor
 {
-    private SerializedProperty cardIDProp;
-    private SerializedProperty cardNameProp;
-    private SerializedProperty cardIllustrationProp;
-    private SerializedProperty typeProp;
-    private SerializedProperty rarityProp;
-    private SerializedProperty effectDescriptionProp;
-
-    private void OnEnable()
-    {
-        // 'basicInfo' í•˜ìœ„ì˜ í”„ë¡œí¼í‹°ë“¤ì„ ì°¾ìŠµë‹ˆë‹¤.
-        cardIDProp = serializedObject.FindProperty("basicInfo.cardID");
-        cardNameProp = serializedObject.FindProperty("basicInfo.cardName");
-        cardIllustrationProp = serializedObject.FindProperty("basicInfo.cardIllustration");
-        typeProp = serializedObject.FindProperty("basicInfo.type");
-        rarityProp = serializedObject.FindProperty("basicInfo.rarity");
-        effectDescriptionProp = serializedObject.FindProperty("basicInfo.effectDescription");
-    }
-
-    // [ì¶”ê°€ëœ í•¨ìˆ˜ 1] ë¬¸ìì—´ì„ CardType ì—´ê±°í˜•ìœ¼ë¡œ ë³€í™˜
-    private CardType ParseCardType(string typeString)
-    {
-        switch (typeString)
-        {
-            case "ë¬¼ë¦¬":
-            case "Physical":
-                return CardType.Physical;
-            case "ë§ˆë²•":
-            case "Magical":
-                return CardType.Magical;
-            default:
-                Debug.LogWarning($"ì•Œ ìˆ˜ ì—†ëŠ” ì¹´ë“œ íƒ€ì…: '{typeString}'. ê¸°ë³¸ê°’(Physical)ìœ¼ë¡œ ì„¤ì •í•©ë‹ˆë‹¤.");
-                return CardType.Physical;
-        }
-    }
-
-    // [ì¶”ê°€ëœ í•¨ìˆ˜ 2] ë¬¸ìì—´ì„ CardRarity ì—´ê±°í˜•ìœ¼ë¡œ ë³€í™˜
-    private CardRarity ParseCardRarity(string rarityString)
-    {
-        switch (rarityString)
-        {
-            case "ì¼ë°˜":
-            case "Common":
-                return CardRarity.Common;
-            case "í¬ê·€":
-            case "Rare":
-                return CardRarity.Rare;
-            case "ì˜ì›…":
-            case "Epic":
-                return CardRarity.Epic;
-            case "ì „ì„¤":
-            case "Legendary":
-                return CardRarity.Legendary;
-            case "ì‹ í™”":
-            case "Mythic":
-                return CardRarity.Mythic;
-            default:
-                Debug.LogWarning($"ì•Œ ìˆ˜ ì—†ëŠ” ì¹´ë“œ ë“±ê¸‰: '{rarityString}'. ê¸°ë³¸ê°’(Common)ìœ¼ë¡œ ì„¤ì •í•©ë‹ˆë‹¤.");
-                return CardRarity.Common;
-        }
-    }
+    // °¢ ¸ğµâÀÇ Editor ÀÎ½ºÅÏ½º¸¦ ÀúÀåÇÏ¿©, ÀÎ½ºÆåÅÍ »óÅÂ¸¦ À¯ÁöÇÕ´Ï´Ù.
+    private readonly Dictionary<Object, Editor> moduleEditors = new Dictionary<Object, Editor>();
 
     public override void OnInspectorGUI()
     {
+        // ¿øº» NewCardDataSOÀÇ º¯°æ»çÇ×À» ±â·Ï ½ÃÀÛ
         serializedObject.Update();
 
-        // basicInfo í•„ë“œë¥¼ ìˆ˜ë™ìœ¼ë¡œ ê·¸ë¦½ë‹ˆë‹¤.
-        SerializedProperty basicInfoProperty = serializedObject.FindProperty("basicInfo");
-        if (basicInfoProperty != null)
+        // "m_Script"¿Í "modules" ÇÊµå¸¦ Á¦¿ÜÇÑ ¸ğµç ±âº» ÇÊµå(baseDamage, projectileCount µî)¸¦ ÀÚµ¿À¸·Î ±×·ÁÁİ´Ï´Ù.
+        DrawPropertiesExcluding(serializedObject, "m_Script", "modules");
+
+        EditorGUILayout.Space(10);
+        EditorGUILayout.LabelField("¸ğµâ Á¶¸³ ½½·Ô", EditorStyles.boldLabel);
+
+        // "modules" ¸®½ºÆ® ÇÁ·ÎÆÛÆ¼¸¦ °¡Á®¿É´Ï´Ù.
+        SerializedProperty modulesProperty = serializedObject.FindProperty("modules");
+
+        modulesProperty.isExpanded = EditorGUILayout.Foldout(modulesProperty.isExpanded, "¸ğµâ Á¶¸³ ½½·Ô", true, EditorStyles.foldoutHeader);
+
+        if (modulesProperty.isExpanded)
         {
-            EditorGUILayout.PropertyField(basicInfoProperty.FindPropertyRelative("cardID"), new GUIContent("Card ID"));
+            EditorGUI.indentLevel++;
 
-            // cardName (LocalizedString) í•„ë“œë¥¼ m_StringReferenceë¥¼ í†µí•´ ê·¸ë¦½ë‹ˆë‹¤.
-            SerializedProperty cardNameProp = basicInfoProperty.FindPropertyRelative("cardName");
-            EditorGUILayout.PropertyField(cardNameProp.FindPropertyRelative("m_StringReference"), new GUIContent("Card Name"));
+            EditorGUILayout.PropertyField(modulesProperty.FindPropertyRelative("Array.size"));
 
-            EditorGUILayout.PropertyField(basicInfoProperty.FindPropertyRelative("cardIllustration"), new GUIContent("Card Illustration"));
+            // ¸®½ºÆ®ÀÇ °¢ ¸ğµâ Ç×¸ñÀ» ¼øÈ¸ÇÕ´Ï´Ù.
+            for (int i = 0; i < modulesProperty.arraySize; i++)
+            {
+                SerializedProperty moduleEntryProperty = modulesProperty.GetArrayElementAtIndex(i);
 
-            // type (CardType enum) í•„ë“œë¥¼ EnumPopupìœ¼ë¡œ ê·¸ë¦½ë‹ˆë‹¤.
-            SerializedProperty typeProp = basicInfoProperty.FindPropertyRelative("type");
-            typeProp.enumValueIndex = (int)(CardType)EditorGUILayout.EnumPopup(new GUIContent("Card Type"), (CardType)typeProp.enumValueIndex);
+                // ModuleEntryÀÇ description ÇÊµå¸¦ ±×¸³´Ï´Ù.
+                SerializedProperty descriptionProperty = moduleEntryProperty.FindPropertyRelative("description");
+                EditorGUILayout.PropertyField(descriptionProperty);
 
-            // rarity (CardRarity enum) í•„ë“œë¥¼ EnumPopupìœ¼ë¡œ ê·¸ë¦½ë‹ˆë‹¤.
-            SerializedProperty rarityProp = basicInfoProperty.FindPropertyRelative("rarity");
-            rarityProp.enumValueIndex = (int)(CardRarity)EditorGUILayout.EnumPopup(new GUIContent("Card Rarity"), (CardRarity)rarityProp.enumValueIndex);
+                // ModuleEntryÀÇ AssetReference ÇÊµå¸¦ ±×¸³´Ï´Ù.
+                SerializedProperty moduleRefProperty = moduleEntryProperty.FindPropertyRelative("moduleReference");
+                EditorGUILayout.PropertyField(moduleRefProperty, new GUIContent("¸ğµâ ¿¡¼Â (Module Asset)"));
 
-            // effectDescription (LocalizedString) í•„ë“œë¥¼ m_StringReferenceë¥¼ í†µí•´ ê·¸ë¦½ë‹ˆë‹¤.
-            SerializedProperty effectDescriptionProp = basicInfoProperty.FindPropertyRelative("effectDescription");
-            EditorGUILayout.PropertyField(effectDescriptionProp.FindPropertyRelative("m_StringReference"), new GUIContent("Effect Description"));
+                // AssetReference¿¡ ½ÇÁ¦ ¿¡¼ÂÀÌ ÇÒ´çµÇ¾î ÀÖ´ÂÁö È®ÀÎÇÕ´Ï´Ù.
+                var referencedModuleGuid = moduleRefProperty.FindPropertyRelative("m_AssetGUID").stringValue;
+
+                if (!string.IsNullOrEmpty(referencedModuleGuid))
+                {
+                    var entry = AddressableAssetSettingsDefaultObject.Settings.FindAssetEntry(referencedModuleGuid);
+                    if (entry != null)
+                    {
+                        // [¼öÁ¤] .GetAsset() ´ë½Å .MainAsset ¼Ó¼ºÀ» »ç¿ëÇÕ´Ï´Ù.
+                        var asset = entry.MainAsset as CardEffectSO;
+
+                        if (asset != null)
+                        {
+                            // ÀÎ¶óÀÎ ¿¡µğÅÍ¸¦ ±×¸®±â À§ÇÑ FoldoutÀ» »ı¼ºÇÕ´Ï´Ù.
+                            bool isExpanded = EditorGUILayout.Foldout(
+                                GetFoldoutState(asset),
+                                $"¦¦ '{asset.name}' ¸ğµâ ³»¿ë ÆíÁı",
+                                true,
+                                EditorStyles.foldoutHeader
+                            );
+
+                            SetFoldoutState(asset, isExpanded);
+
+                            if (isExpanded)
+                            {
+                                EditorGUI.indentLevel++;
+
+                                if (!moduleEditors.ContainsKey(asset))
+                                {
+                                    moduleEditors[asset] = CreateEditor(asset);
+                                }
+
+                                moduleEditors[asset].OnInspectorGUI();
+
+                                EditorGUI.indentLevel--;
+                            }
+                        }
+                    }
+                }
+                EditorGUILayout.Separator();
+            }
+            EditorGUI.indentLevel--;
         }
 
-        EditorGUILayout.Space(20); // ë²„íŠ¼ê³¼ êµ¬ë¶„ì„ ìœ„í•´ ê³µê°„ì„ ì¶”ê°€
+        // º¯°æµÈ »çÇ×ÀÌ ÀÖ´Ù¸é Àû¿ëÇÕ´Ï´Ù.
+        serializedObject.ApplyModifiedProperties();
+    }
 
-        if (GUILayout.Button("Load All Card Data from JSONs in Folder"))
+    // Foldout »óÅÂ ÀúÀåÀ» À§ÇÑ Helper ¸Ş¼Òµåµé
+    private bool GetFoldoutState(Object asset)
+    {
+        return SessionState.GetBool(asset.GetInstanceID().ToString(), false);
+    }
+
+    private void SetFoldoutState(Object asset, bool state)
+    {
+        SessionState.SetBool(asset.GetInstanceID().ToString(), state);
+    }
+
+    private void OnDisable()
+    {
+        // ¿¡µğÅÍ°¡ ºñÈ°¼ºÈ­µÉ ¶§ »ı¼ºµÈ ¸ğµç ÀÎ¶óÀÎ ¿¡µğÅÍ¸¦ Á¤¸®ÇÏ¿© ¸Ş¸ğ¸® ´©¼ö¸¦ ¹æÁöÇÕ´Ï´Ù.
+        foreach (var editor in moduleEditors.Values)
         {
-            string dirPath = EditorUtility.OpenFolderPanel("Select Folder with Card JSONs", "", "");
-            if (!string.IsNullOrEmpty(dirPath))
+            if (editor != null)
             {
-                var jsonFiles = Directory.GetFiles(dirPath, "*.json").ToList();
-                foreach (var filePath in jsonFiles)
-                {
-                    string json = File.ReadAllText(filePath);
-                    CardDataJson jsonData = JsonUtility.FromJson<CardDataJson>(json);
-
-                    string soPath = $"Assets/Resources_moved/CardData/{jsonData.cardID}.asset";
-                    NewCardDataSO so = AssetDatabase.LoadAssetAtPath<NewCardDataSO>(soPath);
-                    if (so == null)
-                    {
-                        so = ScriptableObject.CreateInstance<NewCardDataSO>();
-                        AssetDatabase.CreateAsset(so, soPath);
-                    }
-
-                    SerializedObject soToUpdate = new SerializedObject(so);
-                    soToUpdate.Update();
-
-                    soToUpdate.FindProperty("basicInfo.cardID").stringValue = jsonData.cardID;
-                    soToUpdate.FindProperty("basicInfo.cardName").stringValue = jsonData.cardName;
-                    soToUpdate.FindProperty("basicInfo.effectDescription").stringValue = jsonData.effectDescription;
-
-                    // [í•µì‹¬ ìˆ˜ì •] ë³€í™˜ í•¨ìˆ˜ë¥¼ ì‚¬ìš©í•˜ì—¬ ì˜¬ë°”ë¥¸ Enum ê°’ì„ í• ë‹¹í•©ë‹ˆë‹¤.
-                    soToUpdate.FindProperty("basicInfo.type").enumValueIndex = (int)ParseCardType(jsonData.type);
-                    soToUpdate.FindProperty("basicInfo.rarity").enumValueIndex = (int)ParseCardRarity(jsonData.rarity);
-
-                    soToUpdate.ApplyModifiedProperties();
-                    EditorUtility.SetDirty(so); // ë³€ê²½ì‚¬í•­ì„ ì €ì¥í•˜ë„ë¡ í‘œì‹œ
-                }
-                AssetDatabase.SaveAssets();
-                AssetDatabase.Refresh();
-                Debug.Log($"Finished loading data from {jsonFiles.Count} JSON files.");
+                DestroyImmediate(editor);
             }
         }
-
-        serializedObject.ApplyModifiedProperties();
+        moduleEditors.Clear();
     }
 }
