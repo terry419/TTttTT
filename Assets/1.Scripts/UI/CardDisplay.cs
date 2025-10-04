@@ -1,5 +1,6 @@
 // TTttTT/Assets/1.Scripts/UI/CardDisplay.cs
 using UnityEngine.Localization;
+using UnityEngine.Localization;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -10,24 +11,24 @@ public class CardSelectedEvent : UnityEvent<CardDisplay> { }
 
 public class CardDisplay : MonoBehaviour
 {
-    [Header("--- UI ¿ä¼Ò ¿¬°á ---")]
-    [Header("»ó´Ü Á¤º¸")]
+    [Header("--- UI ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ---")]
+    [Header("ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½")]
     [SerializeField] private TextMeshProUGUI levelText;
     [SerializeField] private TextMeshProUGUI nameText;
     [SerializeField] private Image attributeIcon;
 
-    [Header("Áß¾Ó Á¤º¸")]
+    [Header("ï¿½ß¾ï¿½ ï¿½ï¿½ï¿½ï¿½")]
     [SerializeField] private Image illustrationImage;
 
-    [Header("ÇÏ´Ü Á¤º¸")]
+    [Header("ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½")]
     [SerializeField] private TextMeshProUGUI descriptionText;
 
-    [Header("±âÅ¸ UI")]
+    [Header("ï¿½ï¿½Å¸ UI")]
     // [SerializeField] private Image rarityImage; 
     [SerializeField] private Image highlightBorder;
     public Button selectButton;
 
-    [Header("--- ÀÌº¥Æ® ---")]
+    [Header("--- ï¿½Ìºï¿½Æ® ---")]
     public CardSelectedEvent OnCardSelected;
 
     public NewCardDataSO CurrentCard { get; private set; }
@@ -41,7 +42,7 @@ public class CardDisplay : MonoBehaviour
         NewCardDataSO cardData = cardInstance.CardData;
         CurrentCard = cardData;
 
-        // --- °¢ UI ¿ä¼Ò¿¡ µ¥ÀÌÅÍ ÇÒ´ç ---
+        // --- ï¿½ï¿½ UI ï¿½ï¿½Ò¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ò´ï¿½ ---
         if (nameText != null)
             nameText.text = cardData.basicInfo.cardName.ToString();
 
@@ -54,13 +55,13 @@ public class CardDisplay : MonoBehaviour
         var uiDb = ServiceLocator.Get<UIGraphicsDB>();
         if (uiDb != null)
         {
-            // Highlight Border »ö»ó ¼³Á¤ (µî±Þ ±âÁØ)
+            // Highlight Border ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
             if (highlightBorder != null)
             {
                 highlightBorder.color = uiDb.GetRarityColor(cardData.basicInfo.rarity);
             }
 
-            // ¼Ó¼º ¾ÆÀÌÄÜ ¼³Á¤ (CardType ±âÁØ)
+            // ï¿½Ó¼ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (CardType ï¿½ï¿½ï¿½ï¿½)
             if (attributeIcon != null)
             {
                 attributeIcon.sprite = uiDb.GetAttributeSprite(cardData.basicInfo.type);
@@ -68,14 +69,14 @@ public class CardDisplay : MonoBehaviour
             }
         }
 
-        // ¸ÞÀÎ ÀÏ·¯½ºÆ® (null Ã¼Å©)
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½Ï·ï¿½ï¿½ï¿½Æ® (null Ã¼Å©)
         if (illustrationImage != null)
         {
             illustrationImage.sprite = cardData.basicInfo.cardIllustration;
             illustrationImage.enabled = illustrationImage.sprite != null;
         }
 
-        // ¹öÆ° ¸®½º³Ê ¿¬°á
+        // ï¿½ï¿½Æ° ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         if (selectButton != null)
         {
             selectButton.onClick.RemoveAllListeners();

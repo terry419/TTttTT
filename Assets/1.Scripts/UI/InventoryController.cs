@@ -124,8 +124,7 @@ public class InventoryController : MonoBehaviour
                 fixedCursor.SetActive(true);
                 fixedCursor.transform.position = firstSelectedSlot.transform.position;
             }
-            string cardName = (firstSelectedSlot.currentState == CardSlot.SlotState.Empty) ? "빈 슬롯"
-               : firstSelectedSlot.currentCard.CardData.basicInfo.cardName.ToString();
+            string cardName = (firstSelectedSlot.currentState == CardSlot.SlotState.Empty) ? "빈 슬롯" : firstSelectedSlot.currentCard.CardData.basicInfo.cardName.ToString();
             Debug.Log($"[인벤토리] 1차 선택(Lock-in): {cardName}");
         }
         else

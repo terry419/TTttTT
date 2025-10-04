@@ -1,24 +1,25 @@
-// ÃßÃµ °æ·Î: Assets/1.Scripts/Data/Shared/BasicInfo.cs
+// ï¿½ï¿½Ãµ ï¿½ï¿½ï¿½: Assets/1.Scripts/Data/Shared/BasicInfo.cs
+using UnityEngine.Localization;
+using System;
 using UnityEngine.Localization;
 using UnityEngine;
-using System;
 
 /// <summary>
-/// Ä«µåÀÇ ÀÌ¸§, ¾ÆÀÌÄÜ, Å¸ÀÔ µî UI Ç¥½Ã¿¡ ÇÊ¿äÇÑ ±âº» Á¤º¸¸¦ ´ã´Â °ø¿ë Å¬·¡½ºÀÔ´Ï´Ù.
+/// Ä«ï¿½ï¿½ï¿½ï¿½ ï¿½Ì¸ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½, Å¸ï¿½ï¿½ ï¿½ï¿½ UI Ç¥ï¿½Ã¿ï¿½ ï¿½Ê¿ï¿½ï¿½ï¿½ ï¿½âº» ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Å¬ï¿½ï¿½ï¿½ï¿½ï¿½Ô´Ï´ï¿½.
 /// </summary>
 [Serializable]
 public class BasicInfo
 {
-    [Tooltip("Ä«µå ID (¿¹: warrior_basic_001)")]
+    [Tooltip("Ä«ï¿½ï¿½ ID (ï¿½ï¿½: warrior_basic_001)")]
     public string cardID;
-    [Tooltip("UI¿¡ Ç¥½ÃµÉ Ä«µå ÀÌ¸§")]
-    public LocalizedString cardName; // string -> LocalizedString À¸·Î º¯°æ
-    [Tooltip("Ä«µå Áß¾Ó¿¡ Ç¥½ÃµÉ ÀÏ·¯½ºÆ®")]
+    [Tooltip("UIï¿½ï¿½ Ç¥ï¿½Ãµï¿½ Ä«ï¿½ï¿½ ï¿½Ì¸ï¿½")]
+    public LocalizedString cardName; // string -> LocalizedString ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+    [Tooltip("Ä«ï¿½ï¿½ ï¿½ß¾Ó¿ï¿½ Ç¥ï¿½Ãµï¿½ ï¿½Ï·ï¿½ï¿½ï¿½Æ®")]
     public Sprite cardIllustration;
-    [Tooltip("Ä«µåÀÇ Å¸ÀÔ (°ø°Ý ¶Ç´Â ¹æ¾î)")]
+    [Tooltip("Ä«ï¿½ï¿½ï¿½ï¿½ Å¸ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½Ç´ï¿½ ï¿½ï¿½ï¿½)")]
     public CardType type;
-    [Tooltip("Ä«µåÀÇ µî±Þ")]
+    [Tooltip("Ä«ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½")]
     public CardRarity rarity;
-    [Tooltip("Ä«µå È¿°ú ¼³¸í ÅØ½ºÆ®"), TextArea(3, 5)]
-    public LocalizedString effectDescription; // string -> LocalizedString À¸·Î º¯°æ
+    [Tooltip("Ä«ï¿½ï¿½ È¿ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ø½ï¿½Æ®"), TextArea(3, 5)]
+    public LocalizedString effectDescription; // string -> LocalizedString ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 }

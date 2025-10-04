@@ -1,148 +1,142 @@
-using System.Collections.Generic;
-using UnityEditor;
-using UnityEditor.AddressableAssets;
 using UnityEngine;
-using UnityEngine.AddressableAssets; // AssetReferenceT 사용을 위해 추가
+using UnityEditor;
+using System.IO;
+using System.Linq;
 
 [CustomEditor(typeof(NewCardDataSO))]
 public class CardDataSOEditor : Editor
 {
-    // 각 모듈 Editor 인스턴스를 관리하여, 인스펙터의 상태를 유지합니다.
-    private readonly Dictionary<Object, Editor> moduleEditors = new Dictionary<Object, Editor>();
+    private SerializedProperty cardIDProp;
+    private SerializedProperty cardNameProp;
+    private SerializedProperty cardIllustrationProp;
+    private SerializedProperty typeProp;
+    private SerializedProperty rarityProp;
+    private SerializedProperty effectDescriptionProp;
+
+    private void OnEnable()
+    {
+        // 'basicInfo' 하위의 프로퍼티들을 찾습니다.
+        cardIDProp = serializedObject.FindProperty("basicInfo.cardID");
+        cardNameProp = serializedObject.FindProperty("basicInfo.cardName");
+        cardIllustrationProp = serializedObject.FindProperty("basicInfo.cardIllustration");
+        typeProp = serializedObject.FindProperty("basicInfo.type");
+        rarityProp = serializedObject.FindProperty("basicInfo.rarity");
+        effectDescriptionProp = serializedObject.FindProperty("basicInfo.effectDescription");
+    }
+
+    // [추가된 함수 1] 문자열을 CardType 열거형으로 변환
+    private CardType ParseCardType(string typeString)
+    {
+        switch (typeString)
+        {
+            case "물리":
+            case "Physical":
+                return CardType.Physical;
+            case "마법":
+            case "Magical":
+                return CardType.Magical;
+            default:
+                Debug.LogWarning($"알 수 없는 카드 타입: '{typeString}'. 기본값(Physical)으로 설정합니다.");
+                return CardType.Physical;
+        }
+    }
+
+    // [추가된 함수 2] 문자열을 CardRarity 열거형으로 변환
+    private CardRarity ParseCardRarity(string rarityString)
+    {
+        switch (rarityString)
+        {
+            case "일반":
+            case "Common":
+                return CardRarity.Common;
+            case "희귀":
+            case "Rare":
+                return CardRarity.Rare;
+            case "영웅":
+            case "Epic":
+                return CardRarity.Epic;
+            case "전설":
+            case "Legendary":
+                return CardRarity.Legendary;
+            case "신화":
+            case "Mythic":
+                return CardRarity.Mythic;
+            default:
+                Debug.LogWarning($"알 수 없는 카드 등급: '{rarityString}'. 기본값(Common)으로 설정합니다.");
+                return CardRarity.Common;
+        }
+    }
 
     public override void OnInspectorGUI()
     {
-        // 현재 NewCardDataSO의 변경사항을 업데이트
         serializedObject.Update();
-
-        // "m_Script", "modules", "basicInfo" 필드를 제외하고 나머지 기본 필드를 자동으로 그립니다.
-        DrawPropertiesExcluding(serializedObject, "m_Script", "modules", "basicInfo");
 
         // basicInfo 필드를 수동으로 그립니다.
         SerializedProperty basicInfoProperty = serializedObject.FindProperty("basicInfo");
         if (basicInfoProperty != null)
         {
-            Debug.Log("Drawing cardID...");
-            EditorGUILayout.PropertyField(basicInfoProperty.FindPropertyRelative("cardID"), new
-GUIContent("Card ID"));
-            Debug.Log("Drawing cardName...");
-            EditorGUILayout.PropertyField(basicInfoProperty.FindPropertyRelative("cardName"), new
-GUIContent("Card Name"));
-            Debug.Log("Drawing cardIllustration...");
-            EditorGUILayout.PropertyField(basicInfoProperty.FindPropertyRelative("cardIllustration"), new
-GUIContent("Card Illustration"));
-            Debug.Log("Drawing type...");
-            EditorGUILayout.PropertyField(basicInfoProperty.FindPropertyRelative("type"), new
-GUIContent("Card Type"));
-            Debug.Log("Drawing rarity...");
-            EditorGUILayout.PropertyField(basicInfoProperty.FindPropertyRelative("rarity"), new
-GUIContent("Card Rarity"));
-            Debug.Log("Drawing effectDescription...");
-            EditorGUILayout.PropertyField(basicInfoProperty.FindPropertyRelative("effectDescription"), new
- GUIContent("Effect Description"));
+            EditorGUILayout.PropertyField(basicInfoProperty.FindPropertyRelative("cardID"), new GUIContent("Card ID"));
+
+            // cardName (LocalizedString) 필드를 m_StringReference를 통해 그립니다.
+            SerializedProperty cardNameProp = basicInfoProperty.FindPropertyRelative("cardName");
+            EditorGUILayout.PropertyField(cardNameProp.FindPropertyRelative("m_StringReference"), new GUIContent("Card Name"));
+
+            EditorGUILayout.PropertyField(basicInfoProperty.FindPropertyRelative("cardIllustration"), new GUIContent("Card Illustration"));
+
+            // type (CardType enum) 필드를 EnumPopup으로 그립니다.
+            SerializedProperty typeProp = basicInfoProperty.FindPropertyRelative("type");
+            typeProp.enumValueIndex = (int)(CardType)EditorGUILayout.EnumPopup(new GUIContent("Card Type"), (CardType)typeProp.enumValueIndex);
+
+            // rarity (CardRarity enum) 필드를 EnumPopup으로 그립니다.
+            SerializedProperty rarityProp = basicInfoProperty.FindPropertyRelative("rarity");
+            rarityProp.enumValueIndex = (int)(CardRarity)EditorGUILayout.EnumPopup(new GUIContent("Card Rarity"), (CardRarity)rarityProp.enumValueIndex);
+
+            // effectDescription (LocalizedString) 필드를 m_StringReference를 통해 그립니다.
+            SerializedProperty effectDescriptionProp = basicInfoProperty.FindPropertyRelative("effectDescription");
+            EditorGUILayout.PropertyField(effectDescriptionProp.FindPropertyRelative("m_StringReference"), new GUIContent("Effect Description"));
         }
 
-        EditorGUILayout.Space(10);
-        EditorGUILayout.LabelField("모듈 정보 설정", EditorStyles.boldLabel);
+        EditorGUILayout.Space(20); // 버튼과 구분을 위해 공간을 추가
 
-        // "modules" 리스트 프로퍼티를 그립니다.
-        SerializedProperty modulesProperty = serializedObject.FindProperty("modules");
-
-        modulesProperty.isExpanded = EditorGUILayout.Foldout(modulesProperty.isExpanded, "모듈 정보 설정",
- true, EditorStyles.foldoutHeader);
-
-        if (modulesProperty.isExpanded)
+        if (GUILayout.Button("Load All Card Data from JSONs in Folder"))
         {
-            EditorGUI.indentLevel++;
-
-            EditorGUILayout.PropertyField(modulesProperty.FindPropertyRelative("Array.size"));
-
-            // 리스트의 각 항목을 그립니다.
-            for (int i = 0; i < modulesProperty.arraySize; i++)
+            string dirPath = EditorUtility.OpenFolderPanel("Select Folder with Card JSONs", "", "");
+            if (!string.IsNullOrEmpty(dirPath))
             {
-                SerializedProperty moduleEntryProperty = modulesProperty.GetArrayElementAtIndex(i);
-
-                // ModuleEntry의 description 필드를 그립니다.
-                SerializedProperty descriptionProperty =
-moduleEntryProperty.FindPropertyRelative("description");
-                EditorGUILayout.PropertyField(descriptionProperty);
-
-                // ModuleEntry의 AssetReference 필드를 그립니다.
-                SerializedProperty moduleRefProperty =
-moduleEntryProperty.FindPropertyRelative("moduleReference");
-                EditorGUILayout.PropertyField(moduleRefProperty, new GUIContent("모듈 에셋 (ModuleAsset)"));
-
-                  // AssetReference에 실제 에셋이 할당되어 있는지 확인합니다.
-                var referencedModuleGuid =
-moduleRefProperty.FindPropertyRelative("m_AssetGUID").stringValue;
-
-                if (!string.IsNullOrEmpty(referencedModuleGuid))
+                var jsonFiles = Directory.GetFiles(dirPath, "*.json").ToList();
+                foreach (var filePath in jsonFiles)
                 {
-                    var entry =
-AddressableAssetSettingsDefaultObject.Settings.FindAssetEntry(referencedModuleGuid);
-                    if (entry != null)
+                    string json = File.ReadAllText(filePath);
+                    CardDataJson jsonData = JsonUtility.FromJson<CardDataJson>(json);
+
+                    string soPath = $"Assets/Resources_moved/CardData/{jsonData.cardID}.asset";
+                    NewCardDataSO so = AssetDatabase.LoadAssetAtPath<NewCardDataSO>(soPath);
+                    if (so == null)
                     {
-                        // [주의] .GetAsset() 대신 .MainAsset 속성을 사용합니다.
-                        var asset = entry.MainAsset as CardEffectSO;
-
-                        if (asset != null)
-                        {
-                            // 할당된 에셋을 그리기 위한 Foldout을 사용합니다.
-                            bool isExpanded = EditorGUILayout.Foldout(
-                                GetFoldoutState(asset),
-                                $"'{asset.name}' 모듈 상세 정보",
-                                true,
-                                EditorStyles.foldoutHeader
-                            );
-
-                            SetFoldoutState(asset, isExpanded);
-
-                            if (isExpanded)
-                            {
-                                EditorGUI.indentLevel++;
-
-                                if (!moduleEditors.ContainsKey(asset))
-                                {
-                                    moduleEditors[asset] = CreateEditor(asset);
-                                }
-
-                                moduleEditors[asset].OnInspectorGUI();
-
-                                EditorGUI.indentLevel--;
-                            }
-                        }
+                        so = ScriptableObject.CreateInstance<NewCardDataSO>();
+                        AssetDatabase.CreateAsset(so, soPath);
                     }
+
+                    SerializedObject soToUpdate = new SerializedObject(so);
+                    soToUpdate.Update();
+
+                    soToUpdate.FindProperty("basicInfo.cardID").stringValue = jsonData.cardID;
+                    soToUpdate.FindProperty("basicInfo.cardName").stringValue = jsonData.cardName;
+                    soToUpdate.FindProperty("basicInfo.effectDescription").stringValue = jsonData.effectDescription;
+
+                    // [핵심 수정] 변환 함수를 사용하여 올바른 Enum 값을 할당합니다.
+                    soToUpdate.FindProperty("basicInfo.type").enumValueIndex = (int)ParseCardType(jsonData.type);
+                    soToUpdate.FindProperty("basicInfo.rarity").enumValueIndex = (int)ParseCardRarity(jsonData.rarity);
+
+                    soToUpdate.ApplyModifiedProperties();
+                    EditorUtility.SetDirty(so); // 변경사항을 저장하도록 표시
                 }
-                EditorGUILayout.Separator();
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+                Debug.Log($"Finished loading data from {jsonFiles.Count} JSON files.");
             }
-            EditorGUI.indentLevel--;
         }
 
-        // 변경된 내용을 적용합니다.
         serializedObject.ApplyModifiedProperties();
-    }
-
-    // Foldout 상태 저장을 위한 Helper 메서드
-    private bool GetFoldoutState(Object asset)
-    {
-        return SessionState.GetBool(asset.GetInstanceID().ToString(), false);
-    }
-
-    private void SetFoldoutState(Object asset, bool state)
-    {
-        SessionState.SetBool(asset.GetInstanceID().ToString(), state);
-    }
-
-    private void OnDisable()
-    {
-        // 에디터가 비활성화될 때 생성된 모든 서브 에디터를 제거하여 메모리 누수를 방지합니다.
-        foreach (var editor in moduleEditors.Values)
-        {
-            if (editor != null)
-            {
-                DestroyImmediate(editor);
-            }
-        }
-        moduleEditors.Clear();
     }
 }
