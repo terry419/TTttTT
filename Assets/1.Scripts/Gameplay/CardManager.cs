@@ -118,7 +118,7 @@ public class CardManager : MonoBehaviour
     {
         if (cardInstance == null || PlayerDataManager.CurrentRunData.equippedCards.Contains(cardInstance))
         {
-            Debug.LogWarning($"[CardManager] 카드 장착 실패: Null 또는 이미 장착된 카드 ({cardInstance?.CardData.basicInfo.cardName})");
+            Debug.LogWarning($"[CardManager] 카드 장착 실패: Null 또는 이미 장착된 카드 ({cardInstance?.CardData.basicInfo.cardName.TableEntryReference})");
             return false;
         }
         if (PlayerDataManager.CurrentRunData.equippedCards.Count >= MaxEquipSlots)
@@ -127,7 +127,7 @@ public class CardManager : MonoBehaviour
             return false;
         }
 
-        Debug.Log($"[CardManager] 카드 장착 시도: {cardInstance.CardData.basicInfo.cardName} (to index: {index})");
+        Debug.Log($"[CardManager] 카드 장착 시도: {cardInstance.CardData.basicInfo.cardName.TableEntryReference} (to index: {index})");
         Debug.Log($"[CardManager] 장착 전 equippedCards: {PlayerDataManager.CurrentRunData.equippedCards.Count}개");
 
         if (index != -1 && index < PlayerDataManager.CurrentRunData.equippedCards.Count)
@@ -144,12 +144,12 @@ public class CardManager : MonoBehaviour
         return true;
     }
 
-    // ▼▼▼ [수정] Unequip 메서드에 로그 추가 ▼▼▼
+
     public bool Unequip(CardInstance cardInstance)
     {
         if (cardInstance == null) return false;
 
-        Debug.Log($"[CardManager] 카드 장착 해제 시도: {cardInstance.CardData.basicInfo.cardName}");
+        Debug.Log($"[CardManager] 카드 장착 해제 시도: {cardInstance.CardData.basicInfo.cardName.TableEntryReference}");
         Debug.Log($"[CardManager] 해제 전 equippedCards: {PlayerDataManager.CurrentRunData.equippedCards.Count}개");
 
         bool removed = PlayerDataManager.CurrentRunData.equippedCards.Remove(cardInstance);
@@ -171,7 +171,7 @@ public class CardManager : MonoBehaviour
             return;
         }
 
-        Debug.Log($"[CardManager] 합성 시작: 보상 카드({rewardCardData.basicInfo.cardName}), 재료 카드({materialCard.CardData.basicInfo.cardName}) / 재료 레벨: {materialCard.EnhancementLevel}");
+        Debug.Log($"[CardManager] 합성 시작: 보상 카드({rewardCardData.basicInfo.cardName.TableEntryReference}), 재료 카드({materialCard.CardData.basicInfo.cardName.TableEntryReference}) / 재료 레벨: {materialCard.EnhancementLevel}");
         int equippedIndex = PlayerDataManager.CurrentRunData.equippedCards.IndexOf(materialCard);
         Unequip(materialCard);
         PlayerDataManager.CurrentRunData.ownedCards.Remove(materialCard);
@@ -181,7 +181,7 @@ public class CardManager : MonoBehaviour
         {
             EnhancementLevel = materialCard.EnhancementLevel + 1
         };
-        Debug.Log($"[CardManager] 새로운 강화 카드 생성: {newEnhancedCard.CardData.basicInfo.cardName}, 강화 레벨: {newEnhancedCard.EnhancementLevel}");
+        Debug.Log($"[CardManager] 새로운 강화 카드 생성: {newEnhancedCard.CardData.basicInfo.cardName.TableEntryReference}, 강화 레벨: {newEnhancedCard.EnhancementLevel}");
 
         PlayerDataManager.CurrentRunData.ownedCards.Add(newEnhancedCard);
         Equip(newEnhancedCard, equippedIndex);
@@ -276,13 +276,13 @@ public class CardManager : MonoBehaviour
                 if (randomValue <= currentWeight)
                 {
                     activeCard = card;
-                    Debug.Log($"[CardManager] Selected Card: {activeCard.CardData.basicInfo.cardName}");
+                    Debug.Log($"[CardManager] Selected Card: {activeCard.CardData.basicInfo.cardName.TableEntryReference}");
                     return;
                 }
             }
             activeCard = selectableCards.LastOrDefault();
         }
-        Debug.Log($"[CardManager] Selected Card: {activeCard.CardData.basicInfo.cardName}");
+        Debug.Log($"[CardManager] Selected Card: {activeCard.CardData.basicInfo.cardName.TableEntryReference}");
     }
 
     public void ClearAndResetDeck()

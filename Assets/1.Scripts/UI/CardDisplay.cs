@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.Events;
+using UnityEngine.Localization.Components;
 
 [System.Serializable]
 public class CardSelectedEvent : UnityEvent<CardDisplay> { }
@@ -32,21 +33,66 @@ public class CardDisplay : MonoBehaviour
 
     public NewCardDataSO CurrentCard { get; private set; }
     public CardInstance CurrentCardInstance { get; private set; }
+    private LocalizeStringEvent nameLocalizeEvent;
+    private LocalizeStringEvent descriptionLocalizeEvent;
+
+
+    void Awake()
+    {
+        if (nameText != null)
+        {
+            nameLocalizeEvent = nameText.GetComponent<LocalizeStringEvent>();
+            if (nameLocalizeEvent == null)
+            {
+                Debug.LogError($"[CardDisplay - {gameObject.name}] 'NameText' 오브젝트에 Localize String Event 컴포넌트가 없습니다! 프리팹을 확인해주세요.");
+            }
+            else
+            {
+                Debug.Log($"[CardDisplay - {gameObject.name}] Awake: Localize String Event 컴포넌트를 성공적으로 찾았습니다.");
+            }
+        }
+
+        if (descriptionText != null)
+        {
+            descriptionLocalizeEvent = descriptionText.GetComponent<LocalizeStringEvent>();
+            if (descriptionLocalizeEvent == null)
+            {
+                // ★ 디버그 로그 1: 컴포넌트 누락 확인
+                Debug.LogError($"[CardDisplay - {gameObject.name}] 'DescriptionText' 오브젝트에 Localize String Event 컴포넌트가 없습니다! 프리팹을 확인해주세요.");
+            }
+        }
+    }
 
     public void Setup(CardInstance cardInstance)
     {
-        if (cardInstance == null) return;
-
+        if (cardInstance == null)
+        {
+            Debug.LogError("[CardDisplay] Setup 실패: cardInstance가 null입니다.");
+            return;
+        }
         CurrentCardInstance = cardInstance;
         NewCardDataSO cardData = cardInstance.CardData;
         CurrentCard = cardData;
 
-        // --- 각 UI 요소에 데이터 할당 ---
-        if (nameText != null)
-            nameText.text = cardData.basicInfo.cardName;
+        Debug.Log($"[CardDisplay - {gameObject.name}] Setup 호출됨. 카드: {cardData.name}");
 
-        if (descriptionText != null)
-            descriptionText.text = cardData.basicInfo.effectDescription;
+        // --- 이름 UI 설정 부분 수정 ---
+        if (nameLocalizeEvent != null)
+        {
+            var localizedString = cardData.basicInfo.cardName;
+            Debug.Log($"[CardDisplay] 로컬라이징 데이터 설정 시도. Table: '{localizedString.TableReference}', Key: '{localizedString.TableEntryReference}'");
+
+            nameLocalizeEvent.StringReference = localizedString;
+        }
+
+        if (descriptionLocalizeEvent != null)
+        {
+            // ★ 디버그 로그 2: LocalizedString 정보 확인
+            var localizedString = cardData.basicInfo.effectDescription;
+            Debug.Log($"[CardDisplay] 설명(Description) 로컬라이징 데이터 설정 시도. Table: '{localizedString.TableReference}', Key: '{localizedString.TableEntryReference}'");
+
+            descriptionLocalizeEvent.StringReference = localizedString;
+        }
 
         if (levelText != null)
             levelText.text = $"Lv.{cardInstance.EnhancementLevel + 1}";

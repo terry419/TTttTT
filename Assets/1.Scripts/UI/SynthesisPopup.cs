@@ -7,6 +7,8 @@ using TMPro;
 using System.Collections;
 using UnityEngine.EventSystems;
 using System.Linq;
+using UnityEngine.Localization; 
+using UnityEngine.Localization.Components; 
 
 public class SynthesisPopup : MonoBehaviour
 {
@@ -16,7 +18,8 @@ public class SynthesisPopup : MonoBehaviour
     [SerializeField] private Button confirmButton;
     [SerializeField] private Button cancelButton;
     [SerializeField] private TextMeshProUGUI titleText;
-
+    
+    private LocalizeStringEvent titleLocalizeEvent;
     private Action<CardInstance> onConfirm;
     private Action onCancel;
     private CardInstance selectedMaterialCard;
@@ -27,6 +30,8 @@ public class SynthesisPopup : MonoBehaviour
         confirmButton.onClick.AddListener(OnConfirmClicked);
         cancelButton.onClick.AddListener(OnCancelClicked);
         gameObject.SetActive(false);
+        titleLocalizeEvent = titleText.GetComponent<LocalizeStringEvent>();
+
     }
 
     void OnEnable()
@@ -34,14 +39,20 @@ public class SynthesisPopup : MonoBehaviour
         StartCoroutine(SetInitialPopupFocus());
     }
 
-    public void Initialize(NewCardDataSO baseCard, List<CardInstance> materialChoices, Action<CardInstance> confirmCallback, Action cancelCallback)
+    public async void Initialize(NewCardDataSO baseCard, List<CardInstance> materialChoices, Action<CardInstance> confirmCallback, Action cancelCallback)
     {
         gameObject.SetActive(true);
         onConfirm = confirmCallback;
         onCancel = cancelCallback;
         selectedMaterialCard = null;
 
-        if (titleText != null) titleText.text = $"Synthesize: {baseCard.basicInfo.cardName}";
+        if (titleLocalizeEvent != null)
+        {
+            var localizedCardName = baseCard.basicInfo.cardName;
+            var op = localizedCardName.GetLocalizedStringAsync();
+            await op.Task;
+            titleText.text = $"Synthesize: {op.Result}";
+        }
 
         foreach (var display in spawnedCardDisplays) Destroy(display.gameObject);
         spawnedCardDisplays.Clear();
@@ -58,7 +69,6 @@ public class SynthesisPopup : MonoBehaviour
             }
         }
 
-        // ▼▼▼ [핵심 수정] 네비게이션 설정 함수 호출 ▼▼▼
         SetupNavigation();
         UpdateConfirmButton();
     }
