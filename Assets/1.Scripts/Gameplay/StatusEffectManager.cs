@@ -27,7 +27,7 @@ public class StatusEffectManager : MonoBehaviour
     /// </summary>
     public void ApplyStatusEffect(GameObject target, StatusEffectDataSO effectData)
     {
-        Debug.Log($"[StatusEffectManager] (Legacy) SO기반 효과 '{effectData.name}' 적용 요청. 신규 인스턴스로 변환합니다.");
+        Debug.Log($"[StatusEffectManager] (Legacy) SO기반 효과 '{effectData.effectId}' 적용 요청. 신규 인스턴스로 변환합니다.");
         var instance = new StatusEffectInstance(target, effectData);
         ApplyStatusEffect(target, instance); // 최종적으로는 신규 메서드를 호출
     }
@@ -54,10 +54,11 @@ public class StatusEffectManager : MonoBehaviour
             switch (effectInstance.StackingBehavior)
             {
                 case StackingBehavior.RefreshDuration:
+                    float oldDuration = existingEffect.RemainingDuration;
                     existingEffect.RefreshDuration();
-                    Debug.Log($"[StatusEffect] '{target.name}'의 '{effectInstance.EffectId}' 효과 지속시간을 갱신했습니다.");
-                    return; // 갱신만 하고 종료
-                case StackingBehavior.NoStack:
+                    Debug.Log($"<color=cyan>[StatusEffectManager]</color> '{target.name}'의 '{effectInstance.EffectId}' 효과 지속시간 갱신. (이전: {oldDuration:F1}s -> 새 시간: {existingEffect.RemainingDuration:F1}s)");
+                    return;
+                case StackingBehavior.NoStack:
                     Debug.Log($"[StatusEffect] '{target.name}'에 '{effectInstance.EffectId}' 효과가 이미 존재하며 중첩이 불가능하여 무시합니다.");
                     return; // 적용하지 않고 종료
                 case StackingBehavior.StackEffect:
@@ -65,14 +66,17 @@ public class StatusEffectManager : MonoBehaviour
                     break;
             }
         }
-        // 새 효과를 리스트에 추가하고 적용 로직을 실행합니다.
         activeEffects[target].Add(effectInstance);
         effectInstance.ApplyEffect();
-        Debug.Log($"<color=cyan>[StatusEffect]</color> '{target.name}'에게 '{effectInstance.EffectId}' 효과 적용 완료. 현재 효과 수: {activeEffects[target].Count}개");
+
+        // [디버그 로그 추가] 신규 버프 적용 확인
+        var bonuses = effectInstance.GetType().GetField("statBonuses", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(effectInstance) as Dictionary<StatType, float>;
+        string bonusText = string.Join(", ", bonuses.Select(kvp => $"{kvp.Key}: +{kvp.Value}%"));
+        Debug.Log($"<color=green>[StatusEffectManager]</color> '{target.name}'에게 신규 효과 '{effectInstance.EffectId}' 적용 완료. 지속시간: {effectInstance.RemainingDuration:F1}s, 보너스: [{bonusText}]");
     }
     /// <summary>
-        /// 매 프레임 모든 활성 효과를 업데이트하고, 만료된 효과나 사라진 타겟을 정리합니다.
-        /// </summary>
+    /// 매 프레임 모든 활성 효과를 업데이트하고, 만료된 효과나 사라진 타겟을 정리합니다.
+    /// </summary>
     void Update()
     {
         if (activeEffects.Count == 0) return;

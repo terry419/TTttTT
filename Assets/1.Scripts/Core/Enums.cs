@@ -1,7 +1,8 @@
 public enum CardType
 {
     Physical, 
-    Magical
+    Magical,
+    Fire
 }
 
 public enum CardRarity
@@ -39,7 +40,8 @@ public enum StatType
     CritMultiplier,
     CritRate,
     DamageTaken,
-    ContactDamage
+    ContactDamage,
+    Fire
 }
 
 public enum TargetingType

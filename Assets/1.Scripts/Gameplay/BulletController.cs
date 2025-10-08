@@ -9,7 +9,6 @@ public class BulletController : MonoBehaviour
     public float damage;
     public string shotInstanceID;
     public float lifetime = 3f;
-    // public CardDataSO SourceCard { get; private set; } // 이 줄 삭제
     public ProjectileEffectSO SourceModule { get; private set; }
 
     public int _currentPierceCount;
@@ -28,7 +27,6 @@ public class BulletController : MonoBehaviour
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
-        // [추가] 총알 렌더링 순서 설정
         var renderer = GetComponent<SpriteRenderer>();
         if (renderer != null)
         {
@@ -36,47 +34,42 @@ public class BulletController : MonoBehaviour
         }
     }
 
-    // [수정] NewCardDataSO를 사용하는 Initialize 메소드만 남깁니다.
-    public void Initialize(Vector2 direction, float initialSpeed, float damage, string shotID, NewCardDataSO platform, ProjectileEffectSO module, EntityStats caster, CardInstance instance) // CharacterStats -> EntityStats
+    public void Initialize(Vector2 direction, float initialSpeed, float damage, string shotID, NewCardDataSO platform, ProjectileEffectSO module, EntityStats caster, CardInstance instance, 
+        HashSet<GameObject> initialHitMonsters = null, int? pierceCountOverride = null, int? ricochetCountOverride = null, bool? isTrackingOverride = null)
     {
         this._direction = direction.normalized;
         this.speed = initialSpeed;
         this.damage = damage;
+
         if (string.IsNullOrEmpty(shotID))
         {
             this.shotInstanceID = System.Guid.NewGuid().ToString();
-            Debug.LogWarning($"[BulletController] Initialize에 유효하지 않은 shotID가 전달되어 새 ID를 생성했습니다: {this.shotInstanceID}");
         }
         else
         {
             this.shotInstanceID = shotID;
         }
 
-        this.shotInstanceID = shotID;
         this.SourceModule = module;
         this.sourcePlatform = platform;
         this.sourceCardInstance = instance;
-        this._currentPierceCount = module.pierceCount;
-        this._currentRicochetCount = module.ricochetCount;
-        this.isTracking = module.isTracking;
-        this.trackingTarget = null;
-        this._hitMonsters.Clear();
         this.casterStats = caster;
+        this.trackingTarget = null;
 
-        if (module != null)
+        // 1. 무시할 몬스터 목록 초기화
+        _hitMonsters.Clear();
+        if (initialHitMonsters != null)
         {
-            this._currentPierceCount = module.pierceCount;
-            this._currentRicochetCount = module.ricochetCount;
-            this.isTracking = module.isTracking;
-        }
-        else
-        {
-            // 모듈이 없으면 관통, 튕김, 추적 기능도 없습니다.
-            this._currentPierceCount = 0;
-            this._currentRicochetCount = 0;
-            this.isTracking = false;
+            foreach (var monster in initialHitMonsters)
+            {
+                _hitMonsters.Add(monster);
+            }
         }
 
+        // 2. 특수 능력치 설정 (오버라이드 > 모듈 > 기본값)
+        this._currentPierceCount = pierceCountOverride ?? module?.pierceCount ?? 0;
+        this._currentRicochetCount = ricochetCountOverride ?? module?.ricochetCount ?? 0;
+        this.isTracking = isTrackingOverride ?? module?.isTracking ?? false;
 
         this._bounceCountForPayload = 0;
         float angle = Mathf.Atan2(_direction.y, _direction.x) * Mathf.Rad2Deg;
@@ -126,40 +119,53 @@ public class BulletController : MonoBehaviour
 
             if (!monster.RegisterHitByShot(this.shotInstanceID, canHitMultiple))
             {
-                // 이미 맞은 몬스터는 피해 없이 관통/튕김 로직만 처리
+                // 이미 맞은 몬스터
             }
             else
             {
                 monster.TakeDamage(this.damage);
                 _hitMonsters.Add(other.gameObject);
 
-                // 몬스터가 피해를 받고 즉시 죽은 경우
-                if (monster == null)
+                Debug.Log($"[BulletController] 몬스터 '{monster.name}' 명중. OnHit 효과 실행을 시작합니다.");
+
+                if (this.sourceCardInstance != null)
                 {
-                    if (TryPierce()) return;
-                    Deactivate();
-                    return;
+                    var effectContext = new EffectContext
+                    {
+                        Caster = this.casterStats,
+                        SpawnPoint = this.transform,
+                        Platform = this.sourcePlatform,
+                        SourceCardInstance = this.sourceCardInstance,
+                        HitTarget = monster,
+                        HitPosition = monster.transform.position,
+                        DamageDealt = this.damage
+                    };
+
+                    Debug.Log($"[BulletController] 원본 카드 '{sourceCardInstance.CardData.name}'에는 {sourceCardInstance.CardData.modules.Count}개의 모듈이 있습니다.");
+
+                    foreach (var moduleEntry in this.sourceCardInstance.CardData.modules)
+                    {
+                        if (moduleEntry.moduleReference.Asset is CardEffectSO effectSO)
+                        {
+                            Debug.Log($"[BulletController] 모듈 '{effectSO.name}' 확인 중... 트리거 타입: {effectSO.trigger}");
+                            if (effectSO.trigger == CardEffectSO.EffectTrigger.OnHit)
+                            {
+                                Debug.Log($"<color=yellow>[BulletController] OnHit 트리거 감지! '{effectSO.name}' 모듈을 실행합니다.</color>");
+                                effectSO.Execute(effectContext);
+                            }
+                        }
+                    }
                 }
-
-                // 몬스터가 살아있다면, 페이로드 효과를 실행합니다.
-                _ = HandlePayloads_Async(monster.transform);
+                else
+                {
+                    Debug.LogWarning("[BulletController] sourceCardInstance가 null이라 OnHit 효과를 실행할 수 없습니다.");
+                }
             }
 
-            // 페이로드 효과로 몬스터가 죽었을 수 있으므로 다시 한번 확인합니다.
-            if (monster == null)
-            {
-                if (TryPierce()) return;
-                Deactivate();
-                return;
-            }
-
-            // 몬스터가 살아있다면, 튕기기(Ricochet)를 시도합니다.
+            HandlePayloads_Async(monster.transform).Forget();
+            
             if (TryRicochet(monster.transform)) return;
-
-            // 튕기지 않았다면, 관통(Pierce)을 시도합니다.
             if (TryPierce()) return;
-
-            // 모든 조건에 해당하지 않으면 총알은 소멸합니다.
             Deactivate();
         }
     }
@@ -185,35 +191,56 @@ public class BulletController : MonoBehaviour
 
     private async UniTaskVoid HandlePayloads_Async(Transform hitTarget)
     {
-        Debug.Log($"[DEBUG-BULLET] HandlePayloads_Async 진입. 대상: {hitTarget?.name ?? "NULL"}");
+        Debug.Log($"<color=orange>[HandlePayloads_Async]</color> 실행 시작. 대상: {hitTarget?.name ?? "NULL"}");
 
-        if (SourceModule?.sequentialPayloads == null) return;
+        if (SourceModule?.sequentialPayloads == null || SourceModule.sequentialPayloads.Count == 0)
+        {
+            Debug.LogWarning($"[HandlePayloads_Async] SourceModule이 없거나 sequentialPayloads가 비어있어 실행을 중단합니다.");
+            return;
+        }
+
         var resourceManager = ServiceLocator.Get<ResourceManager>();
+        if (resourceManager == null)
+        {
+            Debug.LogError("[HandlePayloads_Async] ResourceManager를 찾을 수 없습니다.");
+            return;
+        }
+
+        Debug.Log($"[HandlePayloads_Async] 현재 Bounce 카운트({_bounceCountForPayload})와 일치하는 Payload를 찾습니다. (총 {SourceModule.sequentialPayloads.Count}개 페이로드 확인)");
 
         foreach (var payload in SourceModule.sequentialPayloads)
         {
+            Debug.Log($"[HandlePayloads_Async] ... 확인 중인 Payload: onBounceNumber = {payload.onBounceNumber}");
+
             if (payload.onBounceNumber == _bounceCountForPayload)
             {
-                Debug.Log($"[DEBUG-BULLET] Payload 효과 실행 시도. 모듈 GUID: {payload.effectToTrigger.AssetGUID}");
+                Debug.Log($"<color=yellow>[HandlePayloads_Async] 조건 일치! onBounceNumber({payload.onBounceNumber})에서 '{payload.effectToTrigger.AssetGUID}' 효과를 실행합니다.</color>");
 
                 CardEffectSO module = await resourceManager.LoadAsync<CardEffectSO>(payload.effectToTrigger.AssetGUID);
-                if (module == null) continue;
+                if (module == null)
+                {
+                    Debug.LogError($"[HandlePayloads_Async] Payload 효과 '{payload.effectToTrigger.AssetGUID}'를 로드하는 데 실패했습니다.");
+                    continue;
+                }
 
                 var context = new EffectContext
                 {
                     Caster = this.casterStats,
-                    SpawnPoint = hitTarget,
+                    SpawnPoint = hitTarget, // 발동 위치는 맞은 대상
                     Platform = this.sourcePlatform,
                     SourceCardInstance = this.sourceCardInstance,
                     HitTarget = hitTarget.GetComponent<MonsterController>(),
-                    HitPosition = hitTarget.position
+                    HitPosition = hitTarget.position,
+                    DamageDealt = this.damage // 원본 총알의 데미지를 전달
                 };
-                if (payload.overrideBaseDamage > 0 && payload.onBounceNumber > 0)
+
+                if (payload.overrideBaseDamage > 0)
                 {
                     context.BaseDamageOverride = payload.overrideBaseDamage;
                 }
+
+                Debug.Log($"<color=lime>[HandlePayloads_Async]</color> '{module.name}' 모듈의 Execute를 호출합니다.");
                 module.Execute(context);
-                Debug.Log($"[DEBUG-BULLET] Payload 효과 '{module.name}' 실행 완료.");
             }
         }
     }
